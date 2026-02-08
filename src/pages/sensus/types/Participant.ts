@@ -1,0 +1,36 @@
+export interface Participant {
+  id: number;
+  kode_cari_data: string;
+  nama_lengkap: string;
+  nama_panggilan: string;
+  tempat_lahir: string;
+  tanggal_lahir: Date;
+  umur: number;
+  alamat: string;
+  jenis_kelamin: string;
+  no_telepon: string;
+  nama_ayah: string;
+  nama_ibu: string;
+  hoby: string;
+  kd_pekerjaan: number;
+  nm_pekerjaan: string;
+  usia_menikah: string;
+  kriteria_pasangan: string;
+  status_pernikahan: boolean;
+  status_sambung: number;
+  status_atlet_asad: boolean;
+  kd_daerah: number;
+  nm_daerah: string;
+  kd_desa: number;
+  nm_desa: string;
+  kd_kelompok: number;
+  nm_kelompok: string;
+  jenis_data: string;
+  id_petugas_input: number;
+  nm_petugas_input: string;
+  img: null | string;
+  img_url: string;
+  points_balance: null;
+  created_at: Date;
+  updated_at: Date;
+}

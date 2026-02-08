@@ -1,0 +1,123 @@
+export const menuItems = [
+  {
+    id: "beranda",
+    title: "Beranda",
+    icon: "Home",
+    role: ["admin", "ptgs-sensus"],
+    link: "/",
+  },
+  {
+    id: "auth",
+    title: "Authentication",
+    icon: "KeyRound",
+    role: ["admin"],
+    submenu: [
+      {
+        id: "auth-users",
+        title: "Users",
+        icon: "UserCog",
+        role: ["admin"],
+        link: "/auth/users",
+      },
+      {
+        id: "auth-roles",
+        title: "Roles",
+        icon: "ShieldHalf",
+        role: ["admin"],
+        link: "/auth/roles",
+      },
+      {
+        id: "auth-logs",
+        title: "logs",
+        icon: "FileText",
+        role: ["admin"],
+        link: "/auth/logs",
+      },
+    ],
+  },
+  {
+    id: "digitaldata",
+    title: "Digital Data",
+    icon: "MonitorCog",
+    role: ["admin", "ptgs-sensus"],
+    submenu: [
+      {
+        id: "digitaldata-sensus",
+        title: "Sensus",
+        icon: "Users",
+        role: ["admin", "ptgs-sensus"],
+        link: "/sensus",
+      },
+      {
+        id: "digitaldata-laporanbulanan",
+        title: "Laporan Bulanan",
+        icon: "Repeat2",
+        role: ["admin", "ptgs-sensus"],
+        link: "/laporan-bulanan",
+      },
+    ],
+  },
+  {
+    id: "master-data",
+    title: "Master Data",
+    icon: "Container",
+    role: ["admin", "ptgs-sensus"],
+    submenu: [
+      {
+        id: "masterdata-pindahsambung",
+        title: "Pindah Sambung",
+        icon: "Route",
+        role: ["admin", "ptgs-sensus"],
+        link: "/master-data/pindah-sambung",
+      },
+      {
+        id: "masterdata-tempatsambung",
+        title: "Tempat Sambung",
+        icon: "Server",
+        role: ["admin"],
+        submenu: [
+          {
+            id: "masterdata-tempatsambung-daerah",
+            title: "Daerah",
+            icon: "Database",
+            role: ["admin"],
+            link: "/master-data/tempat-sambung",
+          },
+          {
+            id: "masterdata-tempatsambung-desa",
+            title: "Desa",
+            icon: "Database",
+            role: ["admin"],
+          },
+          {
+            id: "masterdata-tempatsambung-kelompok",
+            title: "Kelompok",
+            icon: "Database",
+            role: ["admin"],
+          },
+        ],
+      },
+      {
+        id: "masterdata-pekerjaan",
+        title: "Pekerjaan",
+        icon: "BicepsFlexed",
+        role: ["admin"],
+        link: "/master-data/pekerjaan",
+      },
+    ],
+  },
+  {
+    id: "presensi",
+    title: "Presensi",
+    icon: "ScanQrCode",
+    role: ["admin", "ptgs-sensus"],
+    link: "/presensi",
+  },
+  {
+    id: "pengaduan",
+    title: "Pengaduan",
+    icon: "MailWarning",
+    role: ["admin", "ptgs-sensus"],
+    link: "/pengaduan",
+  },
+];
