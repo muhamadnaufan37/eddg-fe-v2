@@ -51,3 +51,15 @@ export const fetchDetailUsers = async (uuid: string) => {
   const response = await axiosServices().get(`/api/v1/users/${uuid}`);
   return response.data;
 };
+
+export const fetchResetPassUsers = async (uuid: string) => {
+  const response = await axiosServices().post(
+    `/api/v1/users/${uuid}/reset-password`,
+  );
+  return response.data;
+};
+
+export const fetchUnbanUsers = async (uuid: string) => {
+  const response = await axiosServices().post(`/api/v1/users/${uuid}/unban`);
+  return response.data;
+};

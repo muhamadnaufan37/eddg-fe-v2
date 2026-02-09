@@ -4,7 +4,7 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { handleApiError, handleApiResponse } from "@/utils/errorUtils";
+import { handleApiError } from "@/utils/errorUtils";
 import { fetchDesa, fetchKelompok } from "@/utils/locationUtils";
 import { Select, Button } from "@/components/global";
 import { Input } from "@/components/global/Input";
@@ -64,22 +64,26 @@ const CreateUsers = () => {
     setLoadingData(true);
     try {
       const response = await axiosServices().post("/api/v1/users", values);
-
-      handleApiResponse(
-        response,
-        (responseData) => {
-          toast.success("Sukses!", {
-            description: responseData.message,
-            duration: 3000,
-          });
-          setTimeout(() => {
-            navigate("/auth/users", { replace: true });
-          }, 2000);
-        },
-        () => {
-          setLoadingData(false);
-        },
-      );
+      const responseDatamessage = response.data;
+      if (responseDatamessage.success === true) {
+        toast.success("Sukses", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+        setTimeout(() => {
+          navigate("/auth/users", { replace: true });
+        }, 900);
+      } else if (responseDatamessage.success === false) {
+        toast.warning("Error", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+      } else {
+        toast.error("Error", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+      }
     } catch (error: any) {
       setLoadingData(false);
       handleApiError(error, { showToast: true });

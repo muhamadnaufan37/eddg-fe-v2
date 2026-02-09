@@ -31,38 +31,38 @@ const DetailUsers = () => {
     return formatDistanceToNow(new Date(date), { addSuffix: true, locale: id });
   };
 
-  const getStatusIcon = (status: number) => {
-    switch (status) {
-      case 1:
+  const getStatusIcon = (status: any) => {
+    switch (String(status)) {
+      case "1":
         return (
           <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
         );
-      case 0:
+      case "0":
         return <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
-      case -1:
+      case "-1":
         return <Ban className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
       default:
         return null;
     }
   };
 
-  const getStatusBadge = (status: number) => {
-    switch (status) {
-      case 1:
+  const getStatusBadge = (status: any) => {
+    switch (String(status)) {
+      case "1":
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm font-medium">
             <CheckCircle className="w-4 h-4" />
             Aktif
           </div>
         );
-      case 0:
+      case "0":
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm font-medium">
             <XCircle className="w-4 h-4" />
             Tidak Aktif
           </div>
         );
-      case -1:
+      case "-1":
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium">
             <Ban className="w-4 h-4" />
@@ -236,9 +236,9 @@ const DetailUsers = () => {
                 <div className="flex items-center gap-2">
                   {getStatusIcon(userData.status)}
                   <span className={`text-sm ${THEME_COLORS.text.primary}`}>
-                    {userData.status === 1
+                    {String(userData.status) === "1"
                       ? "Aktif"
-                      : userData.status === 0
+                      : String(userData.status) === "0"
                         ? "Tidak Aktif"
                         : "Banned"}
                   </span>
@@ -353,7 +353,7 @@ const DetailUsers = () => {
           </div>
 
           {/* Reason Ban (jika ada) */}
-          {userData.status === -1 && userData.reason_ban && (
+          {String(userData.status) === "-1" && userData.reason_ban && (
             <div
               className={`rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-5 space-y-3`}
             >

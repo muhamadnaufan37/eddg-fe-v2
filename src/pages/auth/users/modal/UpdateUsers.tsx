@@ -5,7 +5,7 @@ import * as Yup from "yup";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import ModalInvalidId from "@/components/modal/ModalInvalidId";
-import { handleApiError, handleApiResponse } from "@/utils/errorUtils";
+import { handleApiError } from "@/utils/errorUtils";
 import { fetchDesa, fetchKelompok } from "@/utils/locationUtils";
 import { Select, Button } from "@/components/global";
 import { Input } from "@/components/global/Input";
@@ -68,21 +68,26 @@ const UpdateUsers = () => {
         values,
       );
 
-      handleApiResponse(
-        response,
-        (responseData) => {
-          toast.success("Sukses!", {
-            description: responseData.message,
-            duration: 3000,
-          });
-          setTimeout(() => {
-            navigate("/auth/users", { replace: true });
-          }, 2000);
-        },
-        () => {
-          setLoadingData(false);
-        },
-      );
+      const responseDatamessage = response.data;
+      if (responseDatamessage.success === true) {
+        toast.success("Sukses", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+        setTimeout(() => {
+          navigate("/auth/users", { replace: true });
+        }, 900);
+      } else if (responseDatamessage.success === false) {
+        toast.warning("Error", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+      } else {
+        toast.error("Error", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+      }
     } catch (error: any) {
       setLoadingData(false);
       handleApiError(error, { showToast: true });
@@ -179,17 +184,17 @@ const UpdateUsers = () => {
                 >
                   Update Users
                 </div>
-                {dataBalikan?.detailData?.status === 0 && (
+                {String(dataBalikan?.detailData?.status) === "0" && (
                   <div className="text-[14px] text-center font-normal leading-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg p-2.5">
                     Tidak Aktif
                   </div>
                 )}
-                {dataBalikan?.detailData?.status === 1 && (
+                {String(dataBalikan?.detailData?.status) === "1" && (
                   <div className="text-[14px] text-center font-normal leading-4 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg p-2.5">
                     Aktif
                   </div>
                 )}
-                {dataBalikan?.detailData?.status === "-1" && (
+                {String(dataBalikan?.detailData?.status) === "-1" && (
                   <div className="text-[14px] text-center font-normal leading-4 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg p-2.5">
                     Banned
                   </div>
