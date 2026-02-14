@@ -93,32 +93,36 @@ const DetailUsers = () => {
       >
         {/* Header */}
         <div
-          className={`${THEME_COLORS.active.background} px-6 py-5 rounded-t-xl`}
+          className={`${THEME_COLORS.active.background} px-4 sm:px-6 py-4 sm:py-5 rounded-t-xl`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <button
                 onClick={() => navigate("/auth/users", { replace: true })}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors shrink-0"
               >
                 <ArrowLeft className="w-5 h-5 text-white" />
               </button>
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Detail User</h2>
-                <p className="text-white/80 text-sm mt-0.5">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-white truncate">
+                  Detail User
+                </h2>
+                <p className="text-white/80 text-xs sm:text-sm mt-0.5 line-clamp-1">
                   Informasi lengkap user
                 </p>
               </div>
             </div>
-            {getStatusBadge(userData.status)}
+            <div className="shrink-0 w-full sm:w-auto">
+              {getStatusBadge(userData.status)}
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Informasi Utama */}
           <div
             className={`rounded-xl border ${THEME_COLORS.border.default} p-5 space-y-4`}
@@ -370,17 +374,19 @@ const DetailUsers = () => {
 
         {/* Footer Actions */}
         <div
-          className={`flex justify-end items-center gap-3 p-4 ${THEME_COLORS.background.tableHeader} rounded-b-xl border-t ${THEME_COLORS.border.default}`}
+          className={`flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 p-4 sm:p-6 ${THEME_COLORS.background.tableHeader} rounded-b-xl border-t ${THEME_COLORS.border.default}`}
         >
           <Button
             type="button"
             variant="outline"
+            className="w-full sm:w-auto"
             onClick={() => navigate("/auth/users", { replace: true })}
           >
             Kembali
           </Button>
           <Button
             type="button"
+            className="w-full sm:w-auto"
             onClick={() =>
               navigate("/auth/users/update", {
                 state: dataBalikan,

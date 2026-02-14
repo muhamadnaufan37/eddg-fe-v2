@@ -22,7 +22,7 @@ export const Input = ({
         </label>
       )}
       <input
-        className={`w-full px-3 py-2 text-sm ${THEME_COLORS.background.input} border ${THEME_COLORS.border.input} rounded-md focus:outline-none focus:ring-2 ${THEME_COLORS.focus.ring} ${THEME_COLORS.text.primary} ${className}`}
+        className={`w-full px-3 py-2 text-sm ${THEME_COLORS.background.input} border ${THEME_COLORS.border.input} rounded-md focus:outline-none focus:ring-2 ${THEME_COLORS.focus.ring} ${THEME_COLORS.text.primary} disabled:bg-gray-100 disabled:dark:bg-gray-800 disabled:text-gray-500 disabled:dark:text-gray-500 disabled:border-gray-200 disabled:dark:border-gray-700 disabled:cursor-not-allowed ${className}`}
         {...props}
       />
       {error && (
@@ -56,7 +56,7 @@ export const Textarea = ({
       )}
       <textarea
         rows={rows}
-        className={`w-full px-3 py-2 text-sm ${THEME_COLORS.background.input} border ${THEME_COLORS.border.input} rounded-md focus:outline-none focus:ring-2 ${THEME_COLORS.focus.ring} ${THEME_COLORS.text.primary} resize-none ${className}`}
+        className={`w-full px-3 py-2 text-sm ${THEME_COLORS.background.input} border ${THEME_COLORS.border.input} rounded-md focus:outline-none focus:ring-2 ${THEME_COLORS.focus.ring} ${THEME_COLORS.text.primary} resize-none disabled:bg-gray-100 disabled:dark:bg-gray-800 disabled:text-gray-500 disabled:dark:text-gray-500 disabled:border-gray-200 disabled:dark:border-gray-700 disabled:cursor-not-allowed ${className}`}
         {...props}
       />
       {error && (

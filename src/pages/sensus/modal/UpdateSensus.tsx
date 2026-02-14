@@ -5,7 +5,7 @@ import * as Yup from "yup";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import ModalInvalidId from "@/components/modal/ModalInvalidId";
-import { handleApiError, handleApiResponse } from "@/utils/errorUtils";
+import { handleApiError } from "@/utils/errorUtils";
 import { fetchDesa, fetchKelompok } from "@/utils/locationUtils";
 import {
   JENIS_KELAMIN_OPTIONS,
@@ -103,21 +103,26 @@ const UpdateSensus = () => {
         },
       );
 
-      handleApiResponse(
-        response,
-        (responseData) => {
-          toast.success("Sukses!", {
-            description: responseData.message,
-            duration: 3000,
-          });
-          setTimeout(() => {
-            navigate("/sensus", { replace: true });
-          }, 2000);
-        },
-        () => {
-          setLoadingData(false);
-        },
-      );
+      const responseDatamessage = response.data;
+      if (responseDatamessage.success === true) {
+        toast.success("Sukses", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+        setTimeout(() => {
+          navigate("/sensus", { replace: true });
+        }, 900);
+      } else if (responseDatamessage.success === false) {
+        toast.warning("Error", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+      } else {
+        toast.error("Error", {
+          description: responseDatamessage.message,
+          duration: 3000,
+        });
+      }
     } catch (error: any) {
       setLoadingData(false);
       handleApiError(error, { showToast: true });

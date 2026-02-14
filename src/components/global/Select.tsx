@@ -28,26 +28,42 @@ export const Select = ({ label, error, required, ...props }: SelectProps) => {
         styles={{
           control: (base, state) => ({
             ...base,
-            backgroundColor: isDark ? "rgb(31 41 55)" : "#ffffff", // dark:bg-gray-800 : bg-white
-            borderColor: error
-              ? "#ef4444" // red-500
-              : state.isFocused
-                ? isDark
-                  ? "#FBB228"
-                  : "#1F2121"
-                : isDark
-                  ? "rgb(75 85 99)" // dark border-gray-600
-                  : "#d1d5db", // light border-gray-300
+            backgroundColor: state.isDisabled
+              ? isDark
+                ? "rgb(31 41 55)" // dark disabled bg
+                : "rgb(243 244 246)" // light disabled bg (gray-100)
+              : isDark
+                ? "rgb(31 41 55)"
+                : "#ffffff",
+            borderColor: state.isDisabled
+              ? isDark
+                ? "rgb(55 65 81)" // dark disabled border (gray-700)
+                : "rgb(229 231 235)" // light disabled border (gray-200)
+              : error
+                ? "#ef4444" // red-500
+                : state.isFocused
+                  ? isDark
+                    ? "#FBB228"
+                    : "#1F2121"
+                  : isDark
+                    ? "rgb(75 85 99)" // dark border-gray-600
+                    : "#d1d5db", // light border-gray-300
             boxShadow: state.isFocused
               ? "0 0 0 1px " + (isDark ? "#FBB228" : "#1F2121")
               : "none",
             minHeight: "42px",
+            cursor: state.isDisabled ? "not-allowed" : "default",
+            opacity: state.isDisabled ? 0.7 : 1,
             "&:hover": {
-              borderColor: error
-                ? "#ef4444"
-                : isDark
-                  ? "rgb(107 114 128)" // hover border-gray-500
-                  : "#9ca3af",
+              borderColor: state.isDisabled
+                ? isDark
+                  ? "rgb(55 65 81)"
+                  : "rgb(229 231 235)"
+                : error
+                  ? "#ef4444"
+                  : isDark
+                    ? "rgb(107 114 128)" // hover border-gray-500
+                    : "#9ca3af",
             },
           }),
           menu: (base) => ({
@@ -90,9 +106,15 @@ export const Select = ({ label, error, required, ...props }: SelectProps) => {
               backgroundColor: isDark ? "#FBB228" : "#1F2121",
             },
           }),
-          singleValue: (base) => ({
+          singleValue: (base, state) => ({
             ...base,
-            color: isDark ? "rgb(249 250 251)" : "rgb(17 24 39)",
+            color: state.isDisabled
+              ? isDark
+                ? "rgb(107 114 128)" // gray-500
+                : "rgb(107 114 128)" // gray-500
+              : isDark
+                ? "rgb(249 250 251)"
+                : "rgb(17 24 39)",
           }),
           multiValue: (base) => ({
             ...base,

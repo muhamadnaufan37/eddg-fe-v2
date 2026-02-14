@@ -605,26 +605,24 @@ const SensusPage = () => {
           {/* Modern Header Card with Gradient */}
           <div className="bg-linear-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
             {/* Header Section */}
-            <div className="bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <Database className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="font-bold text-2xl text-white tracking-tight">
-                      Data Digital Generus
-                    </h1>
-                    <p className="text-blue-100 text-sm mt-0.5">
-                      Kelola dan pantau data digital generus dengan mudah
-                    </p>
-                  </div>
+            <div className="bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 px-4 sm:px-6 py-4 sm:py-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
+                  <Database className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="font-bold text-lg sm:text-2xl text-white tracking-tight truncate">
+                    Data Digital Generus
+                  </h1>
+                  <p className="text-blue-100 text-xs sm:text-sm mt-0.5 line-clamp-1">
+                    Kelola dan pantau data digital generus dengan mudah
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Content Section */}
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Search Bar with Modern Design */}
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
@@ -642,13 +640,13 @@ const SensusPage = () => {
               </div>
 
               {/* Action Buttons with Better Layout */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 {/* Bulk Delete Button - Only show when rows are selected */}
                 {selectedRows.size > 0 && (
-                  <div className="flex items-center gap-2 mr-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:mr-auto">
                     <button
                       disabled={isBulkDeleting}
-                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={handleBulkDelete}
                     >
                       {isBulkDeleting ? (
@@ -684,7 +682,7 @@ const SensusPage = () => {
                     </button>
                     <button
                       disabled={isBulkDeleting}
-                      className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline disabled:opacity-50"
+                      className="text-xs text-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline disabled:opacity-50 py-1"
                       onClick={() => setSelectedRows(new Set())}
                     >
                       Batalkan Pilihan
@@ -694,19 +692,20 @@ const SensusPage = () => {
 
                 {/* Filter & Reset Group */}
                 <div
-                  className={`flex items-center gap-2 ${selectedRows.size > 0 ? "" : "mr-auto"}`}
+                  className={`flex items-center gap-2 w-full sm:w-auto ${selectedRows.size > 0 ? "" : "sm:mr-auto"}`}
                 >
                   <button
                     disabled={isRefetchingSensus}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => setOpenFilter(true)}
                   >
                     <Filter className="w-4 h-4" />
-                    <span>Filter Lanjutan</span>
+                    <span className="hidden sm:inline">Filter Lanjutan</span>
+                    <span className="sm:hidden">Filter</span>
                   </button>
                   <button
                     disabled={isRefetchingSensus}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={onResetFilter}
                   >
                     <RefreshCcw className="w-4 h-4" />
@@ -715,18 +714,19 @@ const SensusPage = () => {
                 </div>
 
                 {/* Main Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
                   <button
                     disabled={isRefetchingSensus}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={loadDataRincian}
                   >
                     <File className="w-4 h-4" />
-                    <span>Pelaporan</span>
+                    <span className="hidden sm:inline">Pelaporan</span>
+                    <span className="sm:hidden">Laporan</span>
                   </button>
                   <button
                     disabled={isRefetchingSensus}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={loadStatistikGenerus}
                   >
                     <ChartLine className="w-4 h-4" />
@@ -734,7 +734,7 @@ const SensusPage = () => {
                   </button>
                   <button
                     disabled={isRefetchingSensus}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() =>
                       navigate("/sensus/create", {
                         state: {
@@ -747,7 +747,8 @@ const SensusPage = () => {
                     }
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span>Tambah Data</span>
+                    <span className="hidden sm:inline">Tambah Data</span>
+                    <span className="sm:hidden">Tambah</span>
                   </button>
                 </div>
               </div>
@@ -762,13 +763,14 @@ const SensusPage = () => {
                 filterKelompok ||
                 rangeUmurMin ||
                 rangeUmurMax) && (
-                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800">
-                  <Info className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-
-                  <span className="font-medium">Filter aktif diterapkan</span>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
+                    <span className="font-medium">Filter aktif diterapkan</span>
+                  </div>
                   <button
                     onClick={onResetFilter}
-                    className="ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
+                    className="sm:ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
                   >
                     Hapus Semua Filter
                   </button>

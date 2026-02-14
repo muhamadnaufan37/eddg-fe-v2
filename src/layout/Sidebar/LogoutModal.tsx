@@ -74,16 +74,16 @@ const LogoutModal = ({ isOpen, onClose }: LogoutModalProps) => {
         </p>
 
         {/* Footer Buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+        <div className="flex gap-4">
           <button
             onClick={onClose}
-            className={`w-full rounded-lg border-2 ${THEME_COLORS.border.input} px-6 py-2.5 text-sm font-semibold ${THEME_COLORS.text.secondary} transition-all duration-300 ${THEME_COLORS.hover.item} sm:w-auto`}
+            className={`w-full rounded-lg border-2 ${THEME_COLORS.border.input} px-6 py-2.5 text-sm font-semibold ${THEME_COLORS.text.secondary} transition-all duration-300 ${THEME_COLORS.hover.item}`}
           >
             Kembali
           </button>
           <button
             onClick={logout}
-            className={`w-full transform rounded-lg px-6 py-2.5 text-sm font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
+            className={`w-full transform rounded-lg px-6 py-2.5 text-sm font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
           >
             Ya, saya yakin
           </button>

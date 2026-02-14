@@ -49,6 +49,13 @@ export const menuItems = [
         link: "/sensus",
       },
       {
+        id: "digitaldata-laporanbulanan-check",
+        title: "Laporan Bulanan Check",
+        icon: "CheckCheckIcon",
+        role: ["admin"],
+        link: "/laporan-bulanan/check",
+      },
+      {
         id: "digitaldata-laporanbulanan",
         title: "Laporan Bulanan",
         icon: "Repeat2",
@@ -117,7 +124,7 @@ export const menuItems = [
     id: "pengaduan",
     title: "Pengaduan",
     icon: "MailWarning",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin"],
     link: "/pengaduan",
   },
 ];

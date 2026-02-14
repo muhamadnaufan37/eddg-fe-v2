@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import ModalInvalidId from "@/components/modal/ModalInvalidId";
 import { axiosServices } from "@/services/axios";
 import { toast } from "sonner";
+import { Select } from "@/components/global";
 
 /* ---------------------------
   Types from backend
@@ -120,26 +121,39 @@ const PresensiDashboard: React.FC = () => {
 
   // accept either Root directly or { detailData: Root }
   const incoming = (location.state as LocationState) ?? {};
-  const initialApiData: Root | null =
+  const initialApiData: any =
     "detailData" in incoming && incoming.detailData
       ? incoming.detailData
       : (incoming as Root) || null;
 
-  const initialData = initialApiData?.data || null;
-  const kode_cari_data = initialData?.peserta?.kode_cari_data || "";
+  const initialData = initialApiData || null;
+  const kode_cari_data = initialData?.kode_cari_data || "";
+
+  // Generate year options (10 years back, current year, 1 year forward)
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const yearOptions = useMemo(() => {
+    const years = [];
+    for (let year = currentYear - 10; year <= currentYear + 1; year++) {
+      years.push({
+        value: year.toString(),
+        label: year.toString(),
+      });
+    }
+    return years.reverse(); // Most recent first
+  }, [currentYear]);
 
   // Filter state
-  const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState<string>(
-    initialData?.filter?.tahun || currentDate.getFullYear().toString(),
+    initialData?.filter?.tahun || currentYear.toString(),
   );
 
   // Ensure selectedYear is never empty
   useEffect(() => {
     if (!selectedYear || selectedYear.trim() === "") {
-      setSelectedYear(currentDate.getFullYear().toString());
+      setSelectedYear(currentYear.toString());
     }
-  }, [selectedYear, currentDate]);
+  }, [selectedYear, currentYear]);
 
   // UI state
   const [query, setQuery] = useState("");
@@ -279,7 +293,7 @@ const PresensiDashboard: React.FC = () => {
   return (
     <>
       {showModal && <ModalInvalidId />}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+      <div className="max-w-7xl mx-auto p-2 space-y-4">
         {/* Loading Overlay */}
         {(isLoading || isFetching) && (
           <div className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -390,31 +404,27 @@ const PresensiDashboard: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0" />
-            <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">
-                  Tahun:
-                </label>
-                <input
-                  type="number"
-                  value={selectedYear}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    // Don't allow empty year
-                    if (val && val.trim() !== "") {
-                      setSelectedYear(val);
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0" />
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Filter Periode:
+              </label>
+            </div>
+
+            <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+              <div className="w-full sm:w-40">
+                <Select
+                  value={yearOptions.find((opt) => opt.value === selectedYear)}
+                  onChange={(option: any) => {
+                    if (option?.value) {
+                      setSelectedYear(option.value);
                     }
                   }}
-                  onBlur={(e) => {
-                    // If empty on blur, reset to current year
-                    if (!e.target.value || e.target.value.trim() === "") {
-                      setSelectedYear(currentDate.getFullYear().toString());
-                    }
-                  }}
-                  placeholder={currentDate.getFullYear().toString()}
-                  className="w-24 px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  options={yearOptions}
+                  placeholder="Pilih Tahun"
+                  isSearchable={false}
+                  className="text-sm"
                 />
               </div>
 
@@ -422,7 +432,7 @@ const PresensiDashboard: React.FC = () => {
                 type="button"
                 onClick={handleFilterChange}
                 disabled={isFetching}
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isFetching && (
                   <svg
@@ -457,7 +467,7 @@ const PresensiDashboard: React.FC = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
         >
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -552,7 +562,8 @@ const PresensiDashboard: React.FC = () => {
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[800px]">
+              {/* Ensure minimum width for proper display */}
               <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
                 <tr className="text-xs text-gray-600 dark:text-gray-400 uppercase">
                   <th

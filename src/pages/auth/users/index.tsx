@@ -695,14 +695,15 @@ const UsersPage = () => {
               {/* Info Badge - Optional: showing active filters count */}
               {(status || filterDaerah || filterDesa || filterKelompok) && (
                 <div
-                  className={`flex items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
+                  className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
                 >
-                  <Info className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-
-                  <span className="font-medium">Filter aktif diterapkan</span>
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
+                    <span className="font-medium">Filter aktif diterapkan</span>
+                  </div>
                   <button
                     onClick={onResetFilter}
-                    className="ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
+                    className="sm:ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
                   >
                     Hapus Semua Filter
                   </button>

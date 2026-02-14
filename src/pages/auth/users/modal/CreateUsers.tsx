@@ -131,10 +131,10 @@ const CreateUsers = () => {
             className={`max-w-4xl mx-auto ${THEME_COLORS.background.card} rounded-xl shadow-lg`}
           >
             {loadingData && (
-              <div
-                className={`fixed inset-0 z-50 flex items-center justify-center ${THEME_COLORS.background.card} bg-opacity-75 dark:bg-opacity-75`}
-              >
-                <div className="flex flex-col items-center space-y-4">
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div
+                  className={`flex flex-col items-center space-y-4 ${THEME_COLORS.background.card} p-6 rounded-xl shadow-2xl`}
+                >
                   <svg
                     className="animate-spin h-10 w-10 text-blue-600 dark:text-blue-400"
                     xmlns="http://www.w3.org/2000/svg"
@@ -164,25 +164,27 @@ const CreateUsers = () => {
 
             {/* Header */}
             <div
-              className={`flex items-center gap-3 p-4 border-b-2 ${THEME_COLORS.border.default}`}
+              className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 sm:p-6 border-b-2 ${THEME_COLORS.border.default}`}
             >
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                <UserPlus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center shrink-0">
+                <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h2
-                  className={`text-lg font-semibold ${THEME_COLORS.text.primary}`}
+                  className={`text-base sm:text-lg font-semibold ${THEME_COLORS.text.primary}`}
                 >
                   Tambah User Baru
                 </h2>
-                <p className={`text-sm ${THEME_COLORS.text.muted}`}>
+                <p
+                  className={`text-xs sm:text-sm ${THEME_COLORS.text.muted} line-clamp-1`}
+                >
                   Lengkapi form untuk menambahkan user baru
                 </p>
               </div>
             </div>
 
             {/* Form Content */}
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6">
               {/* Informasi Akun */}
               <div className="space-y-4">
                 <h3
@@ -357,7 +359,7 @@ const CreateUsers = () => {
                   Akses Lokasi
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className={THEME_COLORS.text.label}>Daerah</label>
                     <Select
@@ -461,16 +463,21 @@ const CreateUsers = () => {
 
             {/* Footer Actions */}
             <div
-              className={`flex justify-end items-center gap-3 p-4 ${THEME_COLORS.background.tableHeader} rounded-b-xl border-t ${THEME_COLORS.border.default}`}
+              className={`flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 p-4 sm:p-6 ${THEME_COLORS.background.tableHeader} rounded-b-xl border-t ${THEME_COLORS.border.default}`}
             >
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => navigate("/auth/users", { replace: true })}
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting || loadingData}>
+              <Button
+                type="submit"
+                disabled={isSubmitting || loadingData}
+                className="w-full sm:w-auto"
+              >
                 {loadingData ? "Menyimpan..." : "Simpan"}
               </Button>
             </div>

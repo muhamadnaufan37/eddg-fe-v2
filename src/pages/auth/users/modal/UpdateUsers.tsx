@@ -146,10 +146,10 @@ const UpdateUsers = () => {
               className={`max-w-4xl mx-auto ${THEME_COLORS.background.card} rounded-xl`}
             >
               {loadingData && (
-                <div
-                  className={`fixed inset-0 z-50 flex items-center justify-center ${THEME_COLORS.background.card} bg-opacity-75 dark:bg-opacity-75`}
-                >
-                  <div className="flex flex-col items-center space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div
+                    className={`flex flex-col items-center space-y-4 ${THEME_COLORS.background.card} p-6 rounded-xl shadow-2xl`}
+                  >
                     <svg
                       className="animate-spin h-10 w-10 text-blue-600 dark:text-blue-400"
                       xmlns="http://www.w3.org/2000/svg"
@@ -177,31 +177,33 @@ const UpdateUsers = () => {
                 </div>
               )}
               <div
-                className={`flex justify-between items-center p-3 border-b-2 ${THEME_COLORS.border.default} gap-2`}
+                className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 border-b-2 ${THEME_COLORS.border.default} gap-3`}
               >
                 <div
-                  className={`text-sm md:text-lg font-semibold ${THEME_COLORS.text.primary}`}
+                  className={`text-sm sm:text-lg font-semibold ${THEME_COLORS.text.primary}`}
                 >
                   Update Users
                 </div>
-                {String(dataBalikan?.detailData?.status) === "0" && (
-                  <div className="text-[14px] text-center font-normal leading-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg p-2.5">
-                    Tidak Aktif
-                  </div>
-                )}
-                {String(dataBalikan?.detailData?.status) === "1" && (
-                  <div className="text-[14px] text-center font-normal leading-4 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg p-2.5">
-                    Aktif
-                  </div>
-                )}
-                {String(dataBalikan?.detailData?.status) === "-1" && (
-                  <div className="text-[14px] text-center font-normal leading-4 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg p-2.5">
-                    Banned
-                  </div>
-                )}
+                <div className="shrink-0">
+                  {String(dataBalikan?.detailData?.status) === "0" && (
+                    <div className="text-xs sm:text-sm text-center font-normal leading-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg px-2.5 py-2">
+                      Tidak Aktif
+                    </div>
+                  )}
+                  {String(dataBalikan?.detailData?.status) === "1" && (
+                    <div className="text-xs sm:text-sm text-center font-normal leading-4 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg px-2.5 py-2">
+                      Aktif
+                    </div>
+                  )}
+                  {String(dataBalikan?.detailData?.status) === "-1" && (
+                    <div className="text-xs sm:text-sm text-center font-normal leading-4 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg px-2.5 py-2">
+                      Banned
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex flex-col gap-3 p-4">
+              <div className="flex flex-col gap-3 p-4 sm:p-6">
                 <div>
                   <label className={THEME_COLORS.text.label}>UUID</label>
 
@@ -445,11 +447,12 @@ const UpdateUsers = () => {
               </div>
 
               <div
-                className={`flex justify-end items-center gap-3 p-3 ${THEME_COLORS.background.tableHeader} rounded-b-lg`}
+                className={`flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 p-4 sm:p-6 ${THEME_COLORS.background.tableHeader} rounded-b-lg`}
               >
                 <Button
                   type="button"
                   variant="outline"
+                  className="w-full sm:w-auto"
                   onClick={() =>
                     navigate("/auth/users", {
                       replace: true,
@@ -458,7 +461,11 @@ const UpdateUsers = () => {
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto"
+                >
                   Simpan Perubahan
                 </Button>
               </div>

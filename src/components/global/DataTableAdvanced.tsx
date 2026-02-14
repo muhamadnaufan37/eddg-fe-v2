@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { ChevronDown, ChevronUp, MoreVertical } from "lucide-react";
 
 export interface Column<T> {
@@ -53,6 +53,8 @@ export function DataTableAdvanced<T extends Record<string, any>>({
     direction: null,
   });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<"top" | "bottom">("bottom");
+  const menuButtonRef = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Use controlled or internal state
   const selectedRows = controlledSelectedRows ?? internalSelectedRows;
@@ -223,10 +225,28 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                       actions.length > 0 && (
                         <td className="px-6 py-4 text-right relative">
                           <button
+                            ref={(el) => {
+                              menuButtonRef.current[rowId] = el;
+                            }}
                             disabled={disabled}
-                            onClick={() =>
-                              setOpenMenuId(openMenuId === rowId ? null : rowId)
-                            }
+                            onClick={() => {
+                              if (openMenuId !== rowId) {
+                                // Calculate position before opening
+                                const button = menuButtonRef.current[rowId];
+                                if (button) {
+                                  const rect = button.getBoundingClientRect();
+                                  const spaceBelow =
+                                    window.innerHeight - rect.bottom;
+                                  const menuHeight = actions.length * 40 + 16; // approximate
+                                  setMenuPosition(
+                                    spaceBelow < menuHeight ? "top" : "bottom",
+                                  );
+                                }
+                                setOpenMenuId(rowId);
+                              } else {
+                                setOpenMenuId(null);
+                              }
+                            }}
                             className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <MoreVertical size={20} />
@@ -238,7 +258,11 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                                 className="fixed inset-0 z-10"
                                 onClick={() => setOpenMenuId(null)}
                               />
-                              <div className="absolute right-12 top-8 z-20 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
+                              <div
+                                className={`absolute right-12 z-20 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 ${
+                                  menuPosition === "top" ? "bottom-8" : "top-8"
+                                }`}
+                              >
                                 {actions.map((action) => (
                                   <button
                                     key={action.value}
