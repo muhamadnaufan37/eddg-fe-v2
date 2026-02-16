@@ -31,38 +31,38 @@ const DetailUsers = () => {
     return formatDistanceToNow(new Date(date), { addSuffix: true, locale: id });
   };
 
-  const getStatusIcon = (status: number) => {
-    switch (status) {
-      case 1:
+  const getStatusIcon = (status: any) => {
+    switch (String(status)) {
+      case "1":
         return (
           <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
         );
-      case 0:
+      case "0":
         return <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
-      case -1:
+      case "-1":
         return <Ban className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
       default:
         return null;
     }
   };
 
-  const getStatusBadge = (status: number) => {
-    switch (status) {
-      case 1:
+  const getStatusBadge = (status: any) => {
+    switch (String(status)) {
+      case "1":
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm font-medium">
             <CheckCircle className="w-4 h-4" />
             Aktif
           </div>
         );
-      case 0:
+      case "0":
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm font-medium">
             <XCircle className="w-4 h-4" />
             Tidak Aktif
           </div>
         );
-      case -1:
+      case "-1":
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium">
             <Ban className="w-4 h-4" />
@@ -93,32 +93,36 @@ const DetailUsers = () => {
       >
         {/* Header */}
         <div
-          className={`${THEME_COLORS.active.background} px-6 py-5 rounded-t-xl`}
+          className={`${THEME_COLORS.active.background} px-4 sm:px-6 py-4 sm:py-5 rounded-t-xl`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <button
                 onClick={() => navigate("/auth/users", { replace: true })}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors shrink-0"
               >
                 <ArrowLeft className="w-5 h-5 text-white" />
               </button>
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Detail User</h2>
-                <p className="text-white/80 text-sm mt-0.5">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-white truncate">
+                  Detail User
+                </h2>
+                <p className="text-white/80 text-xs sm:text-sm mt-0.5 line-clamp-1">
                   Informasi lengkap user
                 </p>
               </div>
             </div>
-            {getStatusBadge(userData.status)}
+            <div className="shrink-0 w-full sm:w-auto">
+              {getStatusBadge(userData.status)}
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Informasi Utama */}
           <div
             className={`rounded-xl border ${THEME_COLORS.border.default} p-5 space-y-4`}
@@ -236,9 +240,9 @@ const DetailUsers = () => {
                 <div className="flex items-center gap-2">
                   {getStatusIcon(userData.status)}
                   <span className={`text-sm ${THEME_COLORS.text.primary}`}>
-                    {userData.status === 1
+                    {String(userData.status) === "1"
                       ? "Aktif"
-                      : userData.status === 0
+                      : String(userData.status) === "0"
                         ? "Tidak Aktif"
                         : "Banned"}
                   </span>
@@ -353,7 +357,7 @@ const DetailUsers = () => {
           </div>
 
           {/* Reason Ban (jika ada) */}
-          {userData.status === -1 && userData.reason_ban && (
+          {String(userData.status) === "-1" && userData.reason_ban && (
             <div
               className={`rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-5 space-y-3`}
             >
@@ -370,17 +374,19 @@ const DetailUsers = () => {
 
         {/* Footer Actions */}
         <div
-          className={`flex justify-end items-center gap-3 p-4 ${THEME_COLORS.background.tableHeader} rounded-b-xl border-t ${THEME_COLORS.border.default}`}
+          className={`flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 p-4 sm:p-6 ${THEME_COLORS.background.tableHeader} rounded-b-xl border-t ${THEME_COLORS.border.default}`}
         >
           <Button
             type="button"
             variant="outline"
+            className="w-full sm:w-auto"
             onClick={() => navigate("/auth/users", { replace: true })}
           >
             Kembali
           </Button>
           <Button
             type="button"
+            className="w-full sm:w-auto"
             onClick={() =>
               navigate("/auth/users/update", {
                 state: dataBalikan,

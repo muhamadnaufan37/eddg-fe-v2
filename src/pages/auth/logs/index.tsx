@@ -10,9 +10,9 @@ import { id } from "date-fns/locale";
 import { BASE_TITLE } from "@/store/actions";
 import { DataTableAdvanced, Input, type Column } from "@/components/global";
 import { Logs, RefreshCcw, Search, X } from "lucide-react";
-import ParticipantSkeleton from "@/pages/sensus/components/ParticipantSkeleton";
 import { fetchLogsData } from "@/services/logsServoces";
 import { THEME_COLORS } from "@/config/theme";
+import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
 
 const LogsPage = () => {
   const { loading } = useFetchOptions();

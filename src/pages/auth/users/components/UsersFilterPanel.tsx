@@ -1,5 +1,5 @@
 import { Select } from "@/components/global";
-import type { UsersFilterPanelProps } from "@/pages/sensus/types/types";
+import type { UsersFilterPanelProps } from "@/pages/digital-data/sensus/types/types";
 
 const UsersFilterPanel = ({
   fetchDataDaerah,
@@ -85,13 +85,14 @@ const UsersFilterPanel = ({
         <Select
           options={statusUsersOptions}
           value={statusUsersOptions?.find(
-            (option: any) => option.value === status,
+            (option: any) => String(option.value) === String(status ?? ""),
           )}
           placeholder="Status Users"
           className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setStatus(selectedOption?.value || "")
-          }
+          onChange={(selectedOption: any) => {
+            const value = selectedOption?.value;
+            setStatus(value !== undefined ? value : "");
+          }}
           isClearable
         />
       </div>

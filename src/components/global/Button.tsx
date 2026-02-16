@@ -31,7 +31,7 @@ export const Button = ({
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:dark:bg-gray-700 disabled:text-gray-500 disabled:dark:text-gray-500 ${className}`}
       {...props}
     >
       {children}

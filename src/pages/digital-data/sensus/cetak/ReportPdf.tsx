@@ -1,5 +1,5 @@
 import { Ref, forwardRef } from "react";
-import "../../../styles/convertPdfSensus.css";
+import "../../../../styles/convertPdfSensus.css";
 
 interface props {
   data: any;

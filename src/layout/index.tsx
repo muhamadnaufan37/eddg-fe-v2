@@ -29,6 +29,7 @@ import {
   MailWarning,
   ScanQrCode,
   BicepsFlexed,
+  CheckCheckIcon,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { THEME_COLORS } from "@/config/theme";
@@ -80,6 +81,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
       ScanQrCode: <ScanQrCode size={20} />,
       MailWarning: <MailWarning size={20} />,
       BicepsFlexed: <BicepsFlexed size={20} />,
+      CheckCheckIcon: <CheckCheckIcon size={20} />,
     };
 
     return iconMap[iconName] || iconName;
@@ -93,9 +95,17 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
   };
 
   const renderMenuItem = (item: MenuItem, depth: number = 0) => {
+    // Check if user has permission to see this menu item
+    if (!item.role.includes(role)) {
+      return null;
+    }
+
     const isActive = location.pathname === item.link;
     const isExpanded = expandedMenus[item.id || ""];
-    const hasSubmenu = item.submenu && item.submenu.length > 0;
+    // Filter submenu items by role
+    const filteredSubmenu =
+      item.submenu?.filter((subItem) => subItem.role.includes(role)) || [];
+    const hasSubmenu = filteredSubmenu.length > 0;
 
     return (
       <div key={item.id} className="w-full">
@@ -179,7 +189,9 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
         )}
         {hasSubmenu && isExpanded && (
           <div className="mt-2 space-y-2 ml-4">
-            {item.submenu!.map((subItem) => renderMenuItem(subItem, depth + 1))}
+            {filteredSubmenu.map((subItem) =>
+              renderMenuItem(subItem, depth + 1),
+            )}
           </div>
         )}
       </div>
@@ -235,65 +247,65 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
     setItemsMenu(filteredItems);
   };
 
-  const BottomNavigation = () => {
-    return (
-      <div
-        className={`fixed bottom-0 left-0 right-0 ${THEME_COLORS.background.card} border-t ${THEME_COLORS.border.default} transition-colors duration-300 shadow-lg z-50`}
-      >
-        <div className="flex justify-around items-center h-16 px-2">
-          {itemsMenu.map((item: MenuItem) => {
-            const isActive = location.pathname === item.link;
+  // const BottomNavigation = () => {
+  //   return (
+  //     <div
+  //       className={`fixed bottom-0 left-0 right-0 ${THEME_COLORS.background.card} border-t ${THEME_COLORS.border.default} transition-colors duration-300 shadow-lg z-50`}
+  //     >
+  //       <div className="flex justify-around items-center h-16 px-2">
+  //         {itemsMenu.map((item: MenuItem) => {
+  //           const isActive = location.pathname === item.link;
 
-            return (
-              <a
-                key={item.id}
-                href={item.link}
-                title={item.title || item.id}
-                className={`transition-all duration-300 transform hover:scale-110 relative group
-                ${
-                  isActive
-                    ? "text-green-600 dark:text-green-400 scale-110"
-                    : `${THEME_COLORS.text.muted} hover:text-green-600 dark:hover:text-green-400`
-                }
-              `}
-              >
-                {typeof item.icon === "string" ? (
-                  item.icon.endsWith(".svg") || item.icon.endsWith(".png") ? (
-                    <img
-                      className="h-6 w-6"
-                      src={`/assets/icons/${item.icon}`}
-                      alt={item.title}
-                    />
-                  ) : item.icon.startsWith("pi ") ? (
-                    <i className={`${item.icon} text-xl`} />
-                  ) : (
-                    <span className="flex items-center justify-center">
-                      {getIconComponent(item.icon)}
-                    </span>
-                  )
-                ) : (
-                  <span className="flex items-center justify-center">
-                    {item.icon}
-                  </span>
-                )}
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse"></span>
-                )}
-              </a>
-            );
-          })}
+  //           return (
+  //             <a
+  //               key={item.id}
+  //               href={item.link}
+  //               title={item.title || item.id}
+  //               className={`transition-all duration-300 transform hover:scale-110 relative group
+  //               ${
+  //                 isActive
+  //                   ? "text-green-600 dark:text-green-400 scale-110"
+  //                   : `${THEME_COLORS.text.muted} hover:text-green-600 dark:hover:text-green-400`
+  //               }
+  //             `}
+  //             >
+  //               {typeof item.icon === "string" ? (
+  //                 item.icon.endsWith(".svg") || item.icon.endsWith(".png") ? (
+  //                   <img
+  //                     className="h-6 w-6"
+  //                     src={`/assets/icons/${item.icon}`}
+  //                     alt={item.title}
+  //                   />
+  //                 ) : item.icon.startsWith("pi ") ? (
+  //                   <i className={`${item.icon} text-xl`} />
+  //                 ) : (
+  //                   <span className="flex items-center justify-center">
+  //                     {getIconComponent(item.icon)}
+  //                   </span>
+  //                 )
+  //               ) : (
+  //                 <span className="flex items-center justify-center">
+  //                   {item.icon}
+  //                 </span>
+  //               )}
+  //               {isActive && (
+  //                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse"></span>
+  //               )}
+  //             </a>
+  //           );
+  //         })}
 
-          <a
-            onClick={() => setIsModalOpen(true)}
-            title="Logout"
-            className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-all duration-300 hover:scale-110 cursor-pointer"
-          >
-            <i className="pi pi-sign-out text-xl" />
-          </a>
-        </div>
-      </div>
-    );
-  };
+  //         <a
+  //           onClick={() => setIsModalOpen(true)}
+  //           title="Logout"
+  //           className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-all duration-300 hover:scale-110 cursor-pointer"
+  //         >
+  //           <i className="pi pi-sign-out text-xl" />
+  //         </a>
+  //       </div>
+  //     </div>
+  //   );
+  // };
 
   useEffect(() => {
     generateItemsMenu();
@@ -314,14 +326,14 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
 
           {/* Modal Sidebar */}
           <div
-            className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col justify-between py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${
+            className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${
               isOpening && !isClosing
                 ? "translate-x-0 opacity-100"
                 : "-translate-x-full opacity-0"
             }`}
           >
             {/* Header dengan close button */}
-            <div className="px-4">
+            <div className="px-4 shrink-0">
               <div className="flex items-center justify-between mb-6">
                 <a href="/" className="flex items-center gap-3">
                   <img
@@ -347,12 +359,14 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
             </div>
 
             {/* MENU ITEMS */}
-            <div className="flex flex-col items-start gap-4 w-full px-4 flex-1 overflow-y-auto">
-              {itemsMenu.map((item: MenuItem) => renderMenuItem(item))}
+            <div className="flex-1 overflow-y-auto px-4 min-h-0">
+              <div className="flex flex-col items-start gap-4 w-full pb-4">
+                {itemsMenu.map((item: MenuItem) => renderMenuItem(item))}
+              </div>
             </div>
 
             {/* BOTTOM MENU */}
-            <div className="px-4">
+            <div className="px-4 shrink-0">
               <div
                 className={`border-t ${THEME_COLORS.border.default} pt-3 flex flex-col gap-2`}
               >
@@ -429,12 +443,12 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                   <span
                     className={`font-semibold text-sm ${THEME_COLORS.text.primary} transition-colors duration-300`}
                   >
-                    {userData?.user?.first_name}
+                    {userData?.user?.nama_lengkap || ""}
                   </span>
                   <span
                     className={`text-sm ${THEME_COLORS.text.muted} -mt-1 transition-colors duration-300`}
                   >
-                    {userData?.user?.role_name}
+                    {userData?.user?.nm_role}
                   </span>
                 </div>
               </div>
@@ -483,13 +497,13 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                 onClick={handleCloseSidebar}
               />
               <div
-                className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col justify-between py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${
+                className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${
                   isOpening && !isClosing
                     ? "translate-x-0 opacity-100"
                     : "-translate-x-full opacity-0"
                 }`}
               >
-                <div className="px-4">
+                <div className="px-4 shrink-0">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
                       <img width="32" src="/logo.svg" alt="logo" />
@@ -506,13 +520,16 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                       <X className={`h-5 w-5 ${THEME_COLORS.text.muted}`} />
                     </button>
                   </div>
+                </div>
 
-                  <div className="flex flex-col gap-2">
+                {/* Mobile Menu Items - Scrollable */}
+                <div className="flex-1 overflow-y-auto px-4 min-h-0">
+                  <div className="flex flex-col gap-2 pb-4">
                     {itemsMenu.map((item: MenuItem) => renderMenuItem(item))}
                   </div>
                 </div>
 
-                <div className="px-4">
+                <div className="px-4 shrink-0">
                   <div
                     className={`border-t ${THEME_COLORS.border.default} pt-3 flex flex-col gap-2`}
                   >
@@ -555,8 +572,8 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
         <div
           className={`relative min-h-dvh w-full pt-20 ${THEME_COLORS.background.primary} transition-colors duration-300`}
         >
-          <div className="h-full overflow-y-auto px-4 pb-20">{children}</div>
-          <BottomNavigation />
+          <div className="h-full overflow-y-auto px-4 pb-5">{children}</div>
+          {/* <BottomNavigation /> */}
         </div>
       )}
 

@@ -36,6 +36,14 @@ export const STATUS_USERS_MAP: Record<string, { text: string; color: any }> = {
   0: { text: "Tidak Aktif", color: "gray" },
 };
 
+export const STATUS_TEMPAT_SAMBUNG_MAP: Record<
+  string,
+  { text: string; color: any }
+> = {
+  true: { text: "Aktif", color: "green" },
+  false: { text: "Tidak Aktif", color: "red" },
+};
+
 /**
  * Resolve status value to display text and color
  * @param map - Status mapping object

@@ -25,12 +25,19 @@ import {
   Search,
   Users,
 } from "lucide-react";
-import { fetchDetailUsers, fetchUsersData } from "@/services/UserServices";
-import ParticipantSkeleton from "@/pages/sensus/components/ParticipantSkeleton";
-import FilterModal from "@/pages/sensus/components/FilterModal";
+import {
+  fetchDetailUsers,
+  fetchResetPassUsers,
+  fetchUnbanUsers,
+  fetchUsersData,
+} from "@/services/UserServices";
 import UsersFilterPanel from "./components/UsersFilterPanel";
 import { THEME_COLORS } from "@/config/theme";
 import Delete from "./modal/Delete";
+import { axiosServices } from "@/services/axios";
+import BannedUsers from "./modal/BannedUsers";
+import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
+import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
 
 interface Option {
   value: string | number;
@@ -47,7 +54,7 @@ const UsersPage = () => {
   const [showModalDelete, setShowModalDelete] = useState(false);
   const [fetchDataDaerah, setFetchDataDaerah] = useState<Option[]>([]);
   const [fetchDataRoles, setFetchDataRoles] = useState<Option[]>([]);
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<any>("");
   const [userData, setUserData] = useState(null);
   const [filterDaerah, setFilterDaerah] = useState(
     dataLogin?.user?.akses_daerah || "",
@@ -64,6 +71,11 @@ const UsersPage = () => {
   const [balikanDataKelompok, setBalikanDataKelompok] = useState([]);
   const [openFilter, setOpenFilter] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showModalBanned, setShowModalBanned] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isUnbanning, setIsUnbanning] = useState(false);
 
   const navigate = useNavigate();
 
@@ -176,14 +188,7 @@ const UsersPage = () => {
     if (isAnyFilterEmpty) {
       refetchListUsers();
     }
-  }, [
-    filterInput,
-    status,
-    filterDaerah,
-    filterDesa,
-    filterKelompok,
-    refetchListUsers,
-  ]);
+  }, [filterInput, status, filterDaerah, filterDesa, filterKelompok]);
 
   useEffect(() => {
     if (!hasFetched.current) {
@@ -206,6 +211,7 @@ const UsersPage = () => {
   }, [dataLogin?.user?.akses_daerah, dataLogin?.user?.akses_desa]);
 
   const DetailDataFetch = async (Kode: any, visibilityOption: any) => {
+    setIsLoadingDetail(true);
     try {
       const response = await fetchDetailUsers(Kode);
 
@@ -244,9 +250,125 @@ const UsersPage = () => {
         case 4:
           setShowModalDelete(true);
           break;
+        case 6:
+          setShowModalBanned(true);
+          break;
       }
     } catch (error: any) {
       handleApiError(error, {});
+    } finally {
+      setIsLoadingDetail(false);
+    }
+  };
+
+  const resetPassUsers = async (Kode: any, visibilityOption: any) => {
+    setIsResettingPassword(true);
+    try {
+      const response = await fetchResetPassUsers(Kode);
+
+      if (!response.success) {
+        toast.error("Error!", {
+          description: response.message || "Gagal memuat data penetapan",
+          duration: 3000,
+        });
+        return;
+      }
+
+      switch (visibilityOption) {
+        case 5:
+          toast.success("Sukses", {
+            description: response?.data?.message || "-",
+            duration: 3000,
+          });
+          refetchListUsers();
+          break;
+      }
+    } catch (error: any) {
+      handleApiError(error, {});
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const unbanUsers = async (Kode: any, visibilityOption: any) => {
+    setIsUnbanning(true);
+    try {
+      const response = await fetchUnbanUsers(Kode);
+
+      if (!response.success) {
+        toast.error("Error!", {
+          description: response.message || "Gagal memuat data penetapan",
+          duration: 3000,
+        });
+        return;
+      }
+
+      switch (visibilityOption) {
+        case 7:
+          toast.success("Sukses", {
+            description: response.message || "-",
+            duration: 3000,
+          });
+          refetchListUsers();
+          break;
+      }
+    } catch (error: any) {
+      handleApiError(error, {});
+    } finally {
+      setIsUnbanning(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRows.size === 0) {
+      toast.warning("Peringatan", {
+        description: "Pilih minimal satu data untuk dihapus",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin menghapus ${selectedRows.size} data terpilih?`,
+    );
+
+    if (!confirmed) return;
+
+    setIsBulkDeleting(true);
+
+    try {
+      // Convert Set to Array
+      const uuid = Array.from(selectedRows);
+
+      const response = await axiosServices().delete(
+        "/api/v1/users/bulk-destroy",
+        { data: { uuid } },
+      );
+
+      // Check if delete was successful
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Berhasil!", {
+          description:
+            response.data?.message ||
+            `${selectedRows.size} data berhasil dihapus`,
+          duration: 3000,
+        });
+
+        // Clear selection
+        setSelectedRows(new Set());
+
+        // Refresh data
+        setTimeout(() => {
+          refetchListUsers();
+        }, 1000);
+      } else {
+        throw new Error(response.data?.message || "Gagal menghapus data");
+      }
+    } catch (error: any) {
+      handleApiError(error, { showToast: true });
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -330,12 +452,25 @@ const UsersPage = () => {
     },
   ];
 
-  // Row actions (menu 3 titik)
-  const rowActions = [
-    { label: "Detail", value: "detail" },
-    { label: "Ubah", value: "edit" },
-    { label: "Hapus", value: "delete" },
-  ];
+  // Row actions (menu 3 titik) - conditional based on user status
+  const rowActions = (item: any) => {
+    const actions = [
+      { label: "Detail", value: "detail" },
+      { label: "Ubah", value: "edit" },
+      { label: "Reset Password", value: "reset" },
+    ];
+
+    // Show Ban or Unban based on status
+    if (String(item.status) === "-1") {
+      actions.push({ label: "Unban User", value: "unbanned" });
+    } else {
+      actions.push({ label: "Ban User", value: "banned" });
+    }
+
+    actions.push({ label: "Hapus", value: "delete" });
+
+    return actions;
+  };
 
   const handleRowAction = (item: any, action: string) => {
     switch (action) {
@@ -348,6 +483,15 @@ const UsersPage = () => {
       case "delete":
         DetailDataFetch(item.uuid, 4);
         break;
+      case "reset":
+        resetPassUsers(item.uuid, 5);
+        break;
+      case "banned":
+        DetailDataFetch(item.uuid, 6);
+        break;
+      case "unbanned":
+        unbanUsers(item.uuid, 7);
+        break;
     }
   };
 
@@ -355,13 +499,20 @@ const UsersPage = () => {
     setShowModalDelete(false);
   };
 
+  const handleModalBannedHide = () => {
+    setShowModalBanned(false);
+  };
+
   document.title = BASE_TITLE + "Users Management";
 
   return (
     <>
       <div className="relative md:h-full">
-        {isRefetchingUsers && (
-          <div className="absolute inset-0 flex items-center justify-center z-50 backdrop-blur-xs">
+        {(isRefetchingUsers ||
+          isLoadingDetail ||
+          isResettingPassword ||
+          isUnbanning) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-xs">
             <svg
               className="animate-spin h-6 w-6"
               xmlns="http://www.w3.org/2000/svg"
@@ -382,6 +533,15 @@ const UsersPage = () => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
+            <p className={`mt-3 text-sm ${THEME_COLORS.text.secondary}`}>
+              {isLoadingDetail
+                ? "Memuat detail..."
+                : isResettingPassword
+                  ? "Mereset password..."
+                  : isUnbanning
+                    ? "Membuka blokir..."
+                    : "Memperbarui data..."}
+            </p>
           </div>
         )}
 
@@ -430,7 +590,55 @@ const UsersPage = () => {
               </div>
 
               <div className="flex flex-col md:flex-row justify-between gap-4">
-                {/* Action Buttons with Better Layout */}
+                {/* Bulk Delete Button - Only show when rows are selected */}
+                {selectedRows.size > 0 && (
+                  <div className="flex items-center gap-2 mr-auto">
+                    <button
+                      disabled={isBulkDeleting}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleBulkDelete}
+                    >
+                      {isBulkDeleting ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
+                          </svg>
+                          <span>Menghapus...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🗑️</span>
+                          <span>Hapus {selectedRows.size} Data</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      disabled={isBulkDeleting}
+                      className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline disabled:opacity-50"
+                      onClick={() => setSelectedRows(new Set())}
+                    >
+                      Batalkan Pilihan
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap items-center gap-3">
                   {/* Filter & Reset Group */}
                   <div
@@ -480,14 +688,15 @@ const UsersPage = () => {
               {/* Info Badge - Optional: showing active filters count */}
               {(status || filterDaerah || filterDesa || filterKelompok) && (
                 <div
-                  className={`flex items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
+                  className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
                 >
-                  <Info className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-
-                  <span className="font-medium">Filter aktif diterapkan</span>
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
+                    <span className="font-medium">Filter aktif diterapkan</span>
+                  </div>
                   <button
                     onClick={onResetFilter}
-                    className="ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
+                    className="sm:ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
                   >
                     Hapus Semua Filter
                   </button>
@@ -517,6 +726,7 @@ const UsersPage = () => {
                 onRowAction={handleRowAction}
                 selectable={true}
                 getRowId={(item: any) => item.uuid}
+                disabled={isLoadingDetail || isResettingPassword || isUnbanning}
               />
             )}
 
@@ -589,6 +799,19 @@ const UsersPage = () => {
         <Delete
           fetchData={refetchListUsers}
           onHide={handleModalDeleteHide}
+          detailData={userData}
+        />
+      </FilterModal>
+
+      {/* manggil ke component form Banned */}
+      <FilterModal
+        open={showModalBanned}
+        onClose={handleModalBannedHide}
+        title="Blokir Pengguna"
+      >
+        <BannedUsers
+          fetchData={refetchListUsers}
+          onHide={handleModalBannedHide}
           detailData={userData}
         />
       </FilterModal>
