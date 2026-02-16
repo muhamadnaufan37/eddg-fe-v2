@@ -378,6 +378,15 @@ export const routes: TRoute[] = [
     ),
     fullScreen: false,
   },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/pindah-sambung",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(() => import("../pages/master-data/pindah-sambung")),
+    fullScreen: false,
+  },
 
   //Path 404
   {
