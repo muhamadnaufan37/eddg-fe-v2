@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getLocalStorage } from "@/services/localStorageService";
 import { useNavigate } from "react-router-dom";
 import Pagination from "@/components/features/Pagination";
 import { useFetchOptions } from "@/hooks/useFetchOptions";
@@ -10,37 +9,23 @@ import { id } from "date-fns/locale";
 import { BASE_TITLE } from "@/store/actions";
 import { toast } from "sonner";
 import { DataTableAdvanced, Input, type Column } from "@/components/global";
-import {
-  Info,
-  PlusCircle,
-  RefreshCcw,
-  Search,
-  ShieldAlert,
-} from "lucide-react";
+import { PlusCircle, RefreshCcw, Search, Workflow } from "lucide-react";
 import { THEME_COLORS } from "@/config/theme";
 import Delete from "./modal/Delete";
-import { fetchDetailRoles, fetchRolesData } from "@/services/RolesServices";
+import {
+  fetchDetailPekerjaan,
+  fetchPekerjaanData,
+} from "@/services/PekerjaanServices";
 import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
 import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
 
-const RolesPage = () => {
-  const dataLogin = getLocalStorage("userData");
+const PekerjaanPage = () => {
   const { loading } = useFetchOptions();
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState(10);
   const [filterInput, setFilterInput] = useState("");
   const [showModalDelete, setShowModalDelete] = useState(false);
-  const [status, setStatus] = useState<any>(null);
   const [userData, setUserData] = useState(null);
-  const [filterDaerah, setFilterDaerah] = useState(
-    dataLogin?.user?.akses_daerah || "",
-  );
-  const [filterDesa, setFilterDesa] = useState(
-    dataLogin?.user?.akses_desa || "",
-  );
-  const [filterKelompok, setFilterKelompok] = useState(
-    dataLogin?.user?.akses_kelompok || "",
-  );
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
@@ -48,7 +33,7 @@ const RolesPage = () => {
 
   const fetchData = async () => {
     try {
-      return await fetchRolesData({
+      return await fetchPekerjaanData({
         page,
         rows,
         filterInput,
@@ -59,11 +44,11 @@ const RolesPage = () => {
   };
 
   const {
-    data: dataListRoles,
-    isFetching: isRefetchingRoles,
-    refetch: refetchListRoles,
+    data: dataListPekerjaan,
+    isFetching: isRefetchingPekerjaan,
+    refetch: refetchListPekerjaan,
   } = useQuery({
-    queryKey: ["dataListRoles", page, rows, filterInput],
+    queryKey: ["dataListPekerjaan", page, rows],
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
@@ -72,16 +57,20 @@ const RolesPage = () => {
     setPage(1);
     setRows(10);
     setFilterInput("");
-    setStatus("");
-    setFilterDaerah(dataLogin?.user?.akses_daerah || "");
-    setFilterDesa(dataLogin?.user?.akses_desa || "");
-    setFilterKelompok(dataLogin?.user?.akses_kelompok || "");
   };
+
+  useEffect(() => {
+    const isAnyFilterEmpty = filterInput === "";
+
+    if (isAnyFilterEmpty) {
+      refetchListPekerjaan();
+    }
+  }, [filterInput]);
 
   const DetailDataFetch = async (Kode: any, visibilityOption: any) => {
     setIsLoadingDetail(true);
     try {
-      const response = await fetchDetailRoles(Kode);
+      const response = await fetchDetailPekerjaan(Kode);
 
       if (!response.success) {
         toast.error("Error!", {
@@ -101,13 +90,13 @@ const RolesPage = () => {
 
       switch (visibilityOption) {
         case 2:
-          navigate("/auth/roles/detail", {
+          navigate("/master-data/pekerjaan/detail", {
             state: navigationState,
             replace: true,
           });
           break;
         case 3:
-          navigate("/auth/roles/update", {
+          navigate("/master-data/pekerjaan/update", {
             state: navigationState,
             replace: true,
           });
@@ -131,24 +120,8 @@ const RolesPage = () => {
   // Definisi kolom
   const columns: Column<any>[] = [
     {
-      key: "uuid",
-      header: "UUID",
-      sortable: true,
-      bold: true,
-    },
-    {
-      key: "name",
-      header: "Role",
-      sortable: true,
-    },
-    {
-      key: "guard_name",
-      header: "Guard",
-      sortable: true,
-    },
-    {
-      key: "description",
-      header: "Description",
+      key: "nama_pekerjaan",
+      header: "Pekerjaan",
       sortable: true,
     },
     {
@@ -173,13 +146,13 @@ const RolesPage = () => {
   const handleRowAction = (item: any, action: string) => {
     switch (action) {
       case "detail":
-        DetailDataFetch(item.uuid, 2);
+        DetailDataFetch(item.id, 2);
         break;
       case "edit":
-        DetailDataFetch(item.uuid, 3);
+        DetailDataFetch(item.id, 3);
         break;
       case "delete":
-        DetailDataFetch(item.uuid, 4);
+        DetailDataFetch(item.id, 4);
         break;
     }
   };
@@ -188,12 +161,12 @@ const RolesPage = () => {
     setShowModalDelete(false);
   };
 
-  document.title = BASE_TITLE + "Roles Management";
+  document.title = BASE_TITLE + "Pekerjaan Management";
 
   return (
     <>
       <div className="relative md:h-full">
-        {(isRefetchingRoles || isLoadingDetail) && (
+        {(isRefetchingPekerjaan || isLoadingDetail) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-xs">
             <svg
               className="animate-spin h-6 w-6"
@@ -231,14 +204,14 @@ const RolesPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <ShieldAlert className="w-6 h-6 text-white" />
+                    <Workflow className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h1 className="font-bold text-2xl text-white tracking-tight">
-                      Roles Management
+                      Pekerjaan Management
                     </h1>
                     <p className="text-white/80 text-sm mt-0.5">
-                      Kelola dan pantau data roles dengan mudah
+                      Kelola dan pantau data pekerjaan dengan mudah
                     </p>
                   </div>
                 </div>
@@ -257,10 +230,10 @@ const RolesPage = () => {
                 <Input
                   value={filterInput}
                   className={`w-full pl-11 pr-4 py-3 text-sm border ${THEME_COLORS.border.default} rounded-xl shadow-sm focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent transition-all ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
-                  placeholder="Cari berdasarkan uuid, name, guard..."
+                  placeholder="Cari berdasarkan nama pekerjaan..."
                   onChange={(e: any) => setFilterInput(e.target.value)}
                   onKeyDown={(e: any) =>
-                    e.key === "Enter" && refetchListRoles()
+                    e.key === "Enter" && refetchListPekerjaan()
                   }
                 />
               </div>
@@ -272,7 +245,7 @@ const RolesPage = () => {
                     className={`flex items-center gap-2 ${selectedRows.size > 0 ? "" : "mr-auto"}`}
                   >
                     <button
-                      disabled={isRefetchingRoles}
+                      disabled={isRefetchingPekerjaan}
                       className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={onResetFilter}
                     >
@@ -285,10 +258,10 @@ const RolesPage = () => {
                 {/* Main Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
                   <button
-                    disabled={isRefetchingRoles}
+                    disabled={isRefetchingPekerjaan}
                     className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText} rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                     onClick={() =>
-                      navigate("/auth/roles/create", {
+                      navigate("/master-data/pekerjaan/create", {
                         replace: true,
                       })
                     }
@@ -298,23 +271,6 @@ const RolesPage = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Info Badge - Optional: showing active filters count */}
-              {(status || filterDaerah || filterDesa || filterKelompok) && (
-                <div
-                  className={`flex items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
-                >
-                  <Info className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-
-                  <span className="font-medium">Filter aktif diterapkan</span>
-                  <button
-                    onClick={onResetFilter}
-                    className="ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
-                  >
-                    Hapus Semua Filter
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -333,18 +289,18 @@ const RolesPage = () => {
               <DataTableAdvanced
                 selectedRows={selectedRows}
                 setSelectedRows={setSelectedRows}
-                data={dataListRoles?.data || []}
+                data={dataListPekerjaan?.data || []}
                 columns={columns}
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}
-                getRowId={(item: any) => item.uuid}
+                getRowId={(item: any) => item.id}
                 disabled={isLoadingDetail}
               />
             )}
 
             {/* Refetch indicator */}
-            {isRefetchingRoles && !loading && (
+            {isRefetchingPekerjaan && !loading && (
               <div
                 className={`text-xs ${THEME_COLORS.text.muted} text-center animate-pulse`}
               >
@@ -355,15 +311,15 @@ const RolesPage = () => {
             {/* PAGINATION */}
             <div className="mt-3 shrink-0">
               <Pagination
-                currentPage={dataListRoles?.meta?.current_page || 1}
-                lastPage={dataListRoles?.meta?.last_page || 1}
-                totalItems={dataListRoles?.meta?.total || 0}
+                currentPage={dataListPekerjaan?.meta?.current_page || 1}
+                lastPage={dataListPekerjaan?.meta?.last_page || 1}
+                totalItems={dataListPekerjaan?.meta?.total || 0}
                 rowsPerPage={rows}
                 onPageChange={(params) => {
                   setPage(params.page + 1);
                   setRows(params.rows);
                 }}
-                disabled={isRefetchingRoles}
+                disabled={isRefetchingPekerjaan}
               />
             </div>
           </div>
@@ -377,7 +333,7 @@ const RolesPage = () => {
         title="Hapus Data"
       >
         <Delete
-          fetchData={refetchListRoles}
+          fetchData={refetchListPekerjaan}
           onHide={handleModalDeleteHide}
           detailData={userData}
         />
@@ -386,4 +342,4 @@ const RolesPage = () => {
   );
 };
 
-export default RolesPage;
+export default PekerjaanPage;

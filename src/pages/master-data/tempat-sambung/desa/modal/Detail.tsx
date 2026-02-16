@@ -3,11 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/global";
 import { THEME_COLORS } from "@/config/theme";
 import ModalInvalidId from "@/components/modal/ModalInvalidId";
-import { ArrowLeft, Calendar, Clock, ShieldBan } from "lucide-react";
+import { User, Calendar, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
-const DetailRoles = () => {
+const DetailDesa = () => {
   const [showModal, setShowModal] = useState(false);
   const location = useLocation();
   const dataBalikan = location?.state;
@@ -43,19 +43,10 @@ const DetailRoles = () => {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate("/auth/roles", { replace: true })}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-white" />
-              </button>
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <ShieldBan className="w-6 h-6 text-white" />
-              </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Detail Roles</h2>
+                <h2 className="text-xl font-bold text-white">Detail Desa</h2>
                 <p className="text-white/80 text-sm mt-0.5">
-                  Informasi lengkap roles
+                  Informasi lengkap desa
                 </p>
               </div>
             </div>
@@ -71,71 +62,90 @@ const DetailRoles = () => {
             <h3
               className={`text-sm font-semibold ${THEME_COLORS.text.primary} flex items-center gap-2 border-b ${THEME_COLORS.border.default} pb-3`}
             >
-              <ShieldBan className="w-4 h-4" />
-              Informasi Roles
+              <User className="w-4 h-4" />
+              Informasi Desa
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label
-                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
-                >
-                  UUID
-                </label>
-                <div
-                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
-                >
-                  <span
-                    className={`text-sm font-mono ${THEME_COLORS.text.primary}`}
-                  >
-                    {userData.uuid || "-"}
-                  </span>
-                </div>
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+              >
+                Foto
+              </label>
+              <div className="flex">
+                {userData?.img_url !== null ? (
+                  <img
+                    src={userData?.img_url}
+                    alt="Foto Desa"
+                    className="w-20 h-15 object-cover rounded-md"
+                  />
+                ) : (
+                  <>
+                    <span className="font-semibold text-xs italic w-full text-gray-600 dark:text-gray-400">
+                      *data ini belum upload foto
+                    </span>
+                  </>
+                )}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
-                >
-                  Roles
-                </label>
-                <div
-                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
-                >
-                  <span className={`text-sm ${THEME_COLORS.text.primary}`}>
-                    {userData.name || "-"}
-                  </span>
-                </div>
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+              >
+                Nama Desa
+              </label>
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+              >
+                <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                  {userData.nama_desa || "-"}
+                </span>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
-                >
-                  Guard
-                </label>
-                <div
-                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
-                >
-                  <span className={`text-sm ${THEME_COLORS.text.primary}`}>
-                    {userData.guard_name || "-"}
-                  </span>
-                </div>
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+              >
+                Alamat
+              </label>
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+              >
+                <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                  {userData.alamat || "-"}
+                </span>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
-                >
-                  Deskripsi
-                </label>
-                <div
-                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
-                >
-                  <span className={`text-sm ${THEME_COLORS.text.primary}`}>
-                    {userData.description || "-"}
-                  </span>
-                </div>
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+              >
+                latitude, longitude
+              </label>
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+              >
+                <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                  {userData.lat || "-"}, {userData.long || "-"}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+              >
+                Status
+              </label>
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+              >
+                <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                  {userData.is_active === true ? "Aktif" : "Tidak Aktif"}
+                </span>
               </div>
             </div>
           </div>
@@ -178,20 +188,22 @@ const DetailRoles = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/auth/roles", { replace: true })}
+            onClick={() =>
+              navigate("/master-data/tempat-sambung/desa", { replace: true })
+            }
           >
             Kembali
           </Button>
           <Button
             type="button"
             onClick={() =>
-              navigate("/auth/roles/update", {
+              navigate("/master-data/tempat-sambung/desa/update", {
                 state: dataBalikan,
                 replace: true,
               })
             }
           >
-            Edit Roles
+            Edit Desa
           </Button>
         </div>
       </div>
@@ -199,4 +211,4 @@ const DetailRoles = () => {
   );
 };
 
-export default DetailRoles;
+export default DetailDesa;

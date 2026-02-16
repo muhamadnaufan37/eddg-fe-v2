@@ -1,14 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { checkUsers } from "@/services/laporanBulananService";
 import { handleApiError } from "@/utils/errorUtils";
+import { BASE_TITLE } from "@/store/actions";
+import { useFetchOptions } from "@/hooks/useFetchOptions";
+import {
+  fetchDesaByDaerah,
+  fetchKelompokByDesa,
+} from "@/services/sensusService";
+import { getLocalStorage } from "@/services/localStorageService";
 
 /**
  * Monitoring Laporan Bulanan - UI (React TSX + TailwindCSS)
- *
- * Catatan:
- * - Komponen ini fokus ke desain & presentasi data API /check-users
- * - Tidak pakai shadcn supaya kamu bisa langsung copas.
- * - Kalau kamu mau versi shadcn (Card, Badge, Tabs, Table, Dialog) bilang ya.
+ * Updated to use backend filters instead of client-side filtering
  */
 
 // ============================
@@ -28,6 +31,29 @@ type ApiResponse = {
       total_terlambat: number;
       total_belum_submit: number;
       rata_rata_kepatuhan: number;
+    };
+    filters: {
+      search: string | null;
+      tahun: number;
+      bulan: number | null;
+      status_bulan: string | null;
+      laporan_status: string | null;
+      is_late: number | null;
+      performa: string | null;
+      min_kepatuhan: number | null;
+      max_kepatuhan: number | null;
+      daerah_id: number | null;
+      desa_id: number | null;
+      kelompok_id: number | null;
+      sort_by: string;
+      sort_dir: string;
+      per_page: number;
+    };
+    pagination: {
+      current_page: number;
+      last_page: number;
+      per_page: number;
+      total: number;
     };
   };
 };
@@ -62,6 +88,11 @@ type UserMonitoring = {
     laporan_status: "approved" | "rejected" | null | string;
   }[];
 };
+
+interface Option {
+  value: string | number;
+  label: string;
+}
 
 // ============================
 // Helpers
@@ -112,11 +143,11 @@ function getPerfTone(perf: string) {
     };
 
   return {
-    ring: "ring-zinc-200 dark:ring-zinc-800",
-    bg: "bg-zinc-50 dark:bg-zinc-900",
-    text: "text-zinc-700 dark:text-zinc-300",
-    dot: "bg-zinc-500 dark:bg-zinc-400",
-    label: perf,
+    ring: "ring-rose-200 dark:ring-rose-900/50",
+    bg: "bg-rose-50 dark:bg-rose-950/30",
+    text: "text-rose-700 dark:text-rose-400",
+    dot: "bg-rose-500 dark:bg-rose-400",
+    label: "Poor",
   };
 }
 
@@ -455,14 +486,6 @@ function UserCard({
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           User ID: <span className="font-medium">{item.user.id}</span>
         </p>
-        <div className="flex flex-wrap gap-2">
-          <button className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-            Detail
-          </button>
-          <button className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
-            Kirim Reminder
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -474,27 +497,166 @@ function UserCard({
 
 export default function MonitoringLaporanBulananPage() {
   const currentYear = new Date().getFullYear();
+  const dataLogin = getLocalStorage("userData");
+  const { fetchOptions } = useFetchOptions();
 
   const [api, setApi] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Filter states - now sent to backend
   const [tahunFilter, setTahunFilter] = useState<number>(currentYear);
-
-  // Filter states
   const [query, setQuery] = useState<string>("");
-  const [perfFilter, setPerfFilter] = useState<
-    "all" | "Excellent" | "Good" | "Average"
-  >("all");
+  const [perfFilter, setPerfFilter] = useState<string>("");
   const [month, setMonth] = useState<number | "all">("all");
-  const [sortBy, setSortBy] = useState<
-    "kepatuhan_desc" | "kepatuhan_asc" | "belum_submit_desc"
-  >("kepatuhan_desc");
+  const [statusBulan, setStatusBulan] = useState<string>("");
+  const [laporanStatus, setLaporanStatus] = useState<string>("");
+  const [isLate, setIsLate] = useState<string>("");
+  const [minKepatuhan, setMinKepatuhan] = useState<string>("");
+  const [maxKepatuhan, setMaxKepatuhan] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("kepatuhan");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  // Fetch data from API
+  // Location filters
+  const [fetchDataDaerah, setFetchDataDaerah] = useState<Option[]>([]);
+  const [balikanDataDesa, setBalikanDataDesa] = useState<Option[]>([]);
+  const [balikanDataKelompok, setBalikanDataKelompok] = useState<Option[]>([]);
+  const [filterDaerah, setFilterDaerah] = useState<string>(
+    dataLogin?.user?.akses_daerah || "",
+  );
+  const [filterDesa, setFilterDesa] = useState<string>(
+    dataLogin?.user?.akses_desa || "",
+  );
+  const [filterKelompok, setFilterKelompok] = useState<string>(
+    dataLogin?.user?.akses_kelompok || "",
+  );
+
+  // Pagination
+  const [page, setPage] = useState<number>(1);
+  const [perPage, setPerPage] = useState<number>(15);
+
+  // Load daerah options
+  useEffect(() => {
+    async function loadDaerah() {
+      try {
+        const daerah = await fetchOptions(
+          "/api/v1/daerah/all",
+          "data_tempat_sambung",
+          "nama_daerah",
+        );
+        setFetchDataDaerah(daerah);
+      } catch (error) {
+        handleApiError(error, { showToast: true });
+      }
+    }
+    loadDaerah();
+  }, []);
+
+  // Fetch desa when daerah changes
+  const fetchDesa = async (id: any) => {
+    if (!id) {
+      setBalikanDataDesa([]);
+      return;
+    }
+    try {
+      const response = await fetchDesaByDaerah(id);
+      if (
+        response?.data_tempat_sambung &&
+        Array.isArray(response.data_tempat_sambung)
+      ) {
+        const formattedData = response.data_tempat_sambung.map(
+          (option: any) => ({
+            value: option.id,
+            label: option.nama_desa,
+          }),
+        );
+        setBalikanDataDesa(formattedData);
+      } else {
+        setBalikanDataDesa([]);
+      }
+    } catch (error: any) {
+      setBalikanDataDesa([]);
+      handleApiError(error, {});
+    }
+  };
+
+  // Fetch kelompok when desa changes
+  const fetchKelompok = async (desaId: any) => {
+    if (!desaId) {
+      setBalikanDataKelompok([]);
+      return;
+    }
+    try {
+      const response = await fetchKelompokByDesa(desaId);
+      if (
+        response?.data_tempat_sambung &&
+        Array.isArray(response.data_tempat_sambung)
+      ) {
+        const formattedData = response.data_tempat_sambung.map(
+          (option: any) => ({
+            value: option.id,
+            label: option.nama_kelompok,
+          }),
+        );
+        setBalikanDataKelompok(formattedData);
+      } else {
+        setBalikanDataKelompok([]);
+      }
+    } catch (error: any) {
+      setBalikanDataKelompok([]);
+      handleApiError(error, {});
+    }
+  };
+
+  // Auto-fetch desa dan kelompok berdasarkan akses user
+  useEffect(() => {
+    if (dataLogin?.user?.akses_daerah) {
+      fetchDesa(dataLogin?.user?.akses_daerah);
+    }
+    if (dataLogin?.user?.akses_desa) {
+      fetchKelompok(dataLogin?.user?.akses_desa);
+    }
+  }, [dataLogin?.user?.akses_daerah, dataLogin?.user?.akses_desa]);
+
+  // Handle daerah change
+  useEffect(() => {
+    if (filterDaerah) {
+      fetchDesa(filterDaerah);
+      setFilterDesa("");
+      setFilterKelompok("");
+    }
+  }, [filterDaerah]);
+
+  // Handle desa change
+  useEffect(() => {
+    if (filterDesa) {
+      fetchKelompok(filterDesa);
+      setFilterKelompok("");
+    }
+  }, [filterDesa]);
+
+  // Fetch data from API whenever filters change
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const response = await checkUsers(tahunFilter);
+        const response = await checkUsers({
+          tahun: tahunFilter,
+          search: query || undefined,
+          daerah_id: filterDaerah || undefined,
+          desa_id: filterDesa || undefined,
+          kelompok_id: filterKelompok || undefined,
+          performa: perfFilter || undefined,
+          bulan: month !== "all" ? month : undefined,
+          status_bulan: statusBulan || undefined,
+          laporan_status: laporanStatus || undefined,
+          is_late: isLate ? (isLate === "1" ? 1 : 0) : undefined,
+          min_kepatuhan: minKepatuhan ? parseFloat(minKepatuhan) : undefined,
+          max_kepatuhan: maxKepatuhan ? parseFloat(maxKepatuhan) : undefined,
+          sort_by: sortBy,
+          sort_dir: sortDir,
+          per_page: perPage,
+          page: page,
+        });
         setApi(response);
       } catch (error) {
         handleApiError(error, { showToast: true });
@@ -503,57 +665,44 @@ export default function MonitoringLaporanBulananPage() {
       }
     }
     loadData();
-  }, [tahunFilter]);
+  }, [
+    tahunFilter,
+    query,
+    filterDaerah,
+    filterDesa,
+    filterKelompok,
+    perfFilter,
+    month,
+    statusBulan,
+    laporanStatus,
+    isLate,
+    minKepatuhan,
+    maxKepatuhan,
+    sortBy,
+    sortDir,
+    perPage,
+    page,
+  ]);
 
   const users = api?.data.users_data || [];
 
-  const filtered = useMemo(() => {
-    let list = [...users];
-
-    // search
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter((x) => {
-        const loc = `${x.user.lokasi.daerah || ""} ${x.user.lokasi.desa || ""} ${x.user.lokasi.kelompok || ""}`;
-        return (
-          x.user.nama_lengkap.toLowerCase().includes(q) ||
-          x.user.username.toLowerCase().includes(q) ||
-          loc.toLowerCase().includes(q)
-        );
-      });
-    }
-
-    // performance
-    if (perfFilter !== "all") {
-      list = list.filter((x) => x.statistik.performa === perfFilter);
-    }
-
-    // month
-    if (month !== "all") {
-      list = list.filter((x) =>
-        x.laporan_per_bulan.some((m) => m.bulan === month),
-      );
-    }
-
-    // sorting
-    if (sortBy === "kepatuhan_desc") {
-      list.sort(
-        (a, b) =>
-          b.statistik.persentase_kepatuhan - a.statistik.persentase_kepatuhan,
-      );
-    }
-    if (sortBy === "kepatuhan_asc") {
-      list.sort(
-        (a, b) =>
-          a.statistik.persentase_kepatuhan - b.statistik.persentase_kepatuhan,
-      );
-    }
-    if (sortBy === "belum_submit_desc") {
-      list.sort((a, b) => b.statistik.belum_submit - a.statistik.belum_submit);
-    }
-
-    return list;
-  }, [users, query, perfFilter, month, sortBy]);
+  const onResetFilter = () => {
+    setPage(1);
+    setQuery("");
+    setPerfFilter("");
+    setMonth("all");
+    setStatusBulan("");
+    setLaporanStatus("");
+    setIsLate("");
+    setMinKepatuhan("");
+    setMaxKepatuhan("");
+    setSortBy("kepatuhan");
+    setSortDir("desc");
+    setTahunFilter(currentYear);
+    setFilterDaerah(dataLogin?.user?.akses_daerah || "");
+    setFilterDesa(dataLogin?.user?.akses_desa || "");
+    setFilterKelompok(dataLogin?.user?.akses_kelompok || "");
+  };
 
   if (loading) {
     return (
@@ -582,6 +731,10 @@ export default function MonitoringLaporanBulananPage() {
       </div>
     );
   }
+
+  document.title = BASE_TITLE + "Monitoring Laporan Bulanan";
+
+  const pagination = api.data.pagination;
 
   return (
     <div className="flex flex-col gap-4">
@@ -644,25 +797,33 @@ export default function MonitoringLaporanBulananPage() {
         {/* Filters */}
         <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-4">
+            {/* Search */}
+            <div className="md:col-span-6">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Cari user / username / lokasi
               </label>
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Contoh: cikampek, jatiluhur, sensus_..."
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Contoh: SENSUS, sensus_klmpk_..."
                 className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
               />
             </div>
 
+            {/* Tahun */}
             <div className="md:col-span-2">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Tahun
               </label>
               <select
                 value={tahunFilter}
-                onChange={(e) => setTahunFilter(Number(e.target.value))}
+                onChange={(e) => {
+                  setTahunFilter(Number(e.target.value));
+                  setPage(1);
+                }}
                 className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
               >
                 {Array.from({ length: 5 }, (_, i) => currentYear - i).map(
@@ -675,33 +836,40 @@ export default function MonitoringLaporanBulananPage() {
               </select>
             </div>
 
+            {/* Performa */}
             <div className="md:col-span-2">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Filter performa
               </label>
               <select
                 value={perfFilter}
-                onChange={(e) => setPerfFilter(e.target.value as any)}
+                onChange={(e) => {
+                  setPerfFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
               >
-                <option value="all">Semua</option>
+                <option value="">Semua</option>
                 <option value="Excellent">Excellent</option>
                 <option value="Good">Good</option>
-                <option value="Average">Average</option>
+                <option value="Needs Improvement">Average</option>
+                <option value="Poor">Poor</option>
               </select>
             </div>
 
+            {/* Bulan */}
             <div className="md:col-span-2">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Bulan
               </label>
               <select
                 value={month}
-                onChange={(e) =>
+                onChange={(e) => {
                   setMonth(
                     e.target.value === "all" ? "all" : Number(e.target.value),
-                  )
-                }
+                  );
+                  setPage(1);
+                }}
                 className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
               >
                 <option value="all">Semua</option>
@@ -712,22 +880,207 @@ export default function MonitoringLaporanBulananPage() {
                 ))}
               </select>
             </div>
+          </div>
 
+          {/* Location Filters Row */}
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            {/* Daerah */}
+            <div>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Daerah
+              </label>
+              <select
+                value={filterDaerah}
+                onChange={(e) => {
+                  setFilterDaerah(e.target.value);
+                  setPage(1);
+                }}
+                disabled={!!dataLogin?.user?.akses_daerah}
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+              >
+                <option value="">Semua Daerah</option>
+                {fetchDataDaerah.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Desa */}
+            <div>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Desa
+              </label>
+              <select
+                value={filterDesa}
+                onChange={(e) => {
+                  setFilterDesa(e.target.value);
+                  setPage(1);
+                }}
+                disabled={!filterDaerah || !!dataLogin?.user?.akses_desa}
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+              >
+                <option value="">Semua Desa</option>
+                {balikanDataDesa.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Kelompok */}
+            <div>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Kelompok
+              </label>
+              <select
+                value={filterKelompok}
+                onChange={(e) => {
+                  setFilterKelompok(e.target.value);
+                  setPage(1);
+                }}
+                disabled={!filterDesa || !!dataLogin?.user?.akses_kelompok}
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+              >
+                <option value="">Semua Kelompok</option>
+                {balikanDataKelompok.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Additional Filters Row */}
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-12">
+            {/* Status Bulan */}
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Status Bulan
+              </label>
+              <select
+                value={statusBulan}
+                onChange={(e) => {
+                  setStatusBulan(e.target.value);
+                  setPage(1);
+                }}
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+              >
+                <option value="">Semua</option>
+                <option value="submitted">Submitted</option>
+                <option value="belum_submit">Belum Submit</option>
+              </select>
+            </div>
+
+            {/* Laporan Status */}
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Status Laporan
+              </label>
+              <select
+                value={laporanStatus}
+                onChange={(e) => {
+                  setLaporanStatus(e.target.value);
+                  setPage(1);
+                }}
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+              >
+                <option value="">Semua</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Is Late */}
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Keterlambatan
+              </label>
+              <select
+                value={isLate}
+                onChange={(e) => {
+                  setIsLate(e.target.value);
+                  setPage(1);
+                }}
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+              >
+                <option value="">Semua</option>
+                <option value="1">Terlambat</option>
+                <option value="0">Tepat Waktu</option>
+              </select>
+            </div>
+
+            {/* Min Kepatuhan */}
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Min Kepatuhan (%)
+              </label>
+              <input
+                type="number"
+                value={minKepatuhan}
+                onChange={(e) => {
+                  setMinKepatuhan(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="0"
+                min="0"
+                max="100"
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+              />
+            </div>
+
+            {/* Max Kepatuhan */}
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Max Kepatuhan (%)
+              </label>
+              <input
+                type="number"
+                value={maxKepatuhan}
+                onChange={(e) => {
+                  setMaxKepatuhan(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="100"
+                min="0"
+                max="100"
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+              />
+            </div>
+
+            {/* Sort By + Dir */}
             <div className="md:col-span-2">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Urutkan
               </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
-              >
-                <option value="kepatuhan_desc">Kepatuhan tertinggi</option>
-                <option value="kepatuhan_asc">Kepatuhan terendah</option>
-                <option value="belum_submit_desc">
-                  Belum submit terbanyak
-                </option>
-              </select>
+              <div className="mt-2 flex gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+                >
+                  <option value="kepatuhan">Kepatuhan</option>
+                  <option value="performa">Performa</option>
+                  <option value="nama">Nama</option>
+                </select>
+                <select
+                  value={sortDir}
+                  onChange={(e) => {
+                    setSortDir(e.target.value as "asc" | "desc");
+                    setPage(1);
+                  }}
+                  className="w-20 rounded-2xl border border-zinc-200 bg-white px-2 py-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+                >
+                  <option value="desc">↓</option>
+                  <option value="asc">↑</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -735,19 +1088,18 @@ export default function MonitoringLaporanBulananPage() {
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Menampilkan{" "}
               <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                {filtered.length}
+                {users.length}
               </span>{" "}
-              user
+              dari{" "}
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {pagination?.total}
+              </span>{" "}
+              user • Halaman {pagination?.current_page} dari{" "}
+              {pagination?.last_page}
             </p>
 
             <button
-              onClick={() => {
-                setQuery("");
-                setPerfFilter("all");
-                setMonth("all");
-                setSortBy("kepatuhan_desc");
-                setTahunFilter(currentYear);
-              }}
+              onClick={onResetFilter}
               className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
             >
               Reset Filter
@@ -761,27 +1113,100 @@ export default function MonitoringLaporanBulananPage() {
         {users.length === 0 ? (
           <div className="rounded-3xl border border-zinc-200 bg-white p-10 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
             <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              Belum ada data user
-            </p>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Tidak ada data monitoring untuk tahun {tahunFilter}
-            </p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border border-zinc-200 bg-white p-10 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-            <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Tidak ada hasil
             </p>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Coba ubah kata kunci pencarian atau filter performa.
+              Coba ubah kata kunci pencarian atau filter yang digunakan.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {filtered.map((item) => (
-              <UserCard key={item.user.id} item={item} selectedMonth={month} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-4">
+              {users.map((item) => (
+                <UserCard
+                  key={item.user.id}
+                  item={item}
+                  selectedMonth={month}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {pagination?.last_page > 1 && (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    Per halaman:
+                  </label>
+                  <select
+                    value={perPage}
+                    onChange={(e) => {
+                      setPerPage(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+                  >
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from(
+                      { length: Math.min(5, pagination?.last_page) },
+                      (_, i) => {
+                        let pageNum;
+                        if (pagination?.last_page <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination?.last_page - 2) {
+                          pageNum = pagination?.last_page - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setPage(pageNum)}
+                            className={cn(
+                              "h-10 w-10 rounded-2xl text-sm font-semibold transition",
+                              page === pageNum
+                                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                                : "border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700",
+                            )}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setPage(Math.min(pagination?.last_page, page + 1))
+                    }
+                    disabled={page === pagination?.last_page}
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

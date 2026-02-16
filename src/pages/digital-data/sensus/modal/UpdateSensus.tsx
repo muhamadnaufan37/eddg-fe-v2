@@ -55,7 +55,7 @@ const UpdateSensus = () => {
     tempat_lahir: dataBalikan?.detailData?.tempat_lahir,
     tanggal_lahir: dataBalikan?.detailData?.tanggal_lahir,
     alamat: dataBalikan?.detailData?.alamat,
-    usia: dataBalikan?.detailData?.usia,
+    usia: dataBalikan?.detailData?.umur,
     jenis_kelamin: dataBalikan?.detailData?.jenis_kelamin,
     no_telepon: dataBalikan?.detailData?.no_telepon,
     nama_ayah: dataBalikan?.detailData?.nama_ayah,
@@ -73,27 +73,31 @@ const UpdateSensus = () => {
     status_atlet_asad: dataBalikan?.detailData?.status_atlet_asad,
     jenis_data: dataBalikan?.detailData?.jenis_data,
     user_id: dataBalikan?.detailData?.id_petugas_input,
-    img: dataBalikan?.detailData?.img_url || null,
+    img: null,
   };
 
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
     setLoadingData(true);
-    const formData = new FormData();
 
-    // Append all form values except `img` to FormData
+    const formData = new FormData();
+    formData.append("_method", "PUT");
+
     Object.keys(values).forEach((key) => {
-      if (key !== "img") {
-        formData.append(key, values[key]);
-      }
+      if (key === "img") return;
+
+      const value = values[key];
+      if (value === null || value === undefined) return;
+
+      formData.append(key, String(value));
     });
 
-    // Append the image file
-    if (values.img) {
+    // ✅ img hanya jika benar-benar File
+    if (values.img instanceof File) {
       formData.append("img", values.img);
     }
 
     try {
-      const response = await axiosServices().put(
+      const response = await axiosServices().post(
         `/api/v1/data_peserta/${values.kode_cari_data}`,
         formData,
         {
@@ -241,20 +245,6 @@ const UpdateSensus = () => {
                     />
                   ) : (
                     <>
-                      {dataBalikan?.detailData?.jenis_kelamin ===
-                      "LAKI-LAKI" ? (
-                        <img
-                          src="/eddg/empty-img-sensus-male.svg"
-                          alt="Foto Laki-laki"
-                          className="w-20 h-15 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <img
-                          src="/eddg/empty-img-sensus-female.svg"
-                          alt="Foto Perempuan"
-                          className="w-20 h-15 object-cover rounded-lg"
-                        />
-                      )}
                       <span className="font-semibold text-xs italic w-full text-gray-700 dark:text-gray-300">
                         *data si bro ini belum upload foto
                         &#128511;&#128511;&#128511;

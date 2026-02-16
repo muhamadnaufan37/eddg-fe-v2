@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getLocalStorage } from "@/services/localStorageService";
 import { useNavigate } from "react-router-dom";
 import Pagination from "@/components/features/Pagination";
 import { useFetchOptions } from "@/hooks/useFetchOptions";
@@ -11,47 +10,53 @@ import { BASE_TITLE } from "@/store/actions";
 import { toast } from "sonner";
 import { DataTableAdvanced, Input, type Column } from "@/components/global";
 import {
+  Filter,
   Info,
   PlusCircle,
   RefreshCcw,
   Search,
-  ShieldAlert,
+  Workflow,
 } from "lucide-react";
 import { THEME_COLORS } from "@/config/theme";
 import Delete from "./modal/Delete";
-import { fetchDetailRoles, fetchRolesData } from "@/services/RolesServices";
 import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
 import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
+import StatusTableBadge from "@/components/features/StatusTableBadge";
+import {
+  fetchDesaData,
+  fetchDetailDesa,
+} from "@/services/tempatSambungServices";
+import { resolveStatus, STATUS_TEMPAT_SAMBUNG_MAP } from "@/constants";
+import DaerahFilterPanel from "./components/DaerahFilterPanel";
 
-const RolesPage = () => {
-  const dataLogin = getLocalStorage("userData");
-  const { loading } = useFetchOptions();
+interface Option {
+  value: string | number;
+  label: string;
+}
+
+const DesaPage = () => {
+  const { fetchOptions, loading } = useFetchOptions();
+  const hasFetched = useRef(false);
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState(10);
   const [filterInput, setFilterInput] = useState("");
   const [showModalDelete, setShowModalDelete] = useState(false);
   const [status, setStatus] = useState<any>(null);
   const [userData, setUserData] = useState(null);
-  const [filterDaerah, setFilterDaerah] = useState(
-    dataLogin?.user?.akses_daerah || "",
-  );
-  const [filterDesa, setFilterDesa] = useState(
-    dataLogin?.user?.akses_desa || "",
-  );
-  const [filterKelompok, setFilterKelompok] = useState(
-    dataLogin?.user?.akses_kelompok || "",
-  );
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [openFilter, setOpenFilter] = useState(false);
+  const [fetchDataDaerah, setFetchDataDaerah] = useState<Option[]>([]);
 
   const navigate = useNavigate();
 
   const fetchData = async () => {
     try {
-      return await fetchRolesData({
+      return await fetchDesaData({
         page,
         rows,
         filterInput,
+        status,
       });
     } catch (error: any) {
       handleApiError(error, {});
@@ -59,29 +64,43 @@ const RolesPage = () => {
   };
 
   const {
-    data: dataListRoles,
-    isFetching: isRefetchingRoles,
-    refetch: refetchListRoles,
+    data: dataListDesa,
+    isFetching: isRefetchingDesa,
+    refetch: refetchListDesa,
   } = useQuery({
-    queryKey: ["dataListRoles", page, rows, filterInput],
+    queryKey: ["dataListDesa", page, rows],
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
+
+  const loadAllData = async () => {
+    const [daerah] = await Promise.all([
+      fetchOptions("/api/v1/daerah/all", "data_tempat_sambung", "nama_daerah"),
+    ]);
+
+    setFetchDataDaerah(daerah);
+  };
 
   const onResetFilter = () => {
     setPage(1);
     setRows(10);
     setFilterInput("");
     setStatus("");
-    setFilterDaerah(dataLogin?.user?.akses_daerah || "");
-    setFilterDesa(dataLogin?.user?.akses_desa || "");
-    setFilterKelompok(dataLogin?.user?.akses_kelompok || "");
   };
+
+  useEffect(() => {
+    const isAnyFilterEmpty =
+      filterInput === "" || status === "" || status === null;
+
+    if (isAnyFilterEmpty) {
+      refetchListDesa();
+    }
+  }, [filterInput, status]);
 
   const DetailDataFetch = async (Kode: any, visibilityOption: any) => {
     setIsLoadingDetail(true);
     try {
-      const response = await fetchDetailRoles(Kode);
+      const response = await fetchDetailDesa(Kode);
 
       if (!response.success) {
         toast.error("Error!", {
@@ -97,17 +116,18 @@ const RolesPage = () => {
       // Handle navigation based on visibility option
       const navigationState = {
         detailData: detailDataArray,
+        fetchdataDearah: fetchDataDaerah,
       };
 
       switch (visibilityOption) {
         case 2:
-          navigate("/auth/roles/detail", {
+          navigate("/master-data/tempat-sambung/desa/detail", {
             state: navigationState,
             replace: true,
           });
           break;
         case 3:
-          navigate("/auth/roles/update", {
+          navigate("/master-data/tempat-sambung/desa/update", {
             state: navigationState,
             replace: true,
           });
@@ -131,25 +151,46 @@ const RolesPage = () => {
   // Definisi kolom
   const columns: Column<any>[] = [
     {
-      key: "uuid",
-      header: "UUID",
-      sortable: true,
-      bold: true,
-    },
-    {
-      key: "name",
-      header: "Role",
+      key: "nama_desa",
+      header: "Nama Desa",
       sortable: true,
     },
     {
-      key: "guard_name",
-      header: "Guard",
+      key: "data_daerah.nama_daerah",
+      header: "Asal Daerah",
+      sortable: true,
+      render: (item: any) => {
+        return <div>{item.data_daerah?.nama_daerah || "-"}</div>;
+      },
+    },
+    {
+      key: "latitude",
+      header: "Latitude",
       sortable: true,
     },
     {
-      key: "description",
-      header: "Description",
+      key: "longitude",
+      header: "Longitude",
       sortable: true,
+    },
+    {
+      key: "alamat",
+      header: "Alamat",
+      sortable: true,
+    },
+    {
+      key: "is_active",
+      header: "Status",
+      sortable: true,
+      render: (item: any) => {
+        const dataStatus = resolveStatus(
+          STATUS_TEMPAT_SAMBUNG_MAP,
+          item.is_active,
+        );
+        return (
+          <StatusTableBadge label={dataStatus.text} color={dataStatus.color} />
+        );
+      },
     },
     {
       key: "created_at",
@@ -173,13 +214,13 @@ const RolesPage = () => {
   const handleRowAction = (item: any, action: string) => {
     switch (action) {
       case "detail":
-        DetailDataFetch(item.uuid, 2);
+        DetailDataFetch(item.id, 2);
         break;
       case "edit":
-        DetailDataFetch(item.uuid, 3);
+        DetailDataFetch(item.id, 3);
         break;
       case "delete":
-        DetailDataFetch(item.uuid, 4);
+        DetailDataFetch(item.id, 4);
         break;
     }
   };
@@ -188,12 +229,19 @@ const RolesPage = () => {
     setShowModalDelete(false);
   };
 
-  document.title = BASE_TITLE + "Roles Management";
+  useEffect(() => {
+    if (!hasFetched.current) {
+      loadAllData();
+      hasFetched.current = true;
+    }
+  }, []);
+
+  document.title = BASE_TITLE + "Desa Management";
 
   return (
     <>
       <div className="relative md:h-full">
-        {(isRefetchingRoles || isLoadingDetail) && (
+        {(isRefetchingDesa || isLoadingDetail) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-xs">
             <svg
               className="animate-spin h-6 w-6"
@@ -231,14 +279,14 @@ const RolesPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <ShieldAlert className="w-6 h-6 text-white" />
+                    <Workflow className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h1 className="font-bold text-2xl text-white tracking-tight">
-                      Roles Management
+                      Desa Management
                     </h1>
                     <p className="text-white/80 text-sm mt-0.5">
-                      Kelola dan pantau data roles dengan mudah
+                      Kelola dan pantau data desa dengan mudah
                     </p>
                   </div>
                 </div>
@@ -257,11 +305,9 @@ const RolesPage = () => {
                 <Input
                   value={filterInput}
                   className={`w-full pl-11 pr-4 py-3 text-sm border ${THEME_COLORS.border.default} rounded-xl shadow-sm focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent transition-all ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
-                  placeholder="Cari berdasarkan uuid, name, guard..."
+                  placeholder="Cari berdasarkan nama desa..."
                   onChange={(e: any) => setFilterInput(e.target.value)}
-                  onKeyDown={(e: any) =>
-                    e.key === "Enter" && refetchListRoles()
-                  }
+                  onKeyDown={(e: any) => e.key === "Enter" && refetchListDesa()}
                 />
               </div>
 
@@ -272,7 +318,15 @@ const RolesPage = () => {
                     className={`flex items-center gap-2 ${selectedRows.size > 0 ? "" : "mr-auto"}`}
                   >
                     <button
-                      disabled={isRefetchingRoles}
+                      disabled={isRefetchingDesa}
+                      className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.background.card} border-2 ${THEME_COLORS.border.default} rounded-lg ${THEME_COLORS.hover.item} transition-all disabled:opacity-50 disabled:cursor-not-allowed ${THEME_COLORS.text.secondary}`}
+                      onClick={() => setOpenFilter(true)}
+                    >
+                      <Filter className="w-4 h-4" />
+                      <span>Filter Lanjutan</span>
+                    </button>
+                    <button
+                      disabled={isRefetchingDesa}
                       className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={onResetFilter}
                     >
@@ -285,10 +339,13 @@ const RolesPage = () => {
                 {/* Main Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
                   <button
-                    disabled={isRefetchingRoles}
+                    disabled={isRefetchingDesa}
                     className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText} rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                     onClick={() =>
-                      navigate("/auth/roles/create", {
+                      navigate("/master-data/tempat-sambung/desa/create", {
+                        state: {
+                          fetchdataDearah: fetchDataDaerah,
+                        },
                         replace: true,
                       })
                     }
@@ -300,7 +357,7 @@ const RolesPage = () => {
               </div>
 
               {/* Info Badge - Optional: showing active filters count */}
-              {(status || filterDaerah || filterDesa || filterKelompok) && (
+              {status && (
                 <div
                   className={`flex items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
                 >
@@ -333,18 +390,18 @@ const RolesPage = () => {
               <DataTableAdvanced
                 selectedRows={selectedRows}
                 setSelectedRows={setSelectedRows}
-                data={dataListRoles?.data || []}
+                data={dataListDesa?.data || []}
                 columns={columns}
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}
-                getRowId={(item: any) => item.uuid}
+                getRowId={(item: any) => item.id}
                 disabled={isLoadingDetail}
               />
             )}
 
             {/* Refetch indicator */}
-            {isRefetchingRoles && !loading && (
+            {isRefetchingDesa && !loading && (
               <div
                 className={`text-xs ${THEME_COLORS.text.muted} text-center animate-pulse`}
               >
@@ -355,20 +412,36 @@ const RolesPage = () => {
             {/* PAGINATION */}
             <div className="mt-3 shrink-0">
               <Pagination
-                currentPage={dataListRoles?.meta?.current_page || 1}
-                lastPage={dataListRoles?.meta?.last_page || 1}
-                totalItems={dataListRoles?.meta?.total || 0}
+                currentPage={dataListDesa?.meta?.current_page || 1}
+                lastPage={dataListDesa?.meta?.last_page || 1}
+                totalItems={dataListDesa?.meta?.total || 0}
                 rowsPerPage={rows}
                 onPageChange={(params) => {
                   setPage(params.page + 1);
                   setRows(params.rows);
                 }}
-                disabled={isRefetchingRoles}
+                disabled={isRefetchingDesa}
               />
             </div>
           </div>
         </div>
       </div>
+
+      <FilterModal
+        open={openFilter}
+        onClose={() => setOpenFilter(false)}
+        title="Filter Data"
+      >
+        <DaerahFilterPanel
+          status={status}
+          setStatus={setStatus}
+          statusOptions={[
+            { value: "", label: "Semua Status" },
+            { value: 1, label: "Aktif" },
+            { value: "0", label: "Tidak Aktif" },
+          ]}
+        />
+      </FilterModal>
 
       {/* manggil ke component form Delete */}
       <FilterModal
@@ -377,7 +450,7 @@ const RolesPage = () => {
         title="Hapus Data"
       >
         <Delete
-          fetchData={refetchListRoles}
+          fetchData={refetchListDesa}
           onHide={handleModalDeleteHide}
           detailData={userData}
         />
@@ -386,4 +459,4 @@ const RolesPage = () => {
   );
 };
 
-export default RolesPage;
+export default DesaPage;

@@ -8,11 +8,12 @@ import {
 } from "@/services/laporanBulananService";
 import { handleApiError } from "@/utils/errorUtils";
 import { toast } from "sonner";
+import { BASE_TITLE } from "@/store/actions";
 
 /** =========================
  * TYPES
  * ========================= */
-type StatusLaporan = "belum_submit" | "submitted" | "approved" | "rejected";
+type StatusLaporan = "draft" | "submitted" | "approved" | "rejected";
 
 type StatusBulananItem = {
   bulan: number;
@@ -42,7 +43,7 @@ type StatusResponse = {
       total_submitted: number;
       total_approved: number;
       total_rejected: number;
-      total_belum_submit: number;
+      total_draft: number;
     };
   };
 };
@@ -117,7 +118,7 @@ function formatDate(iso: string | null) {
 }
 
 function statusLabel(status: StatusLaporan) {
-  if (status === "belum_submit") return "Belum Submit";
+  if (status === "draft") return "Belum Submit";
   if (status === "submitted") return "Submitted";
   if (status === "approved") return "Approved";
   if (status === "rejected") return "Rejected";
@@ -125,7 +126,7 @@ function statusLabel(status: StatusLaporan) {
 }
 
 function statusBadgeClass(status: StatusLaporan) {
-  if (status === "belum_submit")
+  if (status === "draft")
     return "bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700";
   if (status === "submitted")
     return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50";
@@ -415,10 +416,7 @@ export default function LaporanBulananPage() {
             summary: {
               ...prev.data.summary,
               total_submitted: prev.data.summary.total_submitted + 1,
-              total_belum_submit: Math.max(
-                0,
-                prev.data.summary.total_belum_submit - 1,
-              ),
+              total_draft: Math.max(0, prev.data.summary.total_draft - 1),
             },
           },
         };
@@ -572,6 +570,8 @@ export default function LaporanBulananPage() {
 
   const canTakeAction = detailData?.status === "submitted";
 
+  document.title = BASE_TITLE + "Laporan Bulanan";
+
   /** =========================
    * RENDER
    * ========================= */
@@ -632,7 +632,7 @@ export default function LaporanBulananPage() {
             />
             <SummaryCard
               title="Belum Submit"
-              value={summary?.total_belum_submit ?? 0}
+              value={summary?.total_draft ?? 0}
               hint="Yang belum diproses"
             />
           </div>
@@ -1262,8 +1262,8 @@ function MonthCard({
   onOpen: () => void;
   loading: boolean;
 }) {
-  const canSubmit = item.status === "belum_submit";
-  const canOpen = item.status !== "belum_submit";
+  const canSubmit = item.status === "draft";
+  const canOpen = item.status !== "draft";
 
   return (
     <div className="group rounded-2xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -1285,7 +1285,7 @@ function MonthCard({
         >
           <span className="hidden sm:inline">{statusLabel(item.status)}</span>
           <span className="sm:hidden">
-            {item.status === "belum_submit" && "Belum"}
+            {item.status === "draft" && "Belum"}
             {item.status === "submitted" && "Submit"}
             {item.status === "approved" && "✓"}
             {item.status === "rejected" && "✗"}

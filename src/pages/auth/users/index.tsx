@@ -31,13 +31,13 @@ import {
   fetchUnbanUsers,
   fetchUsersData,
 } from "@/services/UserServices";
-import ParticipantSkeleton from "@/pages/sensus/components/ParticipantSkeleton";
-import FilterModal from "@/pages/sensus/components/FilterModal";
 import UsersFilterPanel from "./components/UsersFilterPanel";
 import { THEME_COLORS } from "@/config/theme";
 import Delete from "./modal/Delete";
 import { axiosServices } from "@/services/axios";
 import BannedUsers from "./modal/BannedUsers";
+import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
+import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
 
 interface Option {
   value: string | number;
@@ -54,7 +54,7 @@ const UsersPage = () => {
   const [showModalDelete, setShowModalDelete] = useState(false);
   const [fetchDataDaerah, setFetchDataDaerah] = useState<Option[]>([]);
   const [fetchDataRoles, setFetchDataRoles] = useState<Option[]>([]);
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<any>("");
   const [userData, setUserData] = useState(null);
   const [filterDaerah, setFilterDaerah] = useState(
     dataLogin?.user?.akses_daerah || "",
@@ -188,14 +188,7 @@ const UsersPage = () => {
     if (isAnyFilterEmpty) {
       refetchListUsers();
     }
-  }, [
-    filterInput,
-    status,
-    filterDaerah,
-    filterDesa,
-    filterKelompok,
-    refetchListUsers,
-  ]);
+  }, [filterInput, status, filterDaerah, filterDesa, filterKelompok]);
 
   useEffect(() => {
     if (!hasFetched.current) {

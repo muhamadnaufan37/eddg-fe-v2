@@ -131,12 +131,51 @@ export const rejectLaporan = async (id: number, keterangan_reject: string) => {
   return response.data;
 };
 
+export interface CheckUsersFilters {
+  tahun?: number;
+  search?: string;
+  daerah_id?: number | string;
+  desa_id?: number | string;
+  kelompok_id?: number | string;
+  performa?: string | string[];
+  bulan?: number;
+  status_bulan?: string;
+  laporan_status?: string;
+  is_late?: 0 | 1;
+  min_kepatuhan?: number;
+  max_kepatuhan?: number;
+  sort_by?: string;
+  sort_dir?: "asc" | "desc";
+  per_page?: number;
+  page?: number;
+}
+
 /**
  * Get monitoring laporan - check users compliance
  */
-export const checkUsers = async (tahun?: number) => {
+export const checkUsers = async (filters: CheckUsersFilters = {}) => {
   const axios = axiosServices();
-  const params = tahun ? { tahun } : {};
+
+  // Build query params, only include defined values
+  const params: any = {};
+  if (filters.tahun) params.tahun = filters.tahun;
+  if (filters.search) params.search = filters.search;
+  if (filters.daerah_id) params.daerah_id = filters.daerah_id;
+  if (filters.desa_id) params.desa_id = filters.desa_id;
+  if (filters.kelompok_id) params.kelompok_id = filters.kelompok_id;
+  if (filters.performa) params.performa = filters.performa;
+  if (filters.bulan) params.bulan = filters.bulan;
+  if (filters.status_bulan) params.status_bulan = filters.status_bulan;
+  if (filters.laporan_status) params.laporan_status = filters.laporan_status;
+  if (filters.is_late !== undefined) params.is_late = filters.is_late;
+  if (filters.min_kepatuhan !== undefined)
+    params.min_kepatuhan = filters.min_kepatuhan;
+  if (filters.max_kepatuhan !== undefined)
+    params.max_kepatuhan = filters.max_kepatuhan;
+  if (filters.sort_by) params.sort_by = filters.sort_by;
+  if (filters.sort_dir) params.sort_dir = filters.sort_dir;
+  if (filters.per_page) params.per_page = filters.per_page;
+  if (filters.page) params.page = filters.page;
 
   const response = await axios.get("/api/v1/laporan-bulanan/check-users", {
     params,

@@ -47,7 +47,7 @@ export const routes: TRoute[] = [
     guard: AuthGuard,
     path: "/sensus",
     role: ["admin", "ptgs-sensus"],
-    element: React.lazy(() => import("../pages/sensus")),
+    element: React.lazy(() => import("../pages/digital-data/sensus")),
     fullScreen: false,
   },
   {
@@ -56,7 +56,9 @@ export const routes: TRoute[] = [
     guard: AuthGuard,
     path: "/sensus/create",
     role: ["admin", "ptgs-sensus"],
-    element: React.lazy(() => import("../pages/sensus/modal/CreateSensus")),
+    element: React.lazy(
+      () => import("../pages/digital-data/sensus/modal/CreateSensus"),
+    ),
     fullScreen: false,
   },
   {
@@ -65,7 +67,9 @@ export const routes: TRoute[] = [
     guard: AuthGuard,
     path: "/sensus/detail",
     role: ["admin", "ptgs-sensus"],
-    element: React.lazy(() => import("../pages/sensus/modal/DetailSensus")),
+    element: React.lazy(
+      () => import("../pages/digital-data/sensus/modal/DetailSensus"),
+    ),
     fullScreen: false,
   },
   {
@@ -74,7 +78,9 @@ export const routes: TRoute[] = [
     guard: AuthGuard,
     path: "/sensus/update",
     role: ["admin", "ptgs-sensus"],
-    element: React.lazy(() => import("../pages/sensus/modal/UpdateSensus")),
+    element: React.lazy(
+      () => import("../pages/digital-data/sensus/modal/UpdateSensus"),
+    ),
     fullScreen: false,
   },
   {
@@ -84,7 +90,7 @@ export const routes: TRoute[] = [
     path: "/sensus/presensi",
     role: ["admin", "ptgs-sensus"],
     element: React.lazy(
-      () => import("../pages/sensus/modal/PresensiDashboard"),
+      () => import("../pages/digital-data/sensus/modal/PresensiDashboard"),
     ),
     fullScreen: false,
   },
@@ -184,7 +190,7 @@ export const routes: TRoute[] = [
     guard: AuthGuard,
     path: "/laporan-bulanan",
     role: ["admin", "ptgs-sensus"],
-    element: React.lazy(() => import("../pages/laporan-bulanan")),
+    element: React.lazy(() => import("../pages/digital-data/laporan-bulanan")),
     fullScreen: false,
   },
   {
@@ -194,7 +200,181 @@ export const routes: TRoute[] = [
     path: "/laporan-bulanan/check",
     role: ["admin", "ptgs-sensus"],
     element: React.lazy(
-      () => import("../pages/laporan-bulanan/monitoring-laporan"),
+      () => import("../pages/digital-data/monitoring-laporan"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/pekerjaan",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(() => import("../pages/master-data/pekerjaan")),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/pekerjaan/create",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/pekerjaan/modal/CreatePekerjaan"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/pekerjaan/detail",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/pekerjaan/modal/DetailPekerjaan"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/pekerjaan/update",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/pekerjaan/modal/UpdatePekerjaan"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/daerah",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/daerah"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/daerah/create",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/daerah/modal/Create"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/daerah/detail",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/daerah/modal/Detail"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/daerah/update",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/daerah/modal/Update"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/desa",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/desa"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/desa/create",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/desa/modal/Create"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/desa/detail",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/desa/modal/Detail"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/desa/update",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/desa/modal/Update"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/kelompok",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/kelompok"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/kelompok/create",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/kelompok/modal/Create"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/kelompok/detail",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/kelompok/modal/Detail"),
+    ),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/master-data/tempat-sambung/kelompok/update",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(
+      () => import("../pages/master-data/tempat-sambung/kelompok/modal/Update"),
     ),
     fullScreen: false,
   },

@@ -1,5 +1,5 @@
 import { Select, Input } from "@/components/global";
-import type { SensusFilterPanelProps } from "../types/types";
+import type { SensusFilterPanelProps } from "@/pages/digital-data/sensus/types/types";
 
 const SensusFilterPanel = ({
   rangeUmurMin,

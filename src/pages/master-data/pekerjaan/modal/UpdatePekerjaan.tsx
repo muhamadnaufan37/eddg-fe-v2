@@ -10,7 +10,7 @@ import { Button } from "@/components/global";
 import { Input } from "@/components/global/Input";
 import { THEME_COLORS } from "@/config/theme";
 
-const UpdateRoles = () => {
+const UpdatePekerjaan = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const location = useLocation();
@@ -19,32 +19,23 @@ const UpdateRoles = () => {
 
   const validationSchema = () => {
     let validation = Yup.object().shape({
-      name: Yup.string()
-        .max(255, "Nama Max. 255 karakter")
-        .required("Nama harus diisi"),
-      guard_name: Yup.string()
-        .max(255, "Guard Max. 255 karakter")
-        .required("Guard harus diisi"),
-      description: Yup.string()
-        .max(255, "Description Max. 255 karakter")
-        .required("Description harus diisi"),
+      nama_pekerjaan: Yup.string()
+        .max(255, "Nama Pekerjaan Max. 255 karakter")
+        .required("Nama Pekerjaan harus diisi"),
     });
     return validation;
   };
 
   const initialValues = {
     id: dataBalikan?.detailData?.id,
-    uuid: dataBalikan?.detailData?.uuid,
-    name: dataBalikan?.detailData?.name,
-    guard_name: dataBalikan?.detailData?.guard_name,
-    description: dataBalikan?.detailData?.description,
+    nama_pekerjaan: dataBalikan?.detailData?.nama_pekerjaan,
   };
 
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
     setLoadingData(true);
     try {
       const response = await axiosServices().put(
-        `/api/v1/roles/${values.uuid}`,
+        `/api/v1/pekerjaan/${values.id}`,
         values,
       );
 
@@ -55,7 +46,7 @@ const UpdateRoles = () => {
           duration: 3000,
         });
         setTimeout(() => {
-          navigate("/auth/roles", { replace: true });
+          navigate("/master-data/pekerjaan", { replace: true });
         }, 900);
       } else if (responseDatamessage.success === false) {
         toast.warning("Error", {
@@ -135,78 +126,26 @@ const UpdateRoles = () => {
                 <div
                   className={`text-sm sm:text-lg font-semibold ${THEME_COLORS.text.primary}`}
                 >
-                  Update Roles
+                  Update Pekerjaan
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 p-4 sm:p-6">
                 <div>
-                  <label className={THEME_COLORS.text.label}>UUID</label>
-
-                  <Field
-                    as={Input}
-                    id="uuid"
-                    name="uuid"
-                    placeholder="-"
-                    disabled
-                  />
-
-                  <ErrorMessage
-                    name="uuid"
-                    component="div"
-                    className="text-red-600 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className={THEME_COLORS.text.label}>Roles</label>
+                  <label className={THEME_COLORS.text.label}>
+                    Nama Pekerjaan
+                  </label>
 
                   <Field
                     as={Input}
                     type="text"
-                    id="name"
-                    name="name"
+                    id="nama_pekerjaan"
+                    name="nama_pekerjaan"
                     placeholder="Contoh: admin"
                   />
 
                   <ErrorMessage
-                    name="name"
-                    component="div"
-                    className="text-red-600 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className={THEME_COLORS.text.label}>Guard</label>
-
-                  <Field
-                    as={Input}
-                    type="text"
-                    id="guard_name"
-                    name="guard_name"
-                    placeholder="Contoh: admin"
-                  />
-
-                  <ErrorMessage
-                    name="guard_name"
-                    component="div"
-                    className="text-red-600 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className={THEME_COLORS.text.label}>Description</label>
-
-                  <Field
-                    as={Input}
-                    id="description"
-                    name="description"
-                    rows={3}
-                    placeholder="Isi deskripsi disini..."
-                  />
-
-                  <ErrorMessage
-                    name="description"
+                    name="nama_pekerjaan"
                     component="div"
                     className="text-red-600 text-sm"
                   />
@@ -221,7 +160,7 @@ const UpdateRoles = () => {
                   variant="outline"
                   className="w-full sm:w-auto"
                   onClick={() =>
-                    navigate("/auth/roles", {
+                    navigate("/master-data/pekerjaan", {
                       replace: true,
                     })
                   }
@@ -244,4 +183,4 @@ const UpdateRoles = () => {
   );
 };
 
-export default UpdateRoles;
+export default UpdatePekerjaan;

@@ -1,5 +1,5 @@
+import type { Participant } from "@/pages/digital-data/sensus/types/Participant";
 import { useState } from "react";
-import { Participant } from "../types/Participant";
 
 interface Props {
   data: Participant;
