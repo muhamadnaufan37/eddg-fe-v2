@@ -13,7 +13,12 @@ import { BASE_TITLE } from "@/store/actions";
 /** =========================
  * TYPES
  * ========================= */
-type StatusLaporan = "draft" | "submitted" | "approved" | "rejected";
+type StatusLaporan =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "belum_submit";
 
 type StatusBulananItem = {
   bulan: number;
@@ -575,6 +580,7 @@ export default function LaporanBulananPage() {
   /** =========================
    * RENDER
    * ========================= */
+
   return (
     <>
       {/* Header */}
@@ -1262,7 +1268,7 @@ function MonthCard({
   onOpen: () => void;
   loading: boolean;
 }) {
-  const canSubmit = item.status === "draft";
+  const canSubmit = item.status === "draft" || item.status === "belum_submit";
   const canOpen = item.status !== "draft";
 
   return (
