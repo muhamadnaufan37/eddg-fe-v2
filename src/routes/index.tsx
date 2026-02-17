@@ -213,7 +213,7 @@ export const routes: TRoute[] = [
     element: React.lazy(
       () => import("../pages/digital-data/laporan-bulanan/warnings"),
     ),
-    fullScreen: true,
+    fullScreen: false,
   },
   {
     exact: true,
