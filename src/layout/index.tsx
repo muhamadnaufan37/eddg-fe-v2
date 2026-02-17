@@ -30,6 +30,8 @@ import {
   ScanQrCode,
   BicepsFlexed,
   CheckCheckIcon,
+  AlertTriangle,
+  File,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { THEME_COLORS } from "@/config/theme";
@@ -82,6 +84,8 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
       MailWarning: <MailWarning size={20} />,
       BicepsFlexed: <BicepsFlexed size={20} />,
       CheckCheckIcon: <CheckCheckIcon size={20} />,
+      AlertTriangle: <AlertTriangle size={20} />,
+      File: <File size={20} />,
     };
 
     return iconMap[iconName] || iconName;

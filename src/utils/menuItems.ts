@@ -49,18 +49,35 @@ export const menuItems = [
         link: "/sensus",
       },
       {
-        id: "digitaldata-laporanbulanan-check",
-        title: "Laporan Bulanan Check",
-        icon: "CheckCheckIcon",
-        role: ["admin"],
-        link: "/laporan-bulanan/check",
-      },
-      {
         id: "digitaldata-laporanbulanan",
         title: "Laporan Bulanan",
         icon: "Repeat2",
         role: ["admin", "ptgs-sensus"],
-        link: "/laporan-bulanan",
+        submenu: [
+          {
+            id: "digitaldata-laporanbulanan-report",
+            title: "Report",
+            icon: "File",
+            role: ["admin", "ptgs-sensus"],
+            link: "/laporan-bulanan",
+          },
+
+          {
+            id: "digitaldata-laporanbulanan-check",
+            title: "Laporan Bulanan Check",
+            icon: "CheckCheckIcon",
+            role: ["admin"],
+            link: "/laporan-bulanan/check",
+          },
+
+          {
+            id: "digitaldata-laporanbulanan-warnings",
+            title: "Warnings",
+            icon: "AlertTriangle",
+            role: ["admin"],
+            link: "/laporan-bulanan/warnings",
+          },
+        ],
       },
     ],
   },

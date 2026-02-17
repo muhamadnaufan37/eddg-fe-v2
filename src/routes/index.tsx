@@ -208,6 +208,17 @@ export const routes: TRoute[] = [
     exact: true,
     layout: Layout,
     guard: AuthGuard,
+    path: "/laporan-bulanan/warnings",
+    role: ["admin"],
+    element: React.lazy(
+      () => import("../pages/digital-data/laporan-bulanan/warnings"),
+    ),
+    fullScreen: true,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
     path: "/master-data/pekerjaan",
     role: ["admin", "ptgs-sensus"],
     element: React.lazy(() => import("../pages/master-data/pekerjaan")),

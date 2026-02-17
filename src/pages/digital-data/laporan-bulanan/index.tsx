@@ -49,6 +49,7 @@ type StatusResponse = {
       total_approved: number;
       total_rejected: number;
       total_draft: number;
+      total_belum_submit: number;
     };
   };
 };
@@ -638,7 +639,7 @@ export default function LaporanBulananPage() {
             />
             <SummaryCard
               title="Belum Submit"
-              value={summary?.total_draft ?? 0}
+              value={summary?.total_belum_submit ?? 0}
               hint="Yang belum diproses"
             />
           </div>

@@ -1,4 +1,5 @@
 import type { PindahSambungItem } from "@/services/pindahSambungService";
+import { parse } from "date-fns";
 
 function cn(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -43,6 +44,8 @@ export function PindahSambungCard({
   onReject,
   onRevert,
 }: PindahSambungCardProps) {
+  const dataLogin = localStorage.getItem("dataLogin");
+  const userRole = dataLogin ? JSON.parse(dataLogin).role : null;
   return (
     <div className="group rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
       {/* Header */}
@@ -161,32 +164,35 @@ export function PindahSambungCard({
         >
           View History
         </button>
+        {userRole === "219bc0dd-ec72-4618-b22d-5d5ff612dcaf" && (
+          <>
+            {item.status === "pending" && onApprove && (
+              <button
+                onClick={onApprove}
+                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+              >
+                Approve
+              </button>
+            )}
 
-        {item.status === "pending" && onApprove && (
-          <button
-            onClick={onApprove}
-            className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-          >
-            Approve
-          </button>
-        )}
+            {item.status === "pending" && onReject && (
+              <button
+                onClick={onReject}
+                className="rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600"
+              >
+                Reject
+              </button>
+            )}
 
-        {item.status === "pending" && onReject && (
-          <button
-            onClick={onReject}
-            className="rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600"
-          >
-            Reject
-          </button>
-        )}
-
-        {item.status === "approved" && onRevert && (
-          <button
-            onClick={onRevert}
-            className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
-          >
-            Revert
-          </button>
+            {item.status === "approved" && onRevert && (
+              <button
+                onClick={onRevert}
+                className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
+              >
+                Revert
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

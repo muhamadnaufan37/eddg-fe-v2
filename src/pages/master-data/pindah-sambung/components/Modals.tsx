@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import type { PindahSambungHistory } from "@/services/pindahSambungService";
 import { axiosServices } from "@/services/axios";
+import { handleApiError } from "@/utils/errorUtils";
+import { Select } from "@/components/global";
 
 interface Option {
-  value: number;
+  value: string | number;
   label: string;
 }
 
@@ -321,6 +323,7 @@ interface RequestModalProps {
     alasan_pindah: string;
   }) => void;
   loading?: boolean;
+  fetchDataPeserta?: Option[];
 }
 
 export function RequestModal({
@@ -328,10 +331,10 @@ export function RequestModal({
   onClose,
   onSubmit,
   loading,
+  fetchDataPeserta,
 }: RequestModalProps) {
   const [kodeCariData, setKodeCariData] = useState("");
   const [alasanPindah, setAlasanPindah] = useState("");
-
   // Location states
   const [daerahOptions, setDaerahOptions] = useState<Option[]>([]);
   const [desaOptions, setDesaOptions] = useState<Option[]>([]);
@@ -385,7 +388,7 @@ export function RequestModal({
         })),
       );
     } catch (error) {
-      console.error("Failed to load daerah:", error);
+      handleApiError(error, {});
     } finally {
       setLoadingDaerah(false);
     }
@@ -395,7 +398,7 @@ export function RequestModal({
     setLoadingDesa(true);
     try {
       const response = await axiosServices().get(
-        `/api/v1/desa/by-daerah/${daerahId}`,
+        `/api/v1/desa/check?daerah_id=${daerahId}`,
       );
       const rawData =
         response?.data?.data_tempat_sambung || response?.data?.data || [];
@@ -406,7 +409,7 @@ export function RequestModal({
         })),
       );
     } catch (error) {
-      console.error("Failed to load desa:", error);
+      handleApiError(error, {});
     } finally {
       setLoadingDesa(false);
     }
@@ -416,7 +419,7 @@ export function RequestModal({
     setLoadingKelompok(true);
     try {
       const response = await axiosServices().get(
-        `/api/v1/kelompok/by-desa/${desaId}`,
+        `/api/v1/kelompok/check?desa_id=${desaId}`,
       );
       const rawData =
         response?.data?.data_tempat_sambung || response?.data?.data || [];
@@ -427,7 +430,7 @@ export function RequestModal({
         })),
       );
     } catch (error) {
-      console.error("Failed to load kelompok:", error);
+      handleApiError(error, {});
     } finally {
       setLoadingKelompok(false);
     }
@@ -499,14 +502,21 @@ export function RequestModal({
               Kode Cari Data Peserta{" "}
               <span className="text-rose-600 dark:text-rose-400">*</span>
             </label>
-            <input
-              value={kodeCariData}
-              onChange={(e) => setKodeCariData(e.target.value)}
-              placeholder="Contoh: SEN250502191126409"
-              className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+
+            <Select
+              options={fetchDataPeserta}
+              value={fetchDataPeserta?.find(
+                (option: any) => String(option.value) === kodeCariData,
+              )}
+              onChange={(selected: any) => {
+                setKodeCariData(selected ? String(selected.value) : "");
+              }}
+              placeholder="Kode Cari Data Peserta"
+              className="w-full text-xs"
+              isClearable
             />
             <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Masukkan kode cari data peserta yang akan dipindahkan
+              Atau masukkan kode cari data peserta yang akan dipindahkan
             </p>
           </div>
 

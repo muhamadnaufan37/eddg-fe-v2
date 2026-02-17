@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getPindahSambungList,
   getPindahSambungHistory,
@@ -12,13 +12,23 @@ import {
 import { PindahSambungCard } from "./components/PindahSambungCard";
 import { HistoryModal, ActionModal, RequestModal } from "./components/Modals";
 import { BASE_TITLE } from "@/store/actions";
+import { handleApiError } from "@/utils/errorUtils";
+import { useFetchOptions } from "@/hooks/useFetchOptions";
+import { getLocalStorage } from "@/services/localStorageService";
+
+interface Option {
+  value: string | number;
+  label: string;
+}
 
 const PindahSambungIndex = () => {
+  const hasFetched = useRef(false);
   const [data, setData] = useState<PindahSambungItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const { fetchOptions } = useFetchOptions();
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<
@@ -38,6 +48,9 @@ const PindahSambungIndex = () => {
   const [requestModal, setRequestModal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [fetchDataPeserta, setFetchDataPeserta] = useState<Option[]>([]);
+
+  const dataLogin = getLocalStorage("userData");
 
   // Load data
   const loadData = async () => {
@@ -52,15 +65,40 @@ const PindahSambungIndex = () => {
       setTotalPages(response.meta.last_page);
       setTotal(response.meta.total);
     } catch (error) {
-      console.error("Failed to load data:", error);
+      handleApiError(error, {});
     } finally {
       setLoading(false);
     }
   };
 
+  const loadAllData = async () => {
+    const [dataPeserta] = await Promise.all([
+      fetchOptions(
+        `/api/v1/data_peserta/all?tmpt_daerah=${dataLogin?.user?.akses_daerah}&tmpt_desa=${dataLogin?.user?.akses_desa}&tmpt_kelompok=${dataLogin?.user?.akses_kelompok}`,
+        "data",
+        "nama_lengkap",
+        "kode_cari_data",
+      ),
+    ]);
+
+    setFetchDataPeserta(dataPeserta);
+  };
+
   useEffect(() => {
-    loadData();
+    const isAnyFilterEmpty =
+      statusFilter === "" && searchQuery === "" && currentPage === 1;
+
+    if (isAnyFilterEmpty) {
+      loadData();
+    }
   }, [statusFilter, searchQuery, currentPage]);
+
+  useEffect(() => {
+    if (!hasFetched.current) {
+      loadAllData();
+      hasFetched.current = true;
+    }
+  }, []);
 
   // View history
   const handleViewHistory = async (kodeCariData: string) => {
@@ -70,7 +108,7 @@ const PindahSambungIndex = () => {
       const response = await getPindahSambungHistory(kodeCariData);
       setHistoryData(response.data);
     } catch (error) {
-      console.error("Failed to load history:", error);
+      handleApiError(error, {});
     } finally {
       setHistoryLoading(false);
     }
@@ -85,8 +123,7 @@ const PindahSambungIndex = () => {
       await approvePindahSambung(id);
       await loadData();
     } catch (error) {
-      console.error("Failed to approve:", error);
-      alert("Failed to approve request");
+      handleApiError(error, {});
     } finally {
       setActionLoading(false);
     }
@@ -108,8 +145,7 @@ const PindahSambungIndex = () => {
       setSelectedId(null);
       await loadData();
     } catch (error) {
-      console.error("Failed to reject:", error);
-      alert("Failed to reject request");
+      handleApiError(error, {});
     } finally {
       setActionLoading(false);
     }
@@ -131,8 +167,7 @@ const PindahSambungIndex = () => {
       setSelectedId(null);
       await loadData();
     } catch (error) {
-      console.error("Failed to revert:", error);
-      alert("Failed to revert request");
+      handleApiError(error, {});
     } finally {
       setActionLoading(false);
     }
@@ -153,7 +188,7 @@ const PindahSambungIndex = () => {
       await loadData();
       alert("Request pindah sambung berhasil diajukan!");
     } catch (error: any) {
-      console.error("Failed to request pindah sambung:", error);
+      handleApiError(error, {});
       const errorMsg =
         error?.response?.data?.message ||
         error?.message ||
@@ -383,6 +418,7 @@ const PindahSambungIndex = () => {
         onClose={() => setRequestModal(false)}
         onSubmit={handleRequestSubmit}
         loading={actionLoading}
+        fetchDataPeserta={fetchDataPeserta}
       />
     </>
   );
