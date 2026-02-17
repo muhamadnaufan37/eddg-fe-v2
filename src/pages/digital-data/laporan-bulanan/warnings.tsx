@@ -62,9 +62,9 @@ const WarningListPage = () => {
 
   return (
     <>
-      <div className="flex flex-col gap-4 h-full p-4">
+      <div className="flex flex-col gap-4">
         {/* Header */}
-        <div className="h-full mt-15 sticky top-0 z-30 border-b border-zinc-200/60 bg-white/70 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-900/70 rounded-2xl">
+        <div className="sticky top-0 z-30 border-b border-zinc-200/60 bg-white/70 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-900/70 rounded-2xl">
           <div className="mx-auto flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3">
             <div className="flex-1">
               <div className="text-base sm:text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
