@@ -398,6 +398,24 @@ export const routes: TRoute[] = [
     element: React.lazy(() => import("../pages/master-data/pindah-sambung")),
     fullScreen: false,
   },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/auth/profile",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(() => import("../pages/auth/profile")),
+    fullScreen: false,
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/auth/change-password",
+    role: ["admin", "ptgs-sensus"],
+    element: React.lazy(() => import("../pages/auth/profile/change-password")),
+    fullScreen: false,
+  },
 
   //Path 404
   {

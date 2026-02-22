@@ -136,7 +136,7 @@ export const menuItems = [
     id: "presensi",
     title: "Presensi",
     icon: "ScanQrCode",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin"],
     link: "/presensi",
   },
   {

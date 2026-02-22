@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { THEME_COLORS } from "@/config/theme";
+import { VersionDisplay } from "@/components/features/VersionDisplay";
 
 type TLayoutProps = {
   children: React.ReactNode;
@@ -375,10 +376,13 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                 className={`border-t ${THEME_COLORS.border.default} pt-3 flex flex-col gap-2`}
               >
                 <button
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl ${THEME_COLORS.text.muted} ${THEME_COLORS.hover.item} transition-all duration-300 group`}
+                  className={`flex items-center gap-3 px-4 py-3 ${THEME_COLORS.text.muted} ${THEME_COLORS.hover.item} rounded-xl transition-all`}
+                  onClick={() => {
+                    window.location.href = "/auth/profile";
+                  }}
                 >
-                  <i className="pi pi-bookmark text-lg transition-transform duration-300 group-hover:scale-110" />
-                  <span className="text-sm font-medium">Panduan</span>
+                  <Users className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                  <span className="font-medium">Profile</span>
                 </button>
                 <button
                   onClick={() => {
@@ -415,6 +419,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                   className={`h-5 w-5 ${THEME_COLORS.text.secondary} group-hover:scale-110 transition-transform`}
                 />
               </button>
+              <VersionDisplay />
             </div>
 
             {/* Right side - Dark mode toggle & Profile */}
@@ -539,9 +544,12 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                   >
                     <button
                       className={`flex items-center gap-3 px-4 py-3 ${THEME_COLORS.text.muted} ${THEME_COLORS.hover.item} rounded-xl transition-all`}
+                      onClick={() => {
+                        window.location.href = "/auth/profile";
+                      }}
                     >
-                      <i className="pi pi-bookmark text-lg" />
-                      <span className="font-medium">Panduan</span>
+                      <Users className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="font-medium">Profile</span>
                     </button>
                     <button
                       onClick={() => {

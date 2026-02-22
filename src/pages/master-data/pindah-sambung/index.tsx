@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   getPindahSambungList,
   getPindahSambungHistory,
@@ -6,7 +7,6 @@ import {
   rejectPindahSambung,
   revertPindahSambung,
   requestPindahSambung,
-  type PindahSambungItem,
   type PindahSambungHistory,
 } from "@/services/pindahSambungService";
 import { PindahSambungCard } from "./components/PindahSambungCard";
@@ -15,6 +15,7 @@ import { BASE_TITLE } from "@/store/actions";
 import { handleApiError } from "@/utils/errorUtils";
 import { useFetchOptions } from "@/hooks/useFetchOptions";
 import { getLocalStorage } from "@/services/localStorageService";
+import { toast } from "sonner";
 
 interface Option {
   value: string | number;
@@ -23,11 +24,7 @@ interface Option {
 
 const PindahSambungIndex = () => {
   const hasFetched = useRef(false);
-  const [data, setData] = useState<PindahSambungItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const { fetchOptions } = useFetchOptions();
 
   // Filters
@@ -52,24 +49,37 @@ const PindahSambungIndex = () => {
 
   const dataLogin = getLocalStorage("userData");
 
-  // Load data
-  const loadData = async () => {
-    setLoading(true);
+  // Fetch data function for useQuery
+  const fetchData = async () => {
     try {
       const response = await getPindahSambungList({
+        requested_by: dataLogin?.user?.id || undefined,
         status: statusFilter || undefined,
         kode_cari_data: searchQuery || undefined,
         page: currentPage,
       });
-      setData(response.data);
-      setTotalPages(response.meta.last_page);
-      setTotal(response.meta.total);
+      return response;
     } catch (error) {
       handleApiError(error, {});
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
+
+  // Use useQuery for data fetching
+  const {
+    data: pindahSambungData,
+    isFetching,
+    refetch: refetchData,
+  } = useQuery({
+    queryKey: ["pindahSambungList", currentPage, statusFilter, searchQuery],
+    queryFn: fetchData,
+    refetchOnWindowFocus: false,
+  });
+
+  // Extract data from query result
+  const data = pindahSambungData?.data || [];
+  const totalPages = pindahSambungData?.meta?.last_page || 1;
+  const total = pindahSambungData?.meta?.total || 0;
 
   const loadAllData = async () => {
     const [dataPeserta] = await Promise.all([
@@ -86,12 +96,12 @@ const PindahSambungIndex = () => {
 
   useEffect(() => {
     const isAnyFilterEmpty =
-      statusFilter === "" && searchQuery === "" && currentPage === 1;
+      statusFilter === "" || searchQuery === "" || currentPage === 1;
 
     if (isAnyFilterEmpty) {
-      loadData();
+      refetchData();
     }
-  }, [statusFilter, searchQuery, currentPage]);
+  }, [statusFilter, searchQuery, currentPage, refetchData]);
 
   useEffect(() => {
     if (!hasFetched.current) {
@@ -121,7 +131,7 @@ const PindahSambungIndex = () => {
     setActionLoading(true);
     try {
       await approvePindahSambung(id);
-      await loadData();
+      await refetchData();
     } catch (error) {
       handleApiError(error, {});
     } finally {
@@ -143,7 +153,7 @@ const PindahSambungIndex = () => {
       await rejectPindahSambung(selectedId, keterangan);
       setRejectModal(false);
       setSelectedId(null);
-      await loadData();
+      await refetchData();
     } catch (error) {
       handleApiError(error, {});
     } finally {
@@ -165,7 +175,7 @@ const PindahSambungIndex = () => {
       await revertPindahSambung(selectedId, alasan);
       setRevertModal(false);
       setSelectedId(null);
-      await loadData();
+      await refetchData();
     } catch (error) {
       handleApiError(error, {});
     } finally {
@@ -176,24 +186,27 @@ const PindahSambungIndex = () => {
   // Request new pindah sambung
   const handleRequestSubmit = async (data: {
     kode_cari_data: string;
-    ke_daerah_id: number;
-    ke_desa_id: number;
-    ke_kelompok_id: number;
+    ke_daerah_id?: number;
+    ke_desa_id?: number;
+    ke_kelompok_id?: number;
+    ke_daerah_nama?: string;
+    ke_desa_nama?: string;
+    ke_kelompok_nama?: string;
     alasan_pindah: string;
   }) => {
     setActionLoading(true);
     try {
       await requestPindahSambung(data);
       setRequestModal(false);
-      await loadData();
-      alert("Request pindah sambung berhasil diajukan!");
+      await refetchData();
+      toast.success("Request pindah sambung berhasil diajukan!");
     } catch (error: any) {
       handleApiError(error, {});
       const errorMsg =
         error?.response?.data?.message ||
         error?.message ||
         "Failed to submit request";
-      alert(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setActionLoading(false);
     }
@@ -235,7 +248,7 @@ const PindahSambungIndex = () => {
               </button>
 
               <button
-                onClick={() => loadData()}
+                onClick={() => refetchData()}
                 className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 shrink-0"
               >
                 <span className="hidden sm:inline">↻ Refresh</span>
@@ -300,7 +313,7 @@ const PindahSambungIndex = () => {
 
         {/* Content */}
         <div>
-          {loading ? (
+          {isFetching ? (
             <div className="text-center py-10">
               <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-zinc-900 dark:border-zinc-800 dark:border-t-zinc-100 mx-auto" />
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -318,7 +331,7 @@ const PindahSambungIndex = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {data.map((item) => (
+              {data.map((item: any) => (
                 <PindahSambungCard
                   key={item.id}
                   item={item}
@@ -346,7 +359,7 @@ const PindahSambungIndex = () => {
           )}
 
           {/* Pagination */}
-          {!loading && data.length > 0 && (
+          {!isFetching && data.length > 0 && (
             <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
               <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
                 Page {currentPage} of {totalPages} • Total {total} items

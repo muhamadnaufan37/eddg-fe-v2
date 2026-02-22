@@ -1,6 +1,7 @@
 import { axiosServices } from "@/services/axios";
 
 export interface PindahSambungFilters {
+  requested_by?: number;
   status?: "pending" | "approved" | "rejected" | "reverted" | "";
   kode_cari_data?: string;
   page?: number;
@@ -76,6 +77,7 @@ export const getPindahSambungList = async (
   const axios = axiosServices();
 
   const params: any = {};
+  if (filters.requested_by) params.requested_by = filters.requested_by;
   if (filters.status) params.status = filters.status;
   if (filters.kode_cari_data) params.kode_cari_data = filters.kode_cari_data;
   if (filters.page) params.page = filters.page;
@@ -97,12 +99,18 @@ export const getPindahSambungHistory = async (kodeCariData: string) => {
 
 /**
  * Request pindah sambung
+ * Supports two modes:
+ * 1. Registered location (using ke_daerah_id, ke_desa_id, ke_kelompok_id)
+ * 2. Unregistered location (using ke_daerah_nama, ke_desa_nama, ke_kelompok_nama)
  */
 export const requestPindahSambung = async (data: {
   kode_cari_data: string;
-  ke_daerah_id: number;
-  ke_desa_id: number;
-  ke_kelompok_id: number;
+  ke_daerah_id?: number;
+  ke_desa_id?: number;
+  ke_kelompok_id?: number;
+  ke_daerah_nama?: string;
+  ke_desa_nama?: string;
+  ke_kelompok_nama?: string;
   alasan_pindah: string;
 }) => {
   const axios = axiosServices();

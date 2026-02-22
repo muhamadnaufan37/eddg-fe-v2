@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import useAuth from "@/hooks/useAuth";
 import { BASE_TITLE } from "@/store/actions";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { VersionDisplay } from "@/components/features/VersionDisplay";
 
 interface LoginFormData {
   username: string;
@@ -64,11 +65,27 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#EEEEEE] dark:bg-[#212121] p-5 transition-colors duration-300">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden p-5">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950 transition-colors duration-500">
+        {/* Animated Gradient Overlay */}
+        <div className="absolute inset-0 opacity-60">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 dark:bg-purple-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-70 animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 dark:bg-yellow-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 dark:bg-pink-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+          <div className="absolute bottom-0 right-20 w-72 h-72 bg-blue-300 dark:bg-blue-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-70 animate-blob animation-delay-3000"></div>
+        </div>
+
+        {/* Floating Orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-linear-to-br from-cyan-400/30 to-blue-500/30 dark:from-cyan-600/20 dark:to-blue-700/20 rounded-full filter blur-2xl animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/3 w-40 h-40 bg-linear-to-br from-purple-400/30 to-pink-500/30 dark:from-purple-600/20 dark:to-pink-700/20 rounded-full filter blur-2xl animate-float animation-delay-1000"></div>
+        <div className="absolute top-1/3 right-1/4 w-36 h-36 bg-linear-to-br from-amber-400/30 to-orange-500/30 dark:from-amber-600/20 dark:to-orange-700/20 rounded-full filter blur-2xl animate-float animation-delay-2000"></div>
+      </div>
+
       {/* Theme Toggle Button */}
       <button
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="fixed top-4 right-4 p-3 rounded-full bg-white dark:bg-[#1F2121] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+        className="fixed top-4 right-4 p-3 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
         aria-label="Toggle theme"
       >
         {theme === "dark" ? (
@@ -78,7 +95,7 @@ const LoginPage = () => {
         )}
       </button>
 
-      <div className="flex flex-col 2xl:flex-row overflow-hidden transition-all duration-300 max-w-6xl bg-white rounded-2xl dark:bg-[#1F2121] w-full">
+      <div className="flex flex-col 2xl:flex-row overflow-hidden transition-all duration-300 max-w-6xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl shadow-2xl w-full relative z-10">
         {/* IMAGE */}
         <div className="flex-1 transition-colors duration-300">
           <img
@@ -150,6 +167,18 @@ const LoginPage = () => {
               {isLoading ? "Memproses..." : "Masuk"}
             </Button>
           </form>
+
+          {/* Version Display */}
+          <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+            <VersionDisplay variant="detailed" showBackend={true} />
+          </div>
+        </div>
+      </div>
+
+      {/* Version Display in Footer - Compact */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+        <div className="px-4 py-2 rounded-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-md shadow-lg">
+          <VersionDisplay variant="compact" showBackend={true} />
         </div>
       </div>
     </div>
