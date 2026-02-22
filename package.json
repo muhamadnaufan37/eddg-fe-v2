@@ -1,12 +1,13 @@
 {
   "name": "digitaldatagenerus",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.3.10",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "host": "vite --host",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
+    "build:clean": "rimraf dist .tsbuildinfo && npm run build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

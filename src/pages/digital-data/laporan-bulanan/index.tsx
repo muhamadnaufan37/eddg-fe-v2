@@ -56,7 +56,7 @@ type StatusResponse = {
 
 type LaporanDetail = {
   id: number;
-  user: { id: number };
+  user: { id: number; nama_lengkap: string };
   periode: {
     bulan: number;
     nama_bulan: string;
@@ -84,6 +84,7 @@ type LaporanDetail = {
   keterangan_reject: string | null;
   submitted_at: string | null;
   approved_at: string | null;
+  approver: { id: number | null; nama_lengkap?: string } | null;
   created_at: string;
   updated_at: string;
 };
@@ -449,7 +450,10 @@ export default function LaporanBulananPage() {
     // sementara: bikin pseudo detail
     setDetailData({
       id: item.laporan_id ?? 0,
-      user: { id: statusData?.data.user.id ?? 0 },
+      user: {
+        id: statusData?.data.user.id ?? 0,
+        nama_lengkap: statusData?.data.user.nama_lengkap ?? "",
+      },
       periode: {
         bulan: item.bulan,
         nama_bulan: item.nama_bulan,
@@ -473,6 +477,7 @@ export default function LaporanBulananPage() {
       keterangan_reject: null,
       submitted_at: item.submitted_at,
       approved_at: null,
+      approver: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
@@ -834,7 +839,8 @@ export default function LaporanBulananPage() {
                                 {row.periode.periode_text}
                               </div>
                               <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                                ID: {row.id}
+                                Dilaporkan Oleh:{" "}
+                                <b>{row.user?.nama_lengkap ?? "-"}</b>
                               </div>
                             </td>
                             <td className="py-4 pr-4">
@@ -851,7 +857,8 @@ export default function LaporanBulananPage() {
                               {formatDate(row.submitted_at)}
                             </td>
                             <td className="py-4 pr-4 text-zinc-700 dark:text-zinc-300">
-                              {formatDate(row.approved_at)}
+                              {formatDate(row.approved_at)} by{" "}
+                              <b>{row.approver?.nama_lengkap ?? "-"}</b>
                             </td>
                             <td className="py-4 pr-4">
                               {row.is_late ? (
@@ -956,7 +963,7 @@ export default function LaporanBulananPage() {
                 <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                   Laporan ID:{" "}
                   <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    {detailData.id}
+                    {detailData.id} - {detailData.user?.nama_lengkap ?? "-"}
                   </span>
                 </div>
               </div>
@@ -1318,7 +1325,7 @@ function MonthCard({
       </div>
 
       <div className="mt-3 sm:mt-4 flex items-center justify-end gap-2">
-        {canOpen && (
+        {/* {canOpen && (
           <Button
             variant="ghost"
             onClick={onOpen}
@@ -1326,7 +1333,7 @@ function MonthCard({
           >
             Detail
           </Button>
-        )}
+        )} */}
 
         {canSubmit && (
           <Button

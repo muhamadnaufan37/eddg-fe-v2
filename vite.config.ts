@@ -19,5 +19,38 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      // Increase chunk size warning limit
+      chunkSizeWarningLimit: 1000,
+      // Better chunk splitting strategy
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ["react", "react-dom", "react-router-dom"],
+            query: ["@tanstack/react-query"],
+            ui: ["lucide-react", "sonner", "framer-motion"],
+            forms: ["formik", "yup", "react-hook-form"],
+            charts: ["recharts"],
+          },
+        },
+      },
+      // Prevent memory issues during build
+      minify: "esbuild",
+    },
+    // Optimize dependencies
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "@tanstack/react-query",
+      ],
+    },
+    // Prevent ENOENT errors
+    server: {
+      fs: {
+        strict: false,
+      },
+    },
   };
 });

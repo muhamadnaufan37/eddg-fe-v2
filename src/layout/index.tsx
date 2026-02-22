@@ -481,6 +481,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
               >
                 <Menu className={`h-5 w-5 ${THEME_COLORS.text.secondary}`} />
               </button>
+              <VersionDisplay />
 
               {/* Dark mode toggle */}
               <button

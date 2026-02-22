@@ -36,18 +36,18 @@ const UbahPassword = () => {
 
   return (
     <div
-      className={`min-h-screen flex justify-center items-center p-6 ${THEME_COLORS.background.primary}`}
+      className={`min-h-screen flex justify-center items-start md:items-center p-3 sm:p-6 pt-6 md:pt-6 ${THEME_COLORS.background.primary}`}
     >
       <div
-        className={`w-full max-w-md rounded-2xl shadow-xl p-8 ${THEME_COLORS.background.card}`}
+        className={`w-full max-w-md rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 ${THEME_COLORS.background.card}`}
       >
         <h1
-          className={`text-2xl font-bold mb-6 text-center ${THEME_COLORS.text.primary}`}
+          className={`text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center ${THEME_COLORS.text.primary}`}
         >
           Ubah Password
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <InputPassword
             label="Password Baru"
             value={form.password}
@@ -63,7 +63,7 @@ const UbahPassword = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-xl transition-all font-medium disabled:opacity-50 ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
+            className={`w-full py-2.5 sm:py-3 rounded-xl transition-all font-medium disabled:opacity-50 text-sm sm:text-base ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
           >
             {loading ? "Memproses..." : "Simpan Password"}
           </button>
@@ -86,7 +86,9 @@ const InputPassword = ({
 
   return (
     <div className="flex flex-col">
-      <label className={`text-sm mb-1 ${THEME_COLORS.text.label}`}>
+      <label
+        className={`text-xs sm:text-sm mb-1.5 sm:mb-2 font-medium ${THEME_COLORS.text.label}`}
+      >
         {label}
       </label>
       <div className="relative">
@@ -94,12 +96,12 @@ const InputPassword = ({
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full rounded-xl px-4 py-2 outline-none border ${THEME_COLORS.background.input} ${THEME_COLORS.border.input} ${THEME_COLORS.text.primary} focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#457b9d]`}
+          className={`w-full rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base outline-none border ${THEME_COLORS.background.input} ${THEME_COLORS.border.input} ${THEME_COLORS.text.primary} focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#457b9d]`}
         />
         <button
           type="button"
           onClick={() => setShow(!show)}
-          className={`absolute right-3 top-2 text-sm ${THEME_COLORS.text.muted} ${THEME_COLORS.hover.text}`}
+          className={`absolute right-2 sm:right-3 top-2 sm:top-2.5 text-xs sm:text-sm font-medium ${THEME_COLORS.text.muted} ${THEME_COLORS.hover.text}`}
         >
           {show ? "Hide" : "Show"}
         </button>
