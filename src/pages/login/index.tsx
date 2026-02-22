@@ -167,18 +167,13 @@ const LoginPage = () => {
               {isLoading ? "Memproses..." : "Masuk"}
             </Button>
           </form>
-
-          {/* Version Display */}
-          <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-            <VersionDisplay variant="detailed" showBackend={true} />
-          </div>
         </div>
       </div>
 
       {/* Version Display in Footer - Compact */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
         <div className="px-4 py-2 rounded-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-md shadow-lg">
-          <VersionDisplay variant="compact" showBackend={true} />
+          <VersionDisplay />
         </div>
       </div>
     </div>
