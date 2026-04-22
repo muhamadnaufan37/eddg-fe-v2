@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { DataTableAdvanced, Input, type Column } from "@/components/global";
 import {
   ChartLine,
+  Copy,
   Database,
   File,
   Filter,
@@ -447,6 +448,37 @@ const SensusPage = () => {
     return formatDistanceToNow(new Date(date), { addSuffix: true, locale: id });
   };
 
+  const handleCopyKode = async (kode: string | number) => {
+    const text = String(kode || "").trim();
+    if (!text) return;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      toast.success("Berhasil", {
+        description: `Kode ${text} berhasil disalin`,
+        duration: 2000,
+      });
+    } catch (error) {
+      toast.error("Gagal", {
+        description: "Kode tidak dapat disalin",
+        duration: 2500,
+      });
+    }
+  };
+
   // Definisi kolom
   const columns: Column<any>[] = [
     {
@@ -454,6 +486,20 @@ const SensusPage = () => {
       header: "Kode",
       sortable: true,
       bold: true,
+      render: (item: any) => (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopyKode(item.kode_cari_data);
+          }}
+          title="Klik untuk menyalin kode"
+        >
+          <span>{item.kode_cari_data}</span>
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+      ),
     },
     {
       key: "nama_lengkap",
