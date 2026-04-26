@@ -188,7 +188,7 @@ const UsersPage = () => {
     if (isAnyFilterEmpty) {
       refetchListUsers();
     }
-  }, [filterInput, status, filterDaerah, filterDesa, filterKelompok]);
+  }, [status, filterDaerah, filterDesa, filterKelompok]);
 
   useEffect(() => {
     if (!hasFetched.current) {

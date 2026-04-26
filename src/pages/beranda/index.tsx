@@ -23,6 +23,7 @@ import {
 import BottomSheet from "./components/BottomSheet";
 import RippleButton from "./components/RippleButton";
 import Badge from "./components/Badge";
+import { BASE_TITLE } from "@/store/actions";
 
 interface ActivityRecord {
   id: number;
@@ -417,7 +418,7 @@ const BerandaPage = () => {
     };
   };
 
-  document.title = "Beranda";
+  document.title = BASE_TITLE + "Beranda";
 
   return (
     <>

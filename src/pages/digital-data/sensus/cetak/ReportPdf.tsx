@@ -1,11 +1,52 @@
-import { Ref, forwardRef } from "react";
+import { forwardRef, type Ref } from "react";
 import "../../../../styles/convertPdfSensus.css";
 
-interface props {
-  data: any;
+export interface Root {
+  success: boolean;
+  message: string;
+  data: Daum[];
 }
 
-const ReportPdf = forwardRef(({ data }: props, ref: Ref<any>) => {
+export interface Daum {
+  id: number;
+  kode_cari_data: string;
+  nama_lengkap: string;
+  nama_panggilan: string;
+  tempat_lahir: string;
+  tanggal_lahir: string;
+  umur: number;
+  alamat: string;
+  jenis_kelamin: string;
+  no_telepon: string;
+  nama_ayah: string;
+  nama_ibu: string;
+  hoby: string;
+  kd_pekerjaan: number;
+  nm_pekerjaan: string;
+  usia_menikah: string;
+  kriteria_pasangan: string;
+  status_pernikahan: boolean;
+  status_sambung: number;
+  status_atlet_asad: boolean;
+  kd_daerah: number;
+  nm_daerah: string;
+  kd_desa: number;
+  nm_desa: string;
+  kd_kelompok: number;
+  nm_kelompok: string;
+  jenis_data: string;
+  id_petugas_input: number;
+  nm_petugas_input: string;
+  kelas_label: string;
+}
+
+interface Props {
+  data: Daum[];
+}
+
+const ReportPdf = forwardRef(({ data }: Props, ref: Ref<any>) => {
+  const rows = Array.isArray(data) ? data : [];
+
   return (
     <div ref={ref}>
       <div className="flex flex-col gap-3 p-5">
@@ -30,7 +71,7 @@ const ReportPdf = forwardRef(({ data }: props, ref: Ref<any>) => {
             </tr>
           </thead>
           <tbody>
-            {data.map((rowData: any, index: any) => (
+            {rows.map((rowData: Daum, index: number) => (
               <tr key={index}>
                 <td style={{ textAlign: "center" }}>{index + 1}</td>
                 <td>{rowData?.nama_lengkap || "-"}</td>
@@ -41,26 +82,22 @@ const ReportPdf = forwardRef(({ data }: props, ref: Ref<any>) => {
                 <td style={{ textAlign: "center" }}>
                   {rowData?.jenis_kelamin || "-"}
                 </td>
-                <td style={{ textAlign: "center" }}>
-                  {rowData?.umur || rowData?.usia || "-"}
-                </td>
+                <td style={{ textAlign: "center" }}>{rowData?.umur || "-"}</td>
                 <td>
                   Ayah: {rowData?.nama_ayah || "-"}
                   <br />
                   Ibu: {rowData?.nama_ibu || "-"}
                 </td>
-                <td>
-                  {rowData?.pekerjaan_relation?.nama_pekerjaan ||
-                    rowData?.pekerjaan ||
-                    "-"}
-                </td>
+                <td>{rowData?.nm_pekerjaan || "-"}</td>
                 <td style={{ textAlign: "center" }}>
-                  {rowData?.status_kelas || "-"}
+                  {rowData?.kelas_label || "-"}
                 </td>
                 <td>
-                  {rowData?.kelompok?.nama_kelompok ||
-                    rowData?.nama_kelompok ||
-                    "-"}
+                  {rowData?.nm_daerah || "-"}
+                  <br />
+                  {rowData?.nm_desa || "-"}
+                  <br />
+                  {rowData?.nm_kelompok || "-"}
                 </td>
                 <td style={{ textAlign: "center" }}>
                   {rowData?.status_sambung === 1
@@ -72,13 +109,11 @@ const ReportPdf = forwardRef(({ data }: props, ref: Ref<any>) => {
                         : rowData?.status_sambung || "-"}
                 </td>
                 <td style={{ textAlign: "center" }}>
-                  {rowData?.status_pernikahan === true ||
-                  rowData?.status_pernikahan === "Sudah Menikah"
+                  {rowData?.status_pernikahan === true
                     ? "Sudah Menikah"
-                    : rowData?.status_pernikahan === false ||
-                        rowData?.status_pernikahan === "Belum Menikah"
+                    : rowData?.status_pernikahan === false
                       ? "Belum Menikah"
-                      : rowData?.status_pernikahan || "-"}
+                      : "-"}
                 </td>
               </tr>
             ))}

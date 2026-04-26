@@ -89,6 +89,7 @@ const SensusPage = () => {
   );
   const [generateQrCode, setGenerateQrCode] = useState(false);
   const [dataLaporanPrint, setDataLaporanPrint] = useState([]);
+  const [printFileName, setPrintFileName] = useState("REKAP_DATA_SENSUS");
   const [balikanDataStatistik, setBalikanDataStatistik] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rangeUmurMin, setRangeUmurMin] = useState("");
@@ -112,8 +113,20 @@ const SensusPage = () => {
 
   const navigate = useNavigate();
 
+  const buildUniquePrintFileName = () => {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const milli = String(now.getMilliseconds()).padStart(3, "0");
+    const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+
+    return `REKAP_DATA_SENSUS_${date}_${time}${milli}_${random}`;
+  };
+
   const handlePrintPdf = useReactToPrint({
     contentRef: printRefCetakDataPdf,
+    documentTitle: printFileName,
   });
 
   const fetchData = async () => {
@@ -156,10 +169,18 @@ const SensusPage = () => {
         rangeUmurMin,
         rangeUmurMax,
         resultJenisData,
+        filterInput,
       });
 
       handleApiResponse(response, (data) => {
-        setDataLaporanPrint(data.data);
+        const printableData = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
+
+        setPrintFileName(buildUniquePrintFileName());
+        setDataLaporanPrint(printableData);
         setTimeout(() => handlePrintPdf(), 2000);
       });
     } catch (error: any) {
@@ -180,6 +201,7 @@ const SensusPage = () => {
         rangeUmurMin,
         rangeUmurMax,
         resultJenisData,
+        filterInput,
       });
 
       handleApiResponse(response, (data) => {
@@ -299,7 +321,6 @@ const SensusPage = () => {
       refetchListSensus();
     }
   }, [
-    filterInput,
     statusSambung,
     statusPernikahan,
     statusAtletAsad,

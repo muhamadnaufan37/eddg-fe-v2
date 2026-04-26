@@ -17,6 +17,7 @@ interface FetchDataParams {
 }
 
 interface ReportParams {
+  filterInput: string;
   filterDaerah: string;
   filterDesa: string;
   filterKelompok: string;
@@ -79,16 +80,17 @@ export const fetchReportData = async (params: ReportParams) => {
   let endpoint = "/api/v1/data_peserta/report";
 
   const body = {
-    filter_daerah: params.filterDaerah,
-    filter_desa: params.filterDesa,
-    filter_kelompok: params.filterKelompok,
-    status_sambung: params.statusSambung,
-    status_pernikahan: params.statusPernikahan,
-    status_atlet_asad: params.statusAtletAsad,
-    jenis_kelamin: params.statusGender,
-    umur_min: params.rangeUmurMin,
-    umur_max: params.rangeUmurMax,
-    jenis_data: params.resultJenisData,
+    "filter[search]": params.filterInput,
+    "filter[tmpt_daerah]": params.filterDaerah,
+    "filter[tmpt_desa]": params.filterDesa,
+    "filter[tmpt_kelompok]": params.filterKelompok,
+    "filter[status_sambung]": params.statusSambung,
+    "filter[status_pernikahan]": params.statusPernikahan,
+    "filter[status_atlet_asad]": params.statusAtletAsad,
+    "filter[jenis_kelamin]": params.statusGender,
+    "filter[umur_min]": params.rangeUmurMin,
+    "filter[umur_max]": params.rangeUmurMax,
+    "filter[jenis_data]": params.resultJenisData,
   };
 
   const response = await axiosServices().get(endpoint, { params: body });

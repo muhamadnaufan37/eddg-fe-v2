@@ -1,4 +1,4 @@
-import { Select } from "@/components/global";
+import FilterDropdown from "@/components/features/FilterDropdown";
 import type { UsersFilterPanelProps } from "@/pages/digital-data/sensus/types/types";
 
 const UsersFilterPanel = ({
@@ -23,15 +23,11 @@ const UsersFilterPanel = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-3 gap-2">
-        <Select
+        <FilterDropdown
           options={fetchDataDaerah}
-          value={fetchDataDaerah?.find(
-            (option: any) => option.value === filterDaerah,
-          )}
+          value={filterDaerah}
           placeholder="Daerah"
-          className="w-full text-xs"
-          onChange={async (selectedOption: any) => {
-            const value = selectedOption?.value;
+          onChange={async (value: any) => {
             setFilterDaerah(value || "");
             setBalikanDataDesa([]);
             setBalikanDataKelompok([]);
@@ -41,19 +37,14 @@ const UsersFilterPanel = ({
               await fetchDesa(value);
             }
           }}
-          isClearable
-          isDisabled={dataLogin?.user?.akses_daerah !== null}
+          disabled={dataLogin?.user?.akses_daerah !== null}
         />
 
-        <Select
+        <FilterDropdown
           options={balikanDataDesa}
-          value={balikanDataDesa?.find(
-            (option: any) => option.value === filterDesa,
-          )}
+          value={filterDesa}
           placeholder="Desa"
-          className="w-full text-xs"
-          onChange={async (selectedOption: any) => {
-            const value = selectedOption?.value;
+          onChange={async (value: any) => {
             setFilterDesa(value || "");
             setFilterKelompok("");
             setBalikanDataKelompok([]);
@@ -61,39 +52,27 @@ const UsersFilterPanel = ({
               await fetchKelompok(value);
             }
           }}
-          isClearable
-          isDisabled={dataLogin?.user?.akses_desa !== null}
+          disabled={dataLogin?.user?.akses_desa !== null}
         />
 
-        <Select
+        <FilterDropdown
           options={balikanDataKelompok}
-          value={balikanDataKelompok?.find(
-            (option: any) => option.value === filterKelompok,
-          )}
+          value={filterKelompok}
           placeholder="Kelompok"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setFilterKelompok(selectedOption?.value || "")
-          }
-          isClearable
-          isDisabled={dataLogin?.user?.akses_kelompok !== null}
+          onChange={(value: any) => setFilterKelompok(value || "")}
+          disabled={dataLogin?.user?.akses_kelompok !== null}
         />
       </div>
 
       {/* STATUS FILTER */}
       <div className="grid grid-cols-2 gap-2">
-        <Select
+        <FilterDropdown
           options={statusUsersOptions}
-          value={statusUsersOptions?.find(
-            (option: any) => String(option.value) === String(status ?? ""),
-          )}
+          value={status}
           placeholder="Status Users"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) => {
-            const value = selectedOption?.value;
+          onChange={(value: any) => {
             setStatus(value !== undefined ? value : "");
           }}
-          isClearable
         />
       </div>
     </div>

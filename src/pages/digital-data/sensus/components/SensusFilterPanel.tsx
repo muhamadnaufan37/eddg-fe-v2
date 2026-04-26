@@ -1,4 +1,5 @@
-import { Select, Input } from "@/components/global";
+import FilterDropdown from "@/components/features/FilterDropdown";
+import { Input } from "@/components/global";
 import type { SensusFilterPanelProps } from "@/pages/digital-data/sensus/types/types";
 
 const SensusFilterPanel = ({
@@ -56,15 +57,11 @@ const SensusFilterPanel = ({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <Select
+        <FilterDropdown
           options={fetchDataDaerah}
-          value={fetchDataDaerah?.find(
-            (option: any) => option.value === filterDaerah,
-          )}
+          value={filterDaerah}
           placeholder="Daerah"
-          className="w-full text-xs"
-          onChange={async (selectedOption: any) => {
-            const value = selectedOption?.value;
+          onChange={async (value: any) => {
             setFilterDaerah(value || "");
             setBalikanDataDesa([]);
             setBalikanDataKelompok([]);
@@ -74,19 +71,14 @@ const SensusFilterPanel = ({
               await fetchDesa(value);
             }
           }}
-          isClearable
-          isDisabled={dataLogin?.user?.akses_daerah !== null}
+          disabled={dataLogin?.user?.akses_daerah !== null}
         />
 
-        <Select
+        <FilterDropdown
           options={balikanDataDesa}
-          value={balikanDataDesa?.find(
-            (option: any) => option.value === filterDesa,
-          )}
+          value={filterDesa}
           placeholder="Desa"
-          className="w-full text-xs"
-          onChange={async (selectedOption: any) => {
-            const value = selectedOption?.value;
+          onChange={async (value: any) => {
             setFilterDesa(value || "");
             setFilterKelompok("");
             setBalikanDataKelompok([]);
@@ -94,89 +86,52 @@ const SensusFilterPanel = ({
               await fetchKelompok(value);
             }
           }}
-          isClearable
-          isDisabled={dataLogin?.user?.akses_desa !== null}
+          disabled={dataLogin?.user?.akses_desa !== null}
         />
 
-        <Select
+        <FilterDropdown
           options={balikanDataKelompok}
-          value={balikanDataKelompok?.find(
-            (option: any) => option.value === filterKelompok,
-          )}
+          value={filterKelompok}
           placeholder="Kelompok"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setFilterKelompok(selectedOption?.value || "")
-          }
-          isClearable
-          isDisabled={dataLogin?.user?.akses_kelompok !== null}
+          onChange={(value: any) => setFilterKelompok(value || "")}
+          disabled={dataLogin?.user?.akses_kelompok !== null}
         />
       </div>
 
       {/* STATUS FILTER */}
       <div className="grid grid-cols-2 gap-2">
-        <Select
+        <FilterDropdown
           options={statusFilterInfoSambung}
-          value={statusFilterInfoSambung?.find(
-            (option: any) => option.value === statusSambung,
-          )}
+          value={statusSambung}
           placeholder="Status Sambung"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setStatusSambung(selectedOption?.value || "")
-          }
-          isClearable
+          onChange={(value: any) => setStatusSambung(value || "")}
         />
-        <Select
+        <FilterDropdown
           options={statusFilterInfoPernikahan}
-          value={statusFilterInfoPernikahan?.find(
-            (option: any) => option.value === statusPernikahan,
-          )}
+          value={statusPernikahan}
           placeholder="Status Pernikahan"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setStatusPernikahan(selectedOption?.value || "")
-          }
-          isClearable
+          onChange={(value: any) => setStatusPernikahan(value || "")}
         />
-        <Select
+        <FilterDropdown
           options={statusFilterInfoAtletAsad}
-          value={statusFilterInfoAtletAsad?.find(
-            (option: any) => option.value === statusAtletAsad,
-          )}
+          value={statusAtletAsad}
           placeholder="Status Atlet"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setStatusAtletAsad(selectedOption?.value || "")
-          }
-          isClearable
+          onChange={(value: any) => setStatusAtletAsad(value || "")}
         />
-        <Select
+        <FilterDropdown
           options={statusFilterInfoGender}
-          value={statusFilterInfoGender?.find(
-            (option: any) => option.value === statusGender,
-          )}
+          value={statusGender}
           placeholder="Status Gender"
-          className="w-full text-xs"
-          onChange={(selectedOption: any) =>
-            setStatusGender(selectedOption?.value || "")
-          }
-          isClearable
+          onChange={(value: any) => setStatusGender(value || "")}
         />
 
         {dataLogin?.user?.role_id ===
           "219bc0dd-ec72-4618-b22d-5d5ff612dcaf" && (
-          <Select
+          <FilterDropdown
             options={statusFilterJenisData}
-            value={statusFilterJenisData?.find(
-              (option: any) => option.value === resultJenisData,
-            )}
+            value={resultJenisData}
             placeholder="Jenis Data"
-            className="w-full text-xs"
-            onChange={(selectedOption: any) =>
-              setResultJenisData(selectedOption?.value || "")
-            }
-            isClearable
+            onChange={(value: any) => setResultJenisData(value || "")}
           />
         )}
       </div>
