@@ -6,6 +6,7 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   bold?: boolean;
+  mobileHidden?: boolean;
   render?: (item: T, index: number) => React.ReactNode;
 }
 
@@ -108,17 +109,22 @@ export function DataTableAdvanced<T extends Record<string, any>>({
 
   const allSelected = data.length > 0 && selectedRows.size === data.length;
   const someSelected = selectedRows.size > 0 && selectedRows.size < data.length;
+  const hasMobileHiddenColumns = columns.some((column) => column.mobileHidden);
+  const hasRowActions = Boolean(rowActions);
+  const tableMinWidthClass = hasMobileHiddenColumns
+    ? "w-full min-w-[720px] md:min-w-[960px]"
+    : "w-full min-w-[960px]";
 
   return (
     <>
       {/* Table */}
       <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
-        <table className="w-full">
+        <table className={tableMinWidthClass}>
           <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <tr>
               {/* Checkbox Column */}
               {selectable && (
-                <th className="w-12 px-6 py-3">
+                <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3">
                   <div className="flex items-center justify-center">
                     <input
                       type="checkbox"
@@ -137,12 +143,12 @@ export function DataTableAdvanced<T extends Record<string, any>>({
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
                 >
                   {column.sortable ? (
                     <button
                       onClick={() => handleSort(column.key)}
-                      className="flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      className="flex items-center gap-1 sm:gap-2 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                     >
                       <span>{column.header}</span>
                       {sortConfig.key === column.key ? (
@@ -164,8 +170,8 @@ export function DataTableAdvanced<T extends Record<string, any>>({
               ))}
 
               {/* Actions Column */}
-              {rowActions && rowActions.length > 0 && (
-                <th className="w-12 px-6 py-3"></th>
+              {hasRowActions && (
+                <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3"></th>
               )}
             </tr>
           </thead>
@@ -184,7 +190,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                 >
                   {/* Checkbox */}
                   {selectable && (
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center justify-center">
                         <input
                           type="checkbox"
@@ -202,7 +208,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
                         column.bold
                           ? "font-semibold text-gray-900 dark:text-white"
                           : "text-gray-500 dark:text-gray-400"
@@ -223,7 +229,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                     return (
                       actions &&
                       actions.length > 0 && (
-                        <td className="px-6 py-4 text-right relative">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4 text-right relative whitespace-nowrap">
                           <button
                             ref={(el) => {
                               menuButtonRef.current[rowId] = el;
@@ -259,7 +265,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                                 onClick={() => setOpenMenuId(null)}
                               />
                               <div
-                                className={`absolute right-12 z-20 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 ${
+                                className={`absolute right-0 z-20 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 ${
                                   menuPosition === "top" ? "bottom-8" : "top-8"
                                 }`}
                               >

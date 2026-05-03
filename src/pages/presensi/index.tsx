@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import Pagination from "@/components/features/Pagination";
 import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
 import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
@@ -25,6 +26,7 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   CalendarDays,
+  Eye,
   Pencil,
   PlusCircle,
   RefreshCcw,
@@ -69,6 +71,7 @@ const toApiDateTime = (value: string) => {
 
 const PresensiKegiatanPage = () => {
   const dataLogin = getLocalStorage("userData");
+  const navigate = useNavigate();
   const { fetchOptions, loading: loadingOptions } = useFetchOptions();
 
   const [page, setPage] = useState(1);
@@ -392,7 +395,12 @@ const PresensiKegiatanPage = () => {
   const columns: Column<PresensiKegiatanItem>[] = [
     { key: "kode_kegiatan", header: "Kode", sortable: true },
     { key: "nama_kegiatan", header: "Kegiatan", sortable: true },
-    { key: "type_kegiatan", header: "Tipe", sortable: true },
+    {
+      key: "type_kegiatan",
+      header: "Tipe",
+      sortable: true,
+      mobileHidden: true,
+    },
     {
       key: "lokasi",
       header: "Lokasi",
@@ -417,6 +425,7 @@ const PresensiKegiatanPage = () => {
     {
       key: "total_terlambat",
       header: "Terlambat",
+      mobileHidden: true,
       render: (item: PresensiKegiatanItem) => (
         <span>{item.total_terlambat || 0}</span>
       ),
@@ -424,6 +433,7 @@ const PresensiKegiatanPage = () => {
     {
       key: "total_tidak_hadir",
       header: "Tidak Hadir",
+      mobileHidden: true,
       render: (item: PresensiKegiatanItem) => (
         <span>{item.total_tidak_hadir || 0}</span>
       ),
@@ -432,6 +442,7 @@ const PresensiKegiatanPage = () => {
       key: "created_at",
       header: "Dibuat",
       sortable: true,
+      mobileHidden: true,
       render: (item: PresensiKegiatanItem) => (
         <span>{formatDateString(item.created_at)}</span>
       ),
@@ -439,12 +450,41 @@ const PresensiKegiatanPage = () => {
   ];
 
   const rowActions = [
+    { label: "Lihat Presensi", value: "presensi" },
+    { label: "Detail Presensi", value: "list" },
     { label: "Detail", value: "detail" },
     { label: "Ubah", value: "edit" },
     { label: "Hapus", value: "delete" },
   ];
 
   const handleRowAction = (item: PresensiKegiatanItem, action: string) => {
+    const kegiatanKey = String(item.kode_kegiatan || item.id || "");
+    const idKegiatan = String(item.id || "");
+
+    if (action === "presensi") {
+      if (!kegiatanKey) {
+        toast.error("Error", {
+          description: "Kode kegiatan tidak ditemukan",
+          duration: 3000,
+        });
+        return;
+      }
+      navigate(`/presensi/peserta/${idKegiatan}/${item.kode_kegiatan}`);
+      return;
+    }
+
+    if (action === "list") {
+      if (!kegiatanKey) {
+        toast.error("Error", {
+          description: "Kode kegiatan tidak ditemukan",
+          duration: 3000,
+        });
+        return;
+      }
+      navigate(`/presensi/list/${idKegiatan}/${item.kode_kegiatan}`);
+      return;
+    }
+
     if (action === "detail") {
       openDetailModal(item.id);
       return;

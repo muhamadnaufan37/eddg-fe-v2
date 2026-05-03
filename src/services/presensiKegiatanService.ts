@@ -1,7 +1,8 @@
 import { axiosServices } from "@/services/axios";
 
 export interface PresensiKegiatanItem {
-  id: number;
+  id: any;
+  id_kegiatan: string;
   kode_kegiatan: string;
   nama_kegiatan: string;
   tmpt_kegiatan: string;

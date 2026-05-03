@@ -6,7 +6,7 @@ export interface VersionInfo {
 
 // Get frontend version from package.json
 export const getFrontendVersion = (): string => {
-  return "2.3.10"; // This will be replaced during build
+  return "2.4.20"; // This will be replaced during build
 };
 
 // Get combined version info
