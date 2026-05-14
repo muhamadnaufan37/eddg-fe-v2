@@ -19,6 +19,7 @@ import { id } from "date-fns/locale";
 import { BASE_TITLE } from "@/store/actions";
 import { motion } from "framer-motion";
 import StatusTableBadge from "@/components/features/StatusTableBadge";
+import RenderValue from "./RenderValue";
 
 const LogDetailPage = () => {
   const { id: logId } = useParams();
@@ -115,6 +116,12 @@ const LogDetailPage = () => {
       </div>
     );
   }
+
+  const formatLabel = (key: string) => {
+    return key
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
 
   const activity = getActivityBadge(logDetail.activity_type);
 
@@ -242,116 +249,57 @@ const LogDetailPage = () => {
             {/* Properties - Conditional Rendering */}
             {logDetail.properties && (
               <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-6">
                   <Info className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Detail Perubahan
                   </h2>
                 </div>
 
-                {/* Update Activity - Show Old vs New */}
+                {/* Update */}
                 {logDetail.properties.old && logDetail.properties.new && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                          Data Lama
-                        </h3>
-                        <div className="bg-[#2a2a2a] dark:bg-[#2a2a2a]/10 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-                          {Object.entries(logDetail.properties.old).map(
-                            ([key, value]: [string, any]) => (
-                              <div key={key} className="mb-2 last:mb-0">
-                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                  {key}:
-                                </span>
-                                <p className="text-sm text-gray-900 dark:text-white break-all">
-                                  {typeof value === "object"
-                                    ? JSON.stringify(value)
-                                    : String(value)}
-                                </p>
-                              </div>
-                            ),
-                          )}
-                        </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
+                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        Data Lama
+                      </h3>
+
+                      <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-4 border border-red-100 dark:border-red-800">
+                        <RenderValue value={logDetail.properties.old} />
                       </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          Data Baru
-                        </h3>
-                        <div className="bg-[#2a2a2a] dark:bg-green-900/10 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-                          {Object.entries(logDetail.properties.new).map(
-                            ([key, value]: [string, any]) => (
-                              <div key={key} className="mb-2 last:mb-0">
-                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                  {key}:
-                                </span>
-                                <p className="text-sm text-gray-900 dark:text-white break-all">
-                                  {typeof value === "object"
-                                    ? JSON.stringify(value)
-                                    : String(value)}
-                                </p>
-                              </div>
-                            ),
-                          )}
-                        </div>
+                    </div>
+
+                    <div>
+                      <h3 className="flex items-center gap-2 text-sm font-semibold mb-3 text-green-600 dark:text-green-400">
+                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                        Data Baru
+                      </h3>
+
+                      <div className="bg-green-50 dark:bg-green-900/10 rounded-xl p-4 border border-green-100 dark:border-green-800">
+                        <RenderValue value={logDetail.properties.new} />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Delete Activity - Show Deleted Data */}
+                {/* Deleted */}
                 {logDetail.properties.deleted_data && (
-                  <div className="bg-[#2a2a2a] dark:bg-[#2a2a2a]/10 p-4 rounded-lg border border-gray-700 dark:border-gray-800">
-                    <h3 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-3">
-                      Data yang Dihapus
+                  <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-4 border border-red-100 dark:border-red-800">
+                    <h3 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-4">
+                      Data Yang Dihapus
                     </h3>
-                    <div className="space-y-2">
-                      {Object.entries(logDetail.properties.deleted_data).map(
-                        ([key, value]: [string, any]) => (
-                          <div
-                            key={key}
-                            className="flex justify-between py-1 border-b border-red-100 dark:border-red-800/50 last:border-0"
-                          >
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                              {key}
-                            </span>
-                            <span className="text-xs text-gray-900 dark:text-white">
-                              {value !== null && value !== undefined
-                                ? String(value)
-                                : "-"}
-                            </span>
-                          </div>
-                        ),
-                      )}
-                    </div>
+
+                    <RenderValue value={logDetail.properties.deleted_data} />
                   </div>
                 )}
 
                 {/* Other Properties */}
                 {!logDetail.properties.old &&
                   !logDetail.properties.deleted_data && (
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                      <div className="space-y-2">
-                        {Object.entries(logDetail.properties).map(
-                          ([key, value]: [string, any]) => (
-                            <div
-                              key={key}
-                              className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-700 last:border-0"
-                            >
-                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                {key}
-                              </span>
-                              <span className="text-xs text-gray-900 dark:text-white">
-                                {typeof value === "object"
-                                  ? JSON.stringify(value)
-                                  : String(value)}
-                              </span>
-                            </div>
-                          ),
-                        )}
-                      </div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800">
+                      <RenderValue value={logDetail.properties} />
                     </div>
                   )}
               </Card>

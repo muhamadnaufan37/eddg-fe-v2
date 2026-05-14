@@ -147,6 +147,11 @@ const RolesPage = () => {
       sortable: true,
     },
     {
+      key: "users_count",
+      header: "Jumlah Pengguna",
+      sortable: true,
+    },
+    {
       key: "description",
       header: "Description",
       sortable: true,

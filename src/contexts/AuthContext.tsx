@@ -141,7 +141,6 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       }
       dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
     } catch (error: any) {
-      console.log(error);
       toast.error("Logout Gagal", {
         description: "Terjadi kesalahan, tetapi Anda akan tetap dikeluarkan",
       });

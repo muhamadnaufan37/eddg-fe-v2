@@ -8,7 +8,7 @@ export const menuItems = [
   },
   {
     id: "auth",
-    title: "Authentication",
+    title: "Manahemen",
     icon: "KeyRound",
     role: ["admin"],
     submenu: [
