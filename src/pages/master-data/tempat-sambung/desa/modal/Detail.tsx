@@ -6,6 +6,7 @@ import ModalInvalidId from "@/components/modal/ModalInvalidId";
 import { User, Calendar, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
+import { resolvePreviewUrl } from "@/utils/previewUtils";
 
 const DetailDesa = () => {
   const [showModal, setShowModal] = useState(false);
@@ -73,9 +74,9 @@ const DetailDesa = () => {
                 Foto
               </label>
               <div className="flex">
-                {userData?.img_url !== null ? (
+                {resolvePreviewUrl(userData?.img_url) ? (
                   <img
-                    src={userData?.img_url}
+                    src={resolvePreviewUrl(userData?.img_url)}
                     alt="Foto Desa"
                     className="w-20 h-15 object-cover rounded-md"
                   />

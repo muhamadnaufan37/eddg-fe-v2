@@ -110,7 +110,7 @@ const PresensiKegiatanPage = () => {
     tmpt_kelompok: "",
   });
 
-  const defaultPetugasId = String(dataLogin?.user?.id || "");
+  const defaultPetugasId = 40;
 
   const loadDaerahOptions = async () => {
     const daerah = await fetchOptions(

@@ -160,7 +160,7 @@ export const replyPengaduan = async (
   payload: { balasan_admin: string; status_pengaduan: string },
 ) => {
   const response = await axiosServices().post(
-    `/api/v1/pengaduan/${uuid}`,
+    `/api/v1/pengaduan/${uuid}/reply`,
     payload,
   );
   return response.data;

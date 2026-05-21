@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,11 @@ import { handleApiError } from "@/utils/errorUtils";
 import { createPengaduan } from "@/services/pengaduanService";
 import { THEME_COLORS } from "@/config/theme";
 import { MessageCirclePlus } from "lucide-react";
+import {
+  createObjectPreviewUrl,
+  openPreviewModal,
+  revokeObjectPreviewUrl,
+} from "@/utils/previewUtils";
 
 const JENIS_PENGADUAN_OPTIONS = [
   { value: "kritik_saran", label: "Kritik & Saran" },
@@ -22,6 +27,12 @@ const CreatePengaduan = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [preview, setPreview] = useState<string>("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return () => {
+      revokeObjectPreviewUrl(preview);
+    };
+  }, [preview]);
 
   const validationSchema = Yup.object().shape({
     nama_lengkap: Yup.string().required("Nama lengkap wajib diisi"),
@@ -266,7 +277,8 @@ const CreatePengaduan = () => {
                   onChange={(event) => {
                     const file = event.target.files?.[0] || null;
                     setFieldValue("lampiran", file);
-                    setPreview(file ? URL.createObjectURL(file) : "");
+                    revokeObjectPreviewUrl(preview);
+                    setPreview(createObjectPreviewUrl(file));
                   }}
                 />
                 <ErrorMessage
@@ -276,11 +288,17 @@ const CreatePengaduan = () => {
                 />
 
                 {preview && (
-                  <img
-                    src={preview}
-                    alt="Preview lampiran"
-                    className="mt-3 max-h-52 rounded-lg border border-gray-200 dark:border-gray-700"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => openPreviewModal(preview)}
+                    className="mt-3 rounded-lg"
+                  >
+                    <img
+                      src={preview}
+                      alt="Preview lampiran"
+                      className="max-h-52 rounded-lg border border-gray-200 dark:border-gray-700"
+                    />
+                  </button>
                 )}
               </div>
             </div>

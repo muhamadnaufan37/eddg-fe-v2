@@ -5,6 +5,7 @@ import renderRoutes, { routes } from "./routes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import GlobalImagePreview from "@/components/global/GlobalImagePreview";
 
 function App() {
   const queryClient = new QueryClient();
@@ -14,6 +15,7 @@ function App() {
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <QueryClientProvider client={queryClient}>
           <Toaster />
+          <GlobalImagePreview />
           <AuthContextProvider>{renderRoutes(routes)}</AuthContextProvider>
         </QueryClientProvider>
       </ThemeProvider>

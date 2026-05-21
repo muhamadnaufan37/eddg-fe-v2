@@ -1,5 +1,15 @@
-import React, { useState, useMemo, useRef } from "react";
-import { ChevronDown, ChevronUp, MoreVertical } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
+  Eye,
+  MoreVertical,
+  Pencil,
+  QrCode,
+  Reply,
+  Trash2,
+} from "lucide-react";
 
 export interface Column<T> {
   key: string;
@@ -53,9 +63,6 @@ export function DataTableAdvanced<T extends Record<string, any>>({
     key: "",
     direction: null,
   });
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState<"top" | "bottom">("bottom");
-  const menuButtonRef = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Use controlled or internal state
   const selectedRows = controlledSelectedRows ?? internalSelectedRows;
@@ -112,188 +119,201 @@ export function DataTableAdvanced<T extends Record<string, any>>({
   const hasMobileHiddenColumns = columns.some((column) => column.mobileHidden);
   const hasRowActions = Boolean(rowActions);
   const tableMinWidthClass = hasMobileHiddenColumns
-    ? "w-full min-w-[720px] md:min-w-[960px]"
-    : "w-full min-w-[960px]";
+    ? "min-w-[960px] md:min-w-[1100px]"
+    : "min-w-[1100px]";
+
+  const getActionIcon = (actionValue: string) => {
+    switch (actionValue) {
+      case "detail":
+        return Eye;
+      case "edit":
+      case "update":
+        return Pencil;
+      case "qrcode":
+        return QrCode;
+      case "presensi":
+      case "list":
+        return ClipboardCheck;
+      case "reply":
+        return Reply;
+      case "delete":
+      case "hapus":
+        return Trash2;
+      default:
+        return MoreVertical;
+    }
+  };
+
+  const getActionButtonClass = (actionValue: string) => {
+    const baseClass =
+      "inline-flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900";
+    switch (actionValue) {
+      case "delete":
+      case "hapus":
+        return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
+      case "edit":
+      case "update":
+        return `${baseClass} border-amber-200 bg-amber-50 text-amber-600 hover:border-amber-300 hover:bg-amber-100 focus:ring-amber-500 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/35`;
+      case "qrcode":
+        return `${baseClass} border-violet-200 bg-violet-50 text-violet-600 hover:border-violet-300 hover:bg-violet-100 focus:ring-violet-500 dark:border-violet-900/60 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/35`;
+      case "presensi":
+      case "list":
+        return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
+      case "reply":
+        return `${baseClass} border-cyan-200 bg-cyan-50 text-cyan-600 hover:border-cyan-300 hover:bg-cyan-100 focus:ring-cyan-500 dark:border-cyan-900/60 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-900/35`;
+      default:
+        return `${baseClass} border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700`;
+    }
+  };
 
   return (
     <>
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
-        <table className={tableMinWidthClass}>
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              {/* Checkbox Column */}
-              {selectable && (
-                <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3">
-                  <div className="flex items-center justify-center">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = someSelected;
-                      }}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer"
-                    />
-                  </div>
-                </th>
-              )}
+      <div className="w-full max-w-full overflow-x-auto overflow-y-hidden rounded-2xl border border-gray-200 dark:border-gray-700 touch-pan-x">
+        <div className="min-w-max">
+          <table className={`${tableMinWidthClass} w-full table-auto`}>
+            <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                {/* Checkbox Column */}
+                {selectable && (
+                  <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3">
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someSelected;
+                        }}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer"
+                      />
+                    </div>
+                  </th>
+                )}
 
-              {/* Data Columns */}
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
-                >
-                  {column.sortable ? (
-                    <button
-                      onClick={() => handleSort(column.key)}
-                      className="flex items-center gap-1 sm:gap-2 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                    >
-                      <span>{column.header}</span>
-                      {sortConfig.key === column.key ? (
-                        sortConfig.direction === "asc" ? (
-                          <ChevronUp size={16} />
-                        ) : sortConfig.direction === "desc" ? (
-                          <ChevronDown size={16} />
+                {/* Data Columns */}
+                {columns.map((column) => (
+                  <th
+                    key={column.key}
+                    className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
+                  >
+                    {column.sortable ? (
+                      <button
+                        onClick={() => handleSort(column.key)}
+                        className="flex items-center gap-1 sm:gap-2 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      >
+                        <span>{column.header}</span>
+                        {sortConfig.key === column.key ? (
+                          sortConfig.direction === "asc" ? (
+                            <ChevronUp size={16} />
+                          ) : sortConfig.direction === "desc" ? (
+                            <ChevronDown size={16} />
+                          ) : (
+                            <ChevronDown size={16} className="opacity-30" />
+                          )
                         ) : (
                           <ChevronDown size={16} className="opacity-30" />
-                        )
-                      ) : (
-                        <ChevronDown size={16} className="opacity-30" />
-                      )}
-                    </button>
-                  ) : (
-                    <span>{column.header}</span>
-                  )}
-                </th>
-              ))}
+                        )}
+                      </button>
+                    ) : (
+                      <span>{column.header}</span>
+                    )}
+                  </th>
+                ))}
 
-              {/* Actions Column */}
-              {hasRowActions && (
-                <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3"></th>
-              )}
-            </tr>
-          </thead>
+                {/* Actions Column */}
+                {hasRowActions && (
+                  <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3"></th>
+                )}
+              </tr>
+            </thead>
 
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {sortedData.map((item, index) => {
-              const rowId = getRowId(item);
-              const isSelected = selectedRows.has(rowId);
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              {sortedData.map((item, index) => {
+                const rowId = getRowId(item);
+                const isSelected = selectedRows.has(rowId);
 
-              return (
-                <tr
-                  key={rowId}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                    isSelected ? "bg-blue-50 dark:bg-blue-900/20" : ""
-                  }`}
-                >
-                  {/* Checkbox */}
-                  {selectable && (
-                    <td className="px-3 py-3 sm:px-6 sm:py-4">
-                      <div className="flex items-center justify-center">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) =>
-                            handleSelectRow(rowId, e.target.checked)
-                          }
-                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer"
-                        />
-                      </div>
-                    </td>
-                  )}
+                return (
+                  <tr
+                    key={rowId}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                      isSelected ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    {selectable && (
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) =>
+                              handleSelectRow(rowId, e.target.checked)
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer"
+                          />
+                        </div>
+                      </td>
+                    )}
 
-                  {/* Data Cells */}
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
-                        column.bold
-                          ? "font-semibold text-gray-900 dark:text-white"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      {column.render
-                        ? column.render(item, index)
-                        : item[column.key]}
-                    </td>
-                  ))}
+                    {/* Data Cells */}
+                    {columns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
+                          column.bold
+                            ? "font-semibold text-gray-900 dark:text-white"
+                            : "text-gray-500 dark:text-gray-400"
+                        }`}
+                      >
+                        {column.render
+                          ? column.render(item, index)
+                          : item[column.key]}
+                      </td>
+                    ))}
 
-                  {/* Action Menu */}
-                  {(() => {
-                    const actions =
-                      typeof rowActions === "function"
-                        ? rowActions(item)
-                        : rowActions;
-                    return (
-                      actions &&
-                      actions.length > 0 && (
-                        <td className="px-3 py-3 sm:px-6 sm:py-4 text-right relative whitespace-nowrap">
-                          <button
-                            ref={(el) => {
-                              menuButtonRef.current[rowId] = el;
-                            }}
-                            disabled={disabled}
-                            onClick={() => {
-                              if (openMenuId !== rowId) {
-                                // Calculate position before opening
-                                const button = menuButtonRef.current[rowId];
-                                if (button) {
-                                  const rect = button.getBoundingClientRect();
-                                  const spaceBelow =
-                                    window.innerHeight - rect.bottom;
-                                  const menuHeight = actions.length * 40 + 16; // approximate
-                                  setMenuPosition(
-                                    spaceBelow < menuHeight ? "top" : "bottom",
-                                  );
-                                }
-                                setOpenMenuId(rowId);
-                              } else {
-                                setOpenMenuId(null);
-                              }
-                            }}
-                            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <MoreVertical size={20} />
-                          </button>
-
-                          {openMenuId === rowId && !disabled && (
-                            <>
-                              <div
-                                className="fixed inset-0 z-10"
-                                onClick={() => setOpenMenuId(null)}
-                              />
-                              <div
-                                className={`absolute right-0 z-20 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 ${
-                                  menuPosition === "top" ? "bottom-8" : "top-8"
-                                }`}
-                              >
-                                {actions.map((action) => (
+                    {/* Action Menu */}
+                    {(() => {
+                      const actions =
+                        typeof rowActions === "function"
+                          ? rowActions(item)
+                          : rowActions;
+                      return (
+                        actions &&
+                        actions.length > 0 && (
+                          <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              {actions.map((action) => {
+                                const ActionIcon = getActionIcon(action.value);
+                                return (
                                   <button
                                     key={action.value}
+                                    type="button"
                                     disabled={disabled}
-                                    onClick={() => {
-                                      onRowAction?.(item, action.value);
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={() =>
+                                      onRowAction?.(item, action.value)
+                                    }
+                                    className={getActionButtonClass(
+                                      action.value,
+                                    )}
+                                    title={action.label}
+                                    aria-label={action.label}
                                   >
-                                    {action.label}
+                                    <ActionIcon className="h-4 w-4" />
                                   </button>
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </td>
-                      )
-                    );
-                  })()}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        )
+                      );
+                    })()}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {/* Empty State */}
         {data.length === 0 && (

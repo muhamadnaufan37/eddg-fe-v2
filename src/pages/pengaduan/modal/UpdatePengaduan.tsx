@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -12,6 +12,13 @@ import {
   type PengaduanDetail,
 } from "@/services/pengaduanService";
 import { THEME_COLORS } from "@/config/theme";
+import {
+  createObjectPreviewUrl,
+  isImagePreviewUrl,
+  openPreviewModal,
+  revokeObjectPreviewUrl,
+  resolvePreviewUrl,
+} from "@/utils/previewUtils";
 
 const JENIS_PENGADUAN_OPTIONS = [
   { value: "kritik_saran", label: "Kritik & Saran" },
@@ -36,6 +43,14 @@ const UpdatePengaduan = () => {
   const navigate = useNavigate();
   const dataBalikan = location?.state as { detailData?: PengaduanDetail };
   const detailData = dataBalikan?.detailData;
+  const lampiranUrl = resolvePreviewUrl(detailData?.lampiran_url);
+  const isLampiranImage = isImagePreviewUrl(detailData?.lampiran_url);
+
+  useEffect(() => {
+    return () => {
+      revokeObjectPreviewUrl(preview);
+    };
+  }, [preview]);
 
   const validationSchema = Yup.object().shape({
     nama_lengkap: Yup.string().required("Nama lengkap wajib diisi"),
@@ -297,7 +312,8 @@ const UpdatePengaduan = () => {
                     onChange={(event) => {
                       const file = event.target.files?.[0] || null;
                       setFieldValue("lampiran", file);
-                      setPreview(file ? URL.createObjectURL(file) : "");
+                      revokeObjectPreviewUrl(preview);
+                      setPreview(createObjectPreviewUrl(file));
                     }}
                   />
                   <ErrorMessage
@@ -306,13 +322,31 @@ const UpdatePengaduan = () => {
                     className="text-red-600 text-sm mt-1"
                   />
 
-                  {!!detailData?.lampiran_url && !preview && (
-                    <img
-                      src={detailData.lampiran_url}
-                      alt="Lampiran saat ini"
-                      className="mt-3 max-h-52 rounded-lg border border-gray-200 dark:border-gray-700"
-                    />
-                  )}
+                  {!!lampiranUrl &&
+                    !preview &&
+                    (isLampiranImage ? (
+                      <button
+                        type="button"
+                        onClick={() => openPreviewModal(lampiranUrl)}
+                        className="mt-3 rounded-lg"
+                      >
+                        <img
+                          src={lampiranUrl}
+                          alt="Lampiran saat ini"
+                          className="max-h-52 rounded-lg border border-gray-200 dark:border-gray-700"
+                        />
+                      </button>
+                    ) : (
+                      <div className="mt-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => openPreviewModal(lampiranUrl)}
+                        >
+                          Preview Lampiran Saat Ini
+                        </Button>
+                      </div>
+                    ))}
 
                   {!!preview && (
                     <img

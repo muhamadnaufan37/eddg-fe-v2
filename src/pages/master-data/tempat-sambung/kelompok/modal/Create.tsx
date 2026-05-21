@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { axiosServices } from "@/services/axios";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
@@ -10,6 +10,10 @@ import { Select, Input } from "@/components/global";
 import { THEME_COLORS } from "@/config/theme";
 import { LucideWorkflow } from "lucide-react";
 import { Textarea } from "@/components/global/Input";
+import {
+  createObjectPreviewUrl,
+  revokeObjectPreviewUrl,
+} from "@/utils/previewUtils";
 
 const CreateDesa = () => {
   const [loadingData, setLoadingData] = useState(false);
@@ -18,6 +22,12 @@ const CreateDesa = () => {
   const location = useLocation();
   const dataBalikan = location?.state;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return () => {
+      revokeObjectPreviewUrl(imagePreview);
+    };
+  }, [imagePreview]);
 
   const statusOption = [
     { value: "1", label: "Aktif" },
@@ -64,7 +74,8 @@ const CreateDesa = () => {
       }
 
       setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      revokeObjectPreviewUrl(imagePreview);
+      setImagePreview(createObjectPreviewUrl(file));
     }
   };
 

@@ -32,6 +32,7 @@ import {
   CheckCheckIcon,
   AlertTriangle,
   File,
+  Droplet,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { THEME_COLORS } from "@/config/theme";
@@ -87,6 +88,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
       CheckCheckIcon: <CheckCheckIcon size={20} />,
       AlertTriangle: <AlertTriangle size={20} />,
       File: <File size={20} />,
+      Droplet: <Droplet size={20} />,
     };
 
     return iconMap[iconName] || iconName;

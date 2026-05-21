@@ -5,6 +5,11 @@ import { type PengaduanDetail } from "@/services/pengaduanService";
 import { THEME_COLORS } from "@/config/theme";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import {
+  isImagePreviewUrl,
+  openPreviewModal,
+  resolvePreviewUrl,
+} from "@/utils/previewUtils";
 
 const formatDate = (date: string) => {
   if (!date) return "-";
@@ -20,6 +25,8 @@ const DetailPengaduan = () => {
   const navigate = useNavigate();
   const dataBalikan = location?.state as { detailData?: PengaduanDetail };
   const detailData = dataBalikan?.detailData;
+  const lampiranUrl = resolvePreviewUrl(detailData?.lampiran_url);
+  const isLampiranImage = isImagePreviewUrl(detailData?.lampiran_url);
 
   return (
     <>
@@ -123,16 +130,32 @@ const DetailPengaduan = () => {
             </p>
           </div>
 
-          {!!detailData?.lampiran_url && (
+          {!!lampiranUrl && (
             <div className="md:col-span-2">
               <p className={`text-xs mb-2 ${THEME_COLORS.text.muted}`}>
                 Lampiran
               </p>
-              <img
-                src={detailData.lampiran_url}
-                alt="Lampiran pengaduan"
-                className="max-h-72 rounded-lg border border-gray-200 dark:border-gray-700"
-              />
+              {isLampiranImage ? (
+                <button
+                  type="button"
+                  onClick={() => openPreviewModal(lampiranUrl)}
+                  className="rounded-lg"
+                >
+                  <img
+                    src={lampiranUrl}
+                    alt="Lampiran pengaduan"
+                    className="max-h-72 rounded-lg border border-gray-200 dark:border-gray-700"
+                  />
+                </button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openPreviewModal(lampiranUrl)}
+                >
+                  Preview Lampiran
+                </Button>
+              )}
             </div>
           )}
         </div>

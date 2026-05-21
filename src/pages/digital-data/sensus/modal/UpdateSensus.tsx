@@ -16,6 +16,7 @@ import {
 } from "@/constants/formOptions";
 import { Select, Button } from "@/components/global";
 import { Input, Textarea } from "@/components/global/Input";
+import { resolvePreviewUrl, openPreviewModal } from "@/utils/previewUtils";
 
 const UpdateSensus = () => {
   const [balikanDataDesa, setBalikanDataDesa] = useState<any[]>([]);
@@ -237,11 +238,14 @@ const UpdateSensus = () => {
                   <label className="text-gray-900 dark:text-white">
                     Foto Peserta
                   </label>
-                  {dataBalikan?.detailData?.img_url !== null ? (
+                  {resolvePreviewUrl(dataBalikan?.detailData?.img_url) ? (
                     <img
-                      src={dataBalikan?.detailData?.img_url}
+                      src={resolvePreviewUrl(dataBalikan?.detailData?.img_url)}
                       alt="Foto Peserta"
-                      className="w-20 h-15 object-cover rounded-lg"
+                      className="w-20 h-15 object-cover rounded-lg cursor-pointer"
+                      onClick={() =>
+                        openPreviewModal(dataBalikan?.detailData?.img_url)
+                      }
                     />
                   ) : (
                     <>

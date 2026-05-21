@@ -15,6 +15,10 @@ import {
   IS_ATLET_ASAD_OPTIONS,
 } from "@/constants/formOptions";
 import { cn } from "@/lib/utils";
+import {
+  createObjectPreviewUrl,
+  revokeObjectPreviewUrl,
+} from "@/utils/previewUtils";
 
 const CreateSensus = () => {
   const [balikanDataDesa, setBalikanDataDesa] = useState<any[]>([]);
@@ -88,6 +92,12 @@ const CreateSensus = () => {
     tmpt_kelompok: dataBalikan?.balikanLogin?.user?.akses_kelompok || "",
   };
 
+  useEffect(() => {
+    return () => {
+      revokeObjectPreviewUrl(imagePreview);
+    };
+  }, [imagePreview]);
+
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -110,7 +120,8 @@ const CreateSensus = () => {
       }
 
       setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      revokeObjectPreviewUrl(imagePreview);
+      setImagePreview(createObjectPreviewUrl(file));
     }
   };
 

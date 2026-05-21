@@ -12,6 +12,7 @@ import {
   JENIS_DATA_OPTIONS,
 } from "@/constants/formOptions";
 import { Button, Select } from "@/components/global";
+import { resolvePreviewUrl, openPreviewModal } from "@/utils/previewUtils";
 
 const DetailSensus = () => {
   const [balikanDataDesa, setBalikanDataDesa] = useState<any[]>([]);
@@ -123,24 +124,31 @@ const DetailSensus = () => {
                   Foto Peserta
                 </label>
                 <div className="flex flex-col gap-3">
-                  {dataBalikan?.detailData?.img_url !== null ? (
-                    <img
-                      src={dataBalikan?.detailData?.img_url}
-                      alt="Foto Peserta"
-                      className="w-20 h-15 object-cover rounded-md"
-                    />
+                  {resolvePreviewUrl(dataBalikan?.detailData?.img_url) ? (
+                    <>
+                      <img
+                        src={resolvePreviewUrl(
+                          dataBalikan?.detailData?.img_url,
+                        )}
+                        alt="Foto Peserta"
+                        className="w-20 h-15 object-cover rounded-md cursor-pointer"
+                        onClick={() =>
+                          openPreviewModal(dataBalikan?.detailData?.img_url)
+                        }
+                      />
+                    </>
                   ) : (
                     <>
                       {dataBalikan?.detailData?.jenis_kelamin ===
                       "LAKI-LAKI" ? (
                         <img
-                          src="/eddg/empty-img-sensus-male.svg"
+                          src="/assets/empty-img-sensus-male.svg"
                           alt="Default Male"
                           className="w-20 h-15 object-cover rounded-md"
                         />
                       ) : (
                         <img
-                          src="/eddg/empty-img-sensus-female.svg"
+                          src="/assets/empty-img-sensus-female.svg"
                           alt="Default Female"
                           className="w-20 h-15 object-cover rounded-md"
                         />

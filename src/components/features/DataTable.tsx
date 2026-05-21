@@ -33,7 +33,7 @@ const DataTable: React.FC<DataTableProps> = ({
   meta,
   columns,
   onPageChange,
-  emptyImage = "/eddg/table-no-entry-data.svg",
+  emptyImage = "/assets/table-no-entry-data.svg",
   emptyMessage = "Belum ada data tersedia.",
 }) => {
   // Destructuring meta untuk kemudahan

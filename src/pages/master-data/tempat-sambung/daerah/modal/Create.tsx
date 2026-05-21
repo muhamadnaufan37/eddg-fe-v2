@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { axiosServices } from "@/services/axios";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
@@ -10,12 +10,22 @@ import { Select, Input } from "@/components/global";
 import { THEME_COLORS } from "@/config/theme";
 import { LucideWorkflow } from "lucide-react";
 import { Textarea } from "@/components/global/Input";
+import {
+  createObjectPreviewUrl,
+  revokeObjectPreviewUrl,
+} from "@/utils/previewUtils";
 
 const CreateDaerah = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return () => {
+      revokeObjectPreviewUrl(imagePreview);
+    };
+  }, [imagePreview]);
 
   const statusOption = [
     { value: "1", label: "Aktif" },
@@ -61,7 +71,8 @@ const CreateDaerah = () => {
       }
 
       setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      revokeObjectPreviewUrl(imagePreview);
+      setImagePreview(createObjectPreviewUrl(file));
     }
   };
 

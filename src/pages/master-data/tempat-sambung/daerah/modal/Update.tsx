@@ -10,6 +10,7 @@ import { Button } from "@/components/global";
 import { Input, Textarea } from "@/components/global/Input";
 import { Select } from "@/components/global";
 import { THEME_COLORS } from "@/config/theme";
+import { resolvePreviewUrl } from "@/utils/previewUtils";
 
 const UpdateDaerah = () => {
   const [loadingData, setLoadingData] = useState(false);
@@ -163,9 +164,11 @@ const UpdateDaerah = () => {
                     Foto
                   </label>
                   <div className="flex">
-                    {dataBalikan?.detailData?.img_url !== null ? (
+                    {resolvePreviewUrl(dataBalikan?.detailData?.img_url) ? (
                       <img
-                        src={dataBalikan?.detailData?.img_url}
+                        src={resolvePreviewUrl(
+                          dataBalikan?.detailData?.img_url,
+                        )}
                         alt="Foto Peserta"
                         className="w-20 h-15 object-cover rounded-md"
                       />

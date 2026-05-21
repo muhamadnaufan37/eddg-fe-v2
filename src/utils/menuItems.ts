@@ -49,6 +49,13 @@ export const menuItems = [
         link: "/sensus",
       },
       {
+        id: "digitaldata-cai",
+        title: "CAI",
+        icon: "Droplet",
+        role: ["admin", "ptgs-sensus"],
+        link: "/cai",
+      },
+      {
         id: "digitaldata-laporanbulanan",
         title: "Laporan Bulanan",
         icon: "Repeat2",

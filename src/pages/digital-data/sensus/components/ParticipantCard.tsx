@@ -1,5 +1,6 @@
 import type { Participant } from "@/pages/digital-data/sensus/types/Participant";
 import { useState } from "react";
+import { resolvePreviewUrl } from "@/utils/previewUtils";
 
 interface Props {
   data: Participant;
@@ -110,7 +111,12 @@ const ParticipantCard = ({ data }: Props) => {
       {/* Header */}
       <div className="flex items-start gap-3">
         <img
-          src={data.img_url}
+          src={
+            resolvePreviewUrl(data.img_url) ||
+            (data.jenis_kelamin === "LAKI-LAKI"
+              ? "/assets/empty-img-sensus-male.svg"
+              : "/assets/empty-img-sensus-female.svg")
+          }
           alt={data.nama_lengkap}
           className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700"
         />
