@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import GlobalImagePreview from "@/components/global/GlobalImagePreview";
+import ScrollToTop from "@/components/global/ScrollToTop";
 
 function App() {
   const queryClient = new QueryClient();
@@ -16,6 +17,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <Toaster />
           <GlobalImagePreview />
+          <ScrollToTop />
           <AuthContextProvider>{renderRoutes(routes)}</AuthContextProvider>
         </QueryClientProvider>
       </ThemeProvider>
