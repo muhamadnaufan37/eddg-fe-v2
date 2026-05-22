@@ -51,6 +51,7 @@ const PresensiPesertaPage = () => {
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState(10);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   // State untuk presensi modal
@@ -79,11 +80,11 @@ const PresensiPesertaPage = () => {
     refetch,
     isLoading,
   } = useQuery({
-    queryKey: ["presensi-report", id_kegiatan, page, rows, search],
+    queryKey: ["presensi-report", id_kegiatan, page, rows, debouncedSearch],
     queryFn: () => {
       if (!id_kegiatan) throw new Error("Kode kegiatan tidak ditemukan");
       // Catatan: API report mungkin belum support filter[search], tapi kita siapkan di sini
-      return fetchPresensiReport(id_kegiatan, page, rows, search);
+      return fetchPresensiReport(id_kegiatan, page, rows, debouncedSearch);
     },
     enabled: !!id_kegiatan,
     refetchOnWindowFocus: false,
@@ -96,19 +97,23 @@ const PresensiPesertaPage = () => {
   // Filter peserta berdasarkan search (client-side jika API belum support)
   const filteredData = useMemo(() => {
     if (!listData?.data) return [];
-    if (!search.trim()) return listData.data;
+    if (!debouncedSearch.trim()) return listData.data;
 
     return listData.data.filter(
       (item: PresensiPesertaData) =>
-        item.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
-        String(item.id).includes(search),
+        item.nama_lengkap
+          .toLowerCase()
+          .includes(debouncedSearch.toLowerCase()) ||
+        String(item.id).includes(debouncedSearch),
     );
-  }, [listData?.data, search]);
+  }, [listData?.data, debouncedSearch]);
 
   useEffect(() => {
-    if (search === "") {
-      refetch();
-    }
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
   }, [search]);
 
   const handlePresensi = async () => {
@@ -464,7 +469,12 @@ const PresensiPesertaPage = () => {
                   className={`w-full pl-11 pr-4 py-3 text-sm border ${THEME_COLORS.border.default} rounded-xl shadow-sm focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent transition-all ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
                   placeholder="Cari nama peserta..."
                   onChange={(e: any) => setSearch(e.target.value)}
-                  onKeyDown={(e: any) => e.key === "Enter" && refetch()}
+                  onKeyDown={(e: any) => {
+                    if (e.key === "Enter") {
+                      setDebouncedSearch(search.trim());
+                      refetch();
+                    }
+                  }}
                 />
               </div>
 

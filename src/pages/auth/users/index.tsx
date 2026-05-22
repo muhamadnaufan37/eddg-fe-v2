@@ -28,6 +28,7 @@ import {
 import {
   fetchDetailUsers,
   fetchResetPassUsers,
+  fetchResetDeviceUsers,
   fetchUnbanUsers,
   fetchUsersData,
 } from "@/services/UserServices";
@@ -75,6 +76,7 @@ const UsersPage = () => {
   const [showModalBanned, setShowModalBanned] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isResettingDevice, setIsResettingDevice] = useState(false);
   const [isUnbanning, setIsUnbanning] = useState(false);
 
   const navigate = useNavigate();
@@ -290,6 +292,35 @@ const UsersPage = () => {
     }
   };
 
+  const resetDeviceUsers = async (Kode: any, visibilityOption: any) => {
+    setIsResettingDevice(true);
+    try {
+      const response = await fetchResetDeviceUsers(Kode);
+
+      if (!response.success) {
+        toast.error("Error!", {
+          description: response.message || "Gagal mereset device user",
+          duration: 3000,
+        });
+        return;
+      }
+
+      switch (visibilityOption) {
+        case 8:
+          toast.success("Sukses", {
+            description: response.message || "Device berhasil direset",
+            duration: 3000,
+          });
+          refetchListUsers();
+          break;
+      }
+    } catch (error: any) {
+      handleApiError(error, {});
+    } finally {
+      setIsResettingDevice(false);
+    }
+  };
+
   const unbanUsers = async (Kode: any, visibilityOption: any) => {
     setIsUnbanning(true);
     try {
@@ -458,6 +489,7 @@ const UsersPage = () => {
       { label: "Detail", value: "detail" },
       { label: "Ubah", value: "edit" },
       { label: "Reset Password", value: "reset" },
+      { label: "Reset Device", value: "reset_device" },
     ];
 
     // Show Ban or Unban based on status
@@ -486,6 +518,9 @@ const UsersPage = () => {
       case "reset":
         resetPassUsers(item.uuid, 5);
         break;
+      case "reset_device":
+        resetDeviceUsers(item.uuid, 8);
+        break;
       case "banned":
         DetailDataFetch(item.uuid, 6);
         break;
@@ -511,6 +546,7 @@ const UsersPage = () => {
         {(isRefetchingUsers ||
           isLoadingDetail ||
           isResettingPassword ||
+          isResettingDevice ||
           isUnbanning) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-xs">
             <svg
@@ -538,9 +574,11 @@ const UsersPage = () => {
                 ? "Memuat detail..."
                 : isResettingPassword
                   ? "Mereset password..."
-                  : isUnbanning
-                    ? "Membuka blokir..."
-                    : "Memperbarui data..."}
+                  : isResettingDevice
+                    ? "Mereset device..."
+                    : isUnbanning
+                      ? "Membuka blokir..."
+                      : "Memperbarui data..."}
             </p>
           </div>
         )}

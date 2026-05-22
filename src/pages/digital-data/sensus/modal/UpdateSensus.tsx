@@ -17,10 +17,14 @@ import {
 import { Select, Button } from "@/components/global";
 import { Input, Textarea } from "@/components/global/Input";
 import { resolvePreviewUrl, openPreviewModal } from "@/utils/previewUtils";
+import { fetchUsersSensusOptions } from "@/services/sensusService";
 
 const UpdateSensus = () => {
   const [balikanDataDesa, setBalikanDataDesa] = useState<any[]>([]);
   const [balikanDataKelompok, setBalikanDataKelompok] = useState<any[]>([]);
+  const [balikanDataUsersSensus, setBalikanDataUsersSensus] = useState<any[]>(
+    [],
+  );
   const [loadingData, setLoadingData] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const location = useLocation();
@@ -146,6 +150,15 @@ const UpdateSensus = () => {
     return data;
   };
 
+  const loadUsersSensusData = async () => {
+    try {
+      const users = await fetchUsersSensusOptions();
+      setBalikanDataUsersSensus(users);
+    } catch {
+      setBalikanDataUsersSensus([]);
+    }
+  };
+
   useEffect(() => {
     if (!dataBalikan || !dataBalikan?.detailData?.id) {
       setShowModal(true);
@@ -163,11 +176,17 @@ const UpdateSensus = () => {
         if (dataBalikan.detailData.kd_desa) {
           await loadKelompokData(dataBalikan.detailData.kd_desa);
         }
+        await loadUsersSensusData();
       }
     };
 
     loadData();
   }, [dataBalikan?.detailData?.id]); // Hanya trigger saat detail data berubah
+
+  const usersSensusOptions =
+    balikanDataUsersSensus.length > 0
+      ? balikanDataUsersSensus
+      : dataBalikan?.fetchDataUsersSensus || [];
 
   return (
     <>
@@ -843,7 +862,7 @@ const UpdateSensus = () => {
                     />
                   </div>
 
-                  {dataBalikan?.balikanLogin?.role_id ===
+                  {dataBalikan?.balikanLogin?.role_id !==
                     "219bc0dd-ec72-4618-b22d-5d5ff612dcaf" && (
                     <div>
                       <label className="text-gray-900 dark:text-white">
@@ -854,11 +873,11 @@ const UpdateSensus = () => {
                         id="user_id"
                         name="user_id"
                         value={
-                          dataBalikan?.fetchDataUsersSensus?.find(
+                          usersSensusOptions.find(
                             (opt: any) => opt.value === values.user_id,
                           ) || null
                         }
-                        options={dataBalikan?.fetchDataUsersSensus || []}
+                        options={usersSensusOptions}
                         onChange={(option: any) =>
                           setFieldValue("user_id", option?.value || "")
                         }

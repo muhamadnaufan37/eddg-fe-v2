@@ -30,6 +30,20 @@ interface ReportParams {
   resultJenisData: string | number | null;
 }
 
+export interface UserSensusOption {
+  value: number;
+  label: string;
+}
+
+interface UserSensusResponse {
+  success: boolean;
+  message?: string;
+  data?: Array<{
+    id: number;
+    nama_lengkap: string;
+  }>;
+}
+
 /**
  * Determine endpoint and jenis_data based on role
  */
@@ -154,4 +168,22 @@ export const fetchKelompokByDesa = async (desaId: string) => {
     `/api/v1/kelompok/check?desa_id=${desaId}`,
   );
   return response.data;
+};
+
+export const fetchUsersSensusOptions = async (): Promise<
+  UserSensusOption[]
+> => {
+  const response = await axiosServices().get<UserSensusResponse>(
+    `/api/v1/data_peserta/users-sensus`,
+  );
+
+  const users = response.data?.data;
+  if (!Array.isArray(users)) {
+    return [];
+  }
+
+  return users.map((item) => ({
+    value: item.id,
+    label: item.nama_lengkap,
+  }));
 };

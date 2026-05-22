@@ -416,26 +416,10 @@ const PresensiKegiatanPage = () => {
       ),
     },
     {
-      key: "total_hadir",
-      header: "Hadir",
+      key: "total_presensi",
+      header: "Total Presensi",
       render: (item: PresensiKegiatanItem) => (
-        <span>{item.total_hadir || 0}</span>
-      ),
-    },
-    {
-      key: "total_terlambat",
-      header: "Terlambat",
-      mobileHidden: true,
-      render: (item: PresensiKegiatanItem) => (
-        <span>{item.total_terlambat || 0}</span>
-      ),
-    },
-    {
-      key: "total_tidak_hadir",
-      header: "Tidak Hadir",
-      mobileHidden: true,
-      render: (item: PresensiKegiatanItem) => (
-        <span>{item.total_tidak_hadir || 0}</span>
+        <span>{item.total_presensi || 0}</span>
       ),
     },
     {

@@ -33,6 +33,7 @@ import {
   fetchDetailPeserta,
   fetchDesaByDaerah,
   fetchKelompokByDesa,
+  fetchUsersSensusOptions,
 } from "@/services/sensusService";
 import { handleApiError, handleApiResponse } from "@/utils/errorUtils";
 import { formatDistanceToNow } from "date-fns";
@@ -217,7 +218,7 @@ const SensusPage = () => {
     const [daerah, pekerjaan, users] = await Promise.all([
       fetchOptions("/api/v1/daerah/all", "data_tempat_sambung", "nama_daerah"),
       fetchOptions("/api/v1/pekerjaan/all", "data", "nama_pekerjaan"),
-      fetchOptions("/api/v1/users/all", "data", "nama_lengkap"),
+      fetchUsersSensusOptions(),
     ]);
 
     setFetchDataDaerah(daerah);

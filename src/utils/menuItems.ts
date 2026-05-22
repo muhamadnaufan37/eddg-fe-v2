@@ -52,7 +52,7 @@ export const menuItems = [
         id: "digitaldata-cai",
         title: "CAI",
         icon: "Droplet",
-        role: ["admin", "ptgs-sensus"],
+        role: ["admin"],
         link: "/cai",
       },
       {

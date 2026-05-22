@@ -145,6 +145,14 @@ const BerandaPage = () => {
     window.location.href = "/presensi";
   };
 
+  const pageLprnBulanan = () => {
+    window.location.href = "/laporan-bulanan";
+  };
+
+  const pageManajemenPindahSambung = () => {
+    window.location.href = "/master-data/pindah-sambung";
+  };
+
   const fetchActivitiesRecent = async () => {
     try {
       setLoadingRecent(true);
@@ -370,10 +378,28 @@ const BerandaPage = () => {
       icon: "/assets/logo-dashboard-9.svg",
       roles: [
         "219bc0dd-ec72-4618-b22d-5d5ff612dcaf",
-        "aba1b06f-846a-414b-b223-b002a50c5722",
+        // "aba1b06f-846a-414b-b223-b002a50c5722",
         "b511748b-ef40-4999-b4e9-b8ab575ec958",
       ],
       onClick: pageAbsen,
+    },
+    {
+      label: "Laporan Bulanan",
+      icon: "/assets/logo-dashboard-1.svg",
+      roles: [
+        "219bc0dd-ec72-4618-b22d-5d5ff612dcaf",
+        "aba1b06f-846a-414b-b223-b002a50c5722",
+      ],
+      onClick: pageLprnBulanan,
+    },
+    {
+      label: "Manajemen Pindah Sambung",
+      icon: "/assets/logo-dashboard-1.svg",
+      roles: [
+        "219bc0dd-ec72-4618-b22d-5d5ff612dcaf",
+        "aba1b06f-846a-414b-b223-b002a50c5722",
+      ],
+      onClick: pageManajemenPindahSambung,
     },
   ];
 

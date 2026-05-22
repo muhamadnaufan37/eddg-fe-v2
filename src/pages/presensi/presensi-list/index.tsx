@@ -79,13 +79,13 @@ const PresensiListPage = () => {
       render: (item: PresensiListItem) => (
         <span
           className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-            item.status_presensi === "HADIR"
+            item.status_presensi === "hadir"
               ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-              : item.status_presensi === "TERLAMBAT"
+              : item.status_presensi === "terlambat"
                 ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
-                : item.status_presensi === "IZIN"
+                : item.status_presensi === "izin"
                   ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
-                  : item.status_presensi === "SAKIT"
+                  : item.status_presensi === "sakit"
                     ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200"
                     : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
           }`}

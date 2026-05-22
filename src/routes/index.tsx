@@ -55,7 +55,7 @@ export const routes: TRoute[] = [
     layout: Layout,
     guard: AuthGuard,
     path: "/cai",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin"],
     element: React.lazy(() => import("../pages/digital-data/cai")),
     fullScreen: false,
   },

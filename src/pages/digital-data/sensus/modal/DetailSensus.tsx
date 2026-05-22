@@ -13,10 +13,14 @@ import {
 } from "@/constants/formOptions";
 import { Button, Select } from "@/components/global";
 import { resolvePreviewUrl, openPreviewModal } from "@/utils/previewUtils";
+import { fetchUsersSensusOptions } from "@/services/sensusService";
 
 const DetailSensus = () => {
   const [balikanDataDesa, setBalikanDataDesa] = useState<any[]>([]);
   const [balikanDataKelompok, setBalikanDataKelompok] = useState<any[]>([]);
+  const [balikanDataUsersSensus, setBalikanDataUsersSensus] = useState<any[]>(
+    [],
+  );
   const [showModal, setShowModal] = useState(false);
   const location = useLocation();
   const dataBalikan = location?.state;
@@ -66,6 +70,15 @@ const DetailSensus = () => {
     }
   };
 
+  const loadUsersSensusData = async () => {
+    try {
+      const users = await fetchUsersSensusOptions();
+      setBalikanDataUsersSensus(users);
+    } catch {
+      setBalikanDataUsersSensus([]);
+    }
+  };
+
   const handleSubmit = async () => {};
 
   useEffect(() => {
@@ -79,11 +92,17 @@ const DetailSensus = () => {
       if (dataBalikan?.detailData) {
         await loadDesaData();
         await loadKelompokData();
+        await loadUsersSensusData();
       }
     };
 
     loadData();
   }, [dataBalikan?.detailData?.kd_daerah, dataBalikan?.detailData?.kd_desa]);
+
+  const usersSensusOptions =
+    balikanDataUsersSensus.length > 0
+      ? balikanDataUsersSensus
+      : dataBalikan?.fetchDataUsersSensus || [];
 
   return (
     <>
@@ -726,11 +745,11 @@ const DetailSensus = () => {
                       id="nm_petugas_input"
                       name="nm_petugas_input"
                       value={
-                        dataBalikan?.fetchDataUsersSensus?.find(
+                        usersSensusOptions.find(
                           (opt: any) => opt.value === values.nm_petugas_input,
                         ) || null
                       }
-                      options={dataBalikan?.fetchDataUsersSensus || []}
+                      options={usersSensusOptions}
                       onChange={(option: any) =>
                         setFieldValue("nm_petugas_input", option?.value || "")
                       }

@@ -1,13 +1,19 @@
 import React, { useState, useMemo } from "react";
 import {
+  Ban,
+  CalendarCheck2,
   ChevronDown,
   ChevronUp,
   ClipboardCheck,
+  ClipboardList,
   Eye,
   MoreVertical,
+  KeyRound,
   Pencil,
   QrCode,
   Reply,
+  RotateCcw,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 
@@ -136,10 +142,19 @@ export function DataTableAdvanced<T extends Record<string, any>>({
       case "qrcode":
         return QrCode;
       case "presensi":
-      case "list":
         return ClipboardCheck;
+      case "list":
+        return ClipboardList;
       case "reply":
         return Reply;
+      case "reset":
+        return KeyRound;
+      case "reset_device":
+        return RotateCcw;
+      case "banned":
+        return Ban;
+      case "unbanned":
+        return ShieldCheck;
       case "delete":
       case "hapus":
         return Trash2;
@@ -155,6 +170,10 @@ export function DataTableAdvanced<T extends Record<string, any>>({
       case "delete":
       case "hapus":
         return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
+      case "banned":
+        return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
+      case "unbanned":
+        return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
       case "edit":
       case "update":
         return `${baseClass} border-amber-200 bg-amber-50 text-amber-600 hover:border-amber-300 hover:bg-amber-100 focus:ring-amber-500 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/35`;
@@ -163,6 +182,10 @@ export function DataTableAdvanced<T extends Record<string, any>>({
       case "presensi":
       case "list":
         return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
+      case "reset":
+        return `${baseClass} border-indigo-200 bg-indigo-50 text-indigo-600 hover:border-indigo-300 hover:bg-indigo-100 focus:ring-indigo-500 dark:border-indigo-900/60 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/35`;
+      case "reset_device":
+        return `${baseClass} border-sky-200 bg-sky-50 text-sky-600 hover:border-sky-300 hover:bg-sky-100 focus:ring-sky-500 dark:border-sky-900/60 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/35`;
       case "reply":
         return `${baseClass} border-cyan-200 bg-cyan-50 text-cyan-600 hover:border-cyan-300 hover:bg-cyan-100 focus:ring-cyan-500 dark:border-cyan-900/60 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-900/35`;
       default:
