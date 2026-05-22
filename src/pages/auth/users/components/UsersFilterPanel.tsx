@@ -19,6 +19,9 @@ const UsersFilterPanel = ({
   status,
   setStatus,
   statusUsersOptions,
+  statusNda,
+  setStatusNda,
+  statusNdaOptions,
 }: UsersFilterPanelProps) => {
   return (
     <div className="flex flex-col gap-4">
@@ -72,6 +75,14 @@ const UsersFilterPanel = ({
           placeholder="Status Users"
           onChange={(value: any) => {
             setStatus(value !== undefined ? value : "");
+          }}
+        />
+        <FilterDropdown
+          options={statusNdaOptions}
+          value={statusNda}
+          placeholder="Status NDA"
+          onChange={(value: any) => {
+            setStatusNda(value !== undefined ? value : "");
           }}
         />
       </div>

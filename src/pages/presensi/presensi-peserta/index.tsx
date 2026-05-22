@@ -34,8 +34,12 @@ import { toast } from "sonner";
 interface PresensiModalState {
   open: boolean;
   pesertaId: string | null;
+  pesertaKode: string | null;
   pesertaNama: string | null;
   mode: "regular" | "coordinate";
+  category: string;
+  statusPresensi: "hadir" | "izin" | "sakit";
+  keterangan: string;
 }
 
 const PresensiPesertaPage = () => {
@@ -58,8 +62,12 @@ const PresensiPesertaPage = () => {
   const [presensiModal, setPresensiModal] = useState<PresensiModalState>({
     open: false,
     pesertaId: null,
+    pesertaKode: null,
     pesertaNama: null,
     mode: "regular",
+    category: "",
+    statusPresensi: "hadir",
+    keterangan: "",
   });
 
   // State untuk coordinate
@@ -91,6 +99,7 @@ const PresensiPesertaPage = () => {
   });
 
   // Extract data dan statistics dari report
+  const dataCategory = reportData?.category;
   const listData = reportData?.list_data_presensi_peserta;
   const statistics = reportData?.statistics;
 
@@ -117,7 +126,7 @@ const PresensiPesertaPage = () => {
   }, [search]);
 
   const handlePresensi = async () => {
-    if (!presensiModal.pesertaId) {
+    if (!presensiModal.pesertaKode) {
       toast.error("Error", {
         description: "ID peserta tidak ditemukan",
         duration: 3000,
@@ -129,7 +138,8 @@ const PresensiPesertaPage = () => {
     try {
       const checkResponse = await checkPresensi({
         kode_kegiatan: kode_kegiatan || "",
-        id_peserta: presensiModal.pesertaId,
+        id_peserta: presensiModal.pesertaKode,
+        category: dataCategory || "",
       });
 
       if (checkResponse.data?.already_presensi) {
@@ -162,18 +172,22 @@ const PresensiPesertaPage = () => {
 
         response = await storePresensiByCoordinate({
           kode_kegiatan: kode_kegiatan || "",
-          id_peserta: presensiModal.pesertaId,
+          id_peserta: presensiModal.pesertaKode,
           add_by_petugas: defaultPetugasId,
           latitude: coordinate.latitude,
           longitude: coordinate.longitude,
           radius_meter: coordinate.radiusMeter,
+          category: dataCategory || "",
         });
       } else {
         // Regular presensi
         response = await createPresensi({
           kode_kegiatan: kode_kegiatan || "",
-          id_peserta: presensiModal.pesertaId,
+          id_peserta: presensiModal.pesertaKode,
           add_by_petugas: defaultPetugasId,
+          category: dataCategory || "",
+          status_presensi: presensiModal.statusPresensi,
+          keterangan: presensiModal.keterangan,
         });
       }
 
@@ -249,15 +263,15 @@ const PresensiPesertaPage = () => {
       render: (item: PresensiPesertaData) => (
         <span
           className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-            item.status_presensi === "HADIR"
+            item.status_presensi === "hadir"
               ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-              : item.status_presensi === "TERLAMBAT"
+              : item.status_presensi === "terlambat"
                 ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
-                : item.status_presensi === "IZIN"
+                : item.status_presensi === "izin"
                   ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
-                  : item.status_presensi === "SAKIT"
+                  : item.status_presensi === "sakit"
                     ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                    : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
           }`}
         >
           {item.status_presensi ? (
@@ -268,7 +282,7 @@ const PresensiPesertaPage = () => {
           ) : (
             <>
               <Clock className="w-3 h-3" />
-              Belum Presensi
+              Belum Absen
             </>
           )}
         </span>
@@ -304,8 +318,12 @@ const PresensiPesertaPage = () => {
       setPresensiModal({
         open: true,
         pesertaId: String(item.id),
+        pesertaKode: item.kode_cari_data,
         pesertaNama: item.nama_lengkap,
         mode: "regular",
+        category: "",
+        statusPresensi: "hadir",
+        keterangan: "",
       });
       setCoordinate({
         latitude: "",
@@ -438,7 +456,7 @@ const PresensiPesertaPage = () => {
                   </div>
                   <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Alfa
+                      Alfa / Belum Absen
                     </p>
                     <p className="text-lg font-bold text-red-600 dark:text-red-400">
                       {statistics.alfa}
@@ -674,8 +692,57 @@ const PresensiPesertaPage = () => {
           )}
 
           {presensiModal.mode === "regular" && (
-            <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-xs text-gray-600 dark:text-gray-400">
-              Presensi akan dicatat tanpa verifikasi lokasi.
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium block">
+                  Status Presensi
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(["hadir", "izin", "sakit"] as const).map((status) => {
+                    const isActive = presensiModal.statusPresensi === status;
+
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() =>
+                          setPresensiModal({
+                            ...presensiModal,
+                            statusPresensi: status,
+                          })
+                        }
+                        className={`px-4 py-2 text-xs rounded-lg border transition-all capitalize ${
+                          isActive
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900"
+                        }`}
+                      >
+                        {status}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium block">Keterangan</label>
+                <textarea
+                  value={presensiModal.keterangan}
+                  onChange={(e) =>
+                    setPresensiModal({
+                      ...presensiModal,
+                      keterangan: e.target.value,
+                    })
+                  }
+                  placeholder="Isi keterangan jika diperlukan"
+                  rows={3}
+                  className={`w-full px-3 py-2 text-sm border ${THEME_COLORS.border.default} rounded-lg ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary} focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent`}
+                />
+              </div>
+
+              <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-xs text-gray-600 dark:text-gray-400">
+                Presensi akan dicatat tanpa verifikasi lokasi.
+              </div>
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ interface FetchDataParams {
   rows: number;
   filterInput: string;
   status: string;
+  status_nda: string;
   role_daerah: string;
   role_desa: string;
   role_kelompok: string;
@@ -30,6 +31,7 @@ export const fetchUsersData = async (params: FetchDataParams) => {
     per_page: params.rows,
     "filter[search]": params.filterInput,
     "filter[status]": params.status,
+    "filter[status_nda]": params.status_nda,
     "filter[role_daerah]": params.role_daerah,
     "filter[role_desa]": params.role_desa,
     "filter[role_kelompok]": params.role_kelompok,
@@ -44,7 +46,19 @@ export const fetchUsersData = async (params: FetchDataParams) => {
   const response = await axiosServices().get(endpoint, {
     params: cleanParams,
   });
-  return response.data;
+
+  const responseData = response.data;
+
+  if (Array.isArray(responseData?.data)) {
+    return {
+      ...responseData,
+      data: responseData.data.filter(
+        (user: any) => user?.is_current_user !== true,
+      ),
+    };
+  }
+
+  return responseData;
 };
 
 export const fetchDetailUsers = async (uuid: string) => {

@@ -62,11 +62,14 @@ export interface UsersFilterPanelProps {
   setBalikanDataDesa: (v: any) => void;
   setBalikanDataKelompok: (v: any) => void;
   statusUsersOptions: any[];
+  statusNdaOptions: any[];
 
   // status filters
   status: any;
+  statusNda: any;
 
   setStatus: (v: any) => void;
+  setStatusNda: (v: any) => void;
 
   activeKey: string | null;
   setActiveKey: (v: string | null) => void;

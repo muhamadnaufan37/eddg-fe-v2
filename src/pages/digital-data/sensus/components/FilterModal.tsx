@@ -15,12 +15,12 @@ const FilterModal = ({ open, onClose, title, children }: FilterModalProps) => {
     <Fragment>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 dark:bg-black/60 z-10 animate-fadeIn"
+        className="fixed inset-0 bg-black/40 dark:bg-black/60 z-20 animate-fadeIn"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center z-10">
+      <div className="fixed inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center z-20">
         <div
           className="
             bg-white dark:bg-gray-900 w-full md:max-w-lg rounded-t-2xl md:rounded-2xl

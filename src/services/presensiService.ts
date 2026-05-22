@@ -20,6 +20,7 @@ export interface ListDataPresensiPeserta {
 export interface PresensiPesertaData {
   id: number;
   nama_lengkap: string;
+  kode_cari_data: string;
   tanggal_lahir: string;
   jenis_kelamin: string;
   status_sambung: number;
@@ -58,6 +59,7 @@ export interface Statistics {
 
 export interface PresensiReportResponse {
   message: string;
+  category: string;
   list_data_presensi_peserta: ListDataPresensiPeserta;
   data_presensi_peserta: DataPresensiPeserum[];
   statistics: Statistics;
@@ -140,6 +142,9 @@ export interface CreatePresensiPayload {
   kode_kegiatan: string;
   id_peserta: string;
   add_by_petugas: string;
+  category: string;
+  status_presensi?: string;
+  keterangan?: string;
 }
 
 export interface CreatePresensiResponse {
@@ -156,12 +161,14 @@ export interface StorePresensiByCoordinatePayload {
   latitude: string;
   longitude: string;
   radius_meter: number;
+  category: string;
 }
 
 // ===================== Interfaces untuk Check Presensi =====================
 export interface CheckPresensiPayload {
   kode_kegiatan: string;
   id_peserta: string;
+  category: string;
 }
 
 export interface CheckPresensiResponse {
@@ -189,7 +196,7 @@ export const fetchPresensiReport = async (
     params: {
       id_kegiatan: idKegiatan,
       page,
-      per_page: perPage,
+      "per-page": perPage,
       keyword: search && search.trim() ? search : undefined, // Hanya sertakan search jika ada dan tidak kosong
     },
   });
@@ -240,7 +247,7 @@ export const fetchPresensiDetailByReport = async (
     params: {
       id_kegiatan: idKegiatan,
       page,
-      per_page: perPage,
+      "per-page": perPage,
     },
   });
   return response.data;

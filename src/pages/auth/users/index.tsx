@@ -18,6 +18,7 @@ import { BASE_TITLE } from "@/store/actions";
 import { toast } from "sonner";
 import { DataTableAdvanced, Input, type Column } from "@/components/global";
 import {
+  Copy,
   Filter,
   Info,
   PlusCircle,
@@ -56,6 +57,7 @@ const UsersPage = () => {
   const [fetchDataDaerah, setFetchDataDaerah] = useState<Option[]>([]);
   const [fetchDataRoles, setFetchDataRoles] = useState<Option[]>([]);
   const [status, setStatus] = useState<any>("");
+  const [statusNda, setStatusNda] = useState<any>("");
   const [userData, setUserData] = useState(null);
   const [filterDaerah, setFilterDaerah] = useState(
     dataLogin?.user?.akses_daerah || "",
@@ -88,6 +90,7 @@ const UsersPage = () => {
         rows,
         filterInput,
         status,
+        status_nda: statusNda,
         role_daerah: dataLogin?.user?.akses_daerah || filterDaerah,
         role_desa: dataLogin?.user?.akses_desa || filterDesa,
         role_kelompok: dataLogin?.user?.akses_kelompok || filterKelompok,
@@ -174,6 +177,7 @@ const UsersPage = () => {
     setRows(10);
     setFilterInput("");
     setStatus("");
+    setStatusNda("");
     setFilterDaerah(dataLogin?.user?.akses_daerah || "");
     setFilterDesa(dataLogin?.user?.akses_desa || "");
     setFilterKelompok(dataLogin?.user?.akses_kelompok || "");
@@ -185,12 +189,13 @@ const UsersPage = () => {
       status === "" ||
       filterDaerah === "" ||
       filterDesa === "" ||
-      filterKelompok === "";
+      filterKelompok === "" ||
+      statusNda === "";
 
     if (isAnyFilterEmpty) {
       refetchListUsers();
     }
-  }, [status, filterDaerah, filterDesa, filterKelompok]);
+  }, [status, statusNda, filterDaerah, filterDesa, filterKelompok]);
 
   useEffect(() => {
     if (!hasFetched.current) {
@@ -408,6 +413,37 @@ const UsersPage = () => {
     return formatDistanceToNow(new Date(date), { addSuffix: true, locale: id });
   };
 
+  const handleCopyKode = async (kode: string | number) => {
+    const text = String(kode || "").trim();
+    if (!text) return;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      toast.success("Berhasil", {
+        description: `Kode ${text} berhasil disalin`,
+        duration: 2000,
+      });
+    } catch (error) {
+      toast.error("Gagal", {
+        description: "Kode tidak dapat disalin",
+        duration: 2500,
+      });
+    }
+  };
+
   // Definisi kolom
   const columns: Column<any>[] = [
     {
@@ -415,6 +451,20 @@ const UsersPage = () => {
       header: "UUID",
       sortable: true,
       bold: true,
+      render: (item: any) => (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopyKode(item.uuid);
+          }}
+          title="Klik untuk menyalin kode"
+        >
+          <span>Salin Kode</span>
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+      ),
     },
     {
       key: "nama_lengkap",
@@ -470,10 +520,20 @@ const UsersPage = () => {
       ),
     },
     {
+      key: "status_nda",
+      header: "Status NDA",
+      sortable: true,
+    },
+    {
+      key: "failed_device_attempts",
+      header: "Failed Device Attempts",
+      sortable: true,
+    },
+    {
       key: "login_terakhir",
       header: "Login Terakhir",
       sortable: true,
-      render: (item: any) => <div>{formatDateString(item.created_at)}</div>,
+      render: (item: any) => <div>{formatDateString(item.login_terakhir)}</div>,
     },
     {
       key: "created_at",
@@ -724,7 +784,11 @@ const UsersPage = () => {
               </div>
 
               {/* Info Badge - Optional: showing active filters count */}
-              {(status || filterDaerah || filterDesa || filterKelompok) && (
+              {(status ||
+                statusNda ||
+                filterDaerah ||
+                filterDesa ||
+                filterKelompok) && (
                 <div
                   className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
                 >
@@ -824,6 +888,13 @@ const UsersPage = () => {
             { value: 1, label: "Aktif" },
             { value: 0, label: "Tidak Aktif" },
             { value: -1, label: "Banned" },
+          ]}
+          statusNda={statusNda}
+          setStatusNda={setStatusNda}
+          statusNdaOptions={[
+            { value: "", label: "Semua Status NDA" },
+            { value: 1, label: "Sudah NDA" },
+            { value: 0, label: "Belum NDA" },
           ]}
         />
       </FilterModal>

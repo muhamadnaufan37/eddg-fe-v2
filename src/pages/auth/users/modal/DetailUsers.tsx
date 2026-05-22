@@ -198,6 +198,59 @@ const DetailUsers = () => {
                   </span>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <label
+                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+                >
+                  Status NDA
+                </label>
+                <div
+                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+                >
+                  <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                    {userData.status_nda === 1
+                      ? "Signed"
+                      : userData.status_nda === 0
+                        ? "Not Signed"
+                        : "-"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+                >
+                  Failed Device Attempts
+                </label>
+                <div
+                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+                >
+                  <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                    {userData.failed_device_attempts !== undefined
+                      ? userData.failed_device_attempts
+                      : "-"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className={`text-xs font-medium ${THEME_COLORS.text.muted}`}
+                >
+                  Device Terdaftar
+                </label>
+                <div
+                  className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
+                >
+                  <span className={`text-sm ${THEME_COLORS.text.primary}`}>
+                    {userData.device_identifier !== undefined
+                      ? userData.device_identifier
+                      : "-"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -8,7 +8,7 @@ import ModalInvalidId from "@/components/modal/ModalInvalidId";
 import { handleApiError } from "@/utils/errorUtils";
 import { fetchDesa, fetchKelompok } from "@/utils/locationUtils";
 import { Select, Button } from "@/components/global";
-import { Input } from "@/components/global/Input";
+import { Input, Textarea } from "@/components/global/Input";
 import { THEME_COLORS } from "@/config/theme";
 
 const UpdateUsers = () => {
@@ -52,12 +52,20 @@ const UpdateUsers = () => {
     role_desa: dataBalikan?.detailData?.kd_desa,
     role_kelompok: dataBalikan?.detailData?.kd_kelompok,
     reason_ban: dataBalikan?.detailData?.reason_ban,
+    status_nda: dataBalikan?.detailData?.status_nda,
+    device_identifier: dataBalikan?.detailData?.device_identifier,
+    failed_device_attempts: dataBalikan?.detailData?.failed_device_attempts,
   };
 
   const statusAkun = [
     { value: "1", label: "Aktif" },
     { value: "0", label: "Tidak Aktif" },
     { value: "-1", label: "Blokir Akun" },
+  ];
+
+  const statusNDA = [
+    { value: 1, label: "Signed" },
+    { value: 0, label: "Not Signed" },
   ];
 
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
@@ -222,7 +230,7 @@ const UpdateUsers = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className={THEME_COLORS.text.label}>
                       Nama Lengkap
@@ -306,9 +314,6 @@ const UpdateUsers = () => {
                       className="text-red-600 text-sm"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
                   <div>
                     <label className={THEME_COLORS.text.label}>Status</label>
 
@@ -330,6 +335,72 @@ const UpdateUsers = () => {
 
                     <ErrorMessage
                       name="status"
+                      component="div"
+                      className="text-red-600 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className={THEME_COLORS.text.label}>
+                      Status NDA
+                    </label>
+                    <Select
+                      id="status_nda"
+                      name="status_nda"
+                      value={
+                        statusNDA.find(
+                          (opt) => opt.value === values.status_nda,
+                        ) || null
+                      }
+                      options={statusNDA}
+                      onChange={(option: any) =>
+                        setFieldValue("status_nda", option?.value || "")
+                      }
+                      placeholder="Pilih salah satu"
+                      isClearable
+                      isDisabled
+                    />
+                  </div>
+
+                  <div>
+                    <label className={THEME_COLORS.text.label}>
+                      Failed Device Attempts
+                    </label>
+
+                    <Field
+                      as={Input}
+                      id="failed_device_attempts"
+                      name="failed_device_attempts"
+                      rows={3}
+                      placeholder="Isi Alamat"
+                      disabled
+                    />
+
+                    <ErrorMessage
+                      name="failed_device_attempts"
+                      component="div"
+                      className="text-red-600 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className={THEME_COLORS.text.label}>
+                      Device Identifier
+                    </label>
+
+                    <Field
+                      as={Textarea}
+                      id="device_identifier"
+                      name="device_identifier"
+                      rows={3}
+                      placeholder="Isi Alamat"
+                      disabled
+                    />
+
+                    <ErrorMessage
+                      name="device_identifier"
                       component="div"
                       className="text-red-600 text-sm"
                     />

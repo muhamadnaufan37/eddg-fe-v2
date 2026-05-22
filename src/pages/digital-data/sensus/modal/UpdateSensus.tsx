@@ -862,7 +862,7 @@ const UpdateSensus = () => {
                     />
                   </div>
 
-                  {dataBalikan?.balikanLogin?.role_id !==
+                  {dataBalikan?.balikanLogin?.user?.role_id ===
                     "219bc0dd-ec72-4618-b22d-5d5ff612dcaf" && (
                     <div>
                       <label className="text-gray-900 dark:text-white">
@@ -887,7 +887,7 @@ const UpdateSensus = () => {
                             null &&
                             dataBalikan?.balikanLogin?.user?.akses_kelompok !==
                               null) ||
-                          dataBalikan?.balikanLogin?.role_id !==
+                          dataBalikan?.balikanLogin?.user?.role_id !==
                             "219bc0dd-ec72-4618-b22d-5d5ff612dcaf"
                         }
                         isClearable

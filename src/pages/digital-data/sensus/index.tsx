@@ -518,7 +518,7 @@ const SensusPage = () => {
           }}
           title="Klik untuk menyalin kode"
         >
-          <span>{item.kode_cari_data}</span>
+          <span>Salin Kode</span>
           <Copy className="h-3.5 w-3.5" />
         </button>
       ),
