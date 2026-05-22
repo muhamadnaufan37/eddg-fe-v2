@@ -25,6 +25,9 @@ export interface DataTableAdvancedProps<T> {
   data: T[];
   columns: Column<T>[];
 
+  // Table scroll behavior
+  maxHeightClassName?: string;
+
   // Row actions
   onRowAction?: (item: T, action: string) => void;
   rowActions?:
@@ -45,6 +48,7 @@ export interface DataTableAdvancedProps<T> {
 export function DataTableAdvanced<T extends Record<string, any>>({
   data,
   columns,
+  maxHeightClassName = "max-h-[70vh]",
   onRowAction,
   rowActions,
   selectable = true,
@@ -169,14 +173,16 @@ export function DataTableAdvanced<T extends Record<string, any>>({
   return (
     <>
       {/* Table */}
-      <div className="w-full max-w-full overflow-x-auto overflow-y-hidden rounded-2xl border border-gray-200 dark:border-gray-700 touch-pan-x">
+      <div
+        className={`w-full max-w-full ${maxHeightClassName} overflow-auto rounded-2xl border border-gray-200 dark:border-gray-700`}
+      >
         <div className="min-w-max">
           <table className={`${tableMinWidthClass} w-full table-auto`}>
-            <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <thead className="sticky top-0 z-20 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
               <tr>
                 {/* Checkbox Column */}
                 {selectable && (
-                  <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3">
+                  <th className="w-10 bg-gray-50 px-3 py-2 sm:w-12 sm:px-6 sm:py-3 dark:bg-gray-800">
                     <div className="flex items-center justify-center">
                       <input
                         type="checkbox"
@@ -195,7 +201,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                 {columns.map((column) => (
                   <th
                     key={column.key}
-                    className={`${column.mobileHidden ? "hidden md:table-cell" : ""} px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
+                    className={`${column.mobileHidden ? "hidden md:table-cell" : ""} bg-gray-50 px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6 sm:py-3 dark:bg-gray-800 dark:text-gray-400`}
                   >
                     {column.sortable ? (
                       <button
@@ -223,7 +229,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
 
                 {/* Actions Column */}
                 {hasRowActions && (
-                  <th className="w-10 px-3 py-2 sm:w-12 sm:px-6 sm:py-3"></th>
+                  <th className="w-10 bg-gray-50 px-3 py-2 sm:w-12 sm:px-6 sm:py-3 dark:bg-gray-800"></th>
                 )}
               </tr>
             </thead>
