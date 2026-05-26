@@ -4,6 +4,7 @@ import { axiosServices } from "@/services/axios";
 import { handleApiError } from "@/utils/errorUtils";
 import { Select } from "@/components/global";
 import { THEME_COLORS } from "@/config/theme";
+import type { InputActionMeta } from "react-select";
 
 interface Option {
   value: string | number;
@@ -364,6 +365,7 @@ interface RequestModalProps {
   }) => void;
   loading?: boolean;
   fetchDataPeserta?: Option[];
+  setNamaSearchTerm: (value: string) => void;
 }
 
 export function RequestModal({
@@ -372,6 +374,7 @@ export function RequestModal({
   onSubmit,
   loading,
   fetchDataPeserta,
+  setNamaSearchTerm,
 }: RequestModalProps) {
   const [kodeCariData, setKodeCariData] = useState("");
   const [alasanPindah, setAlasanPindah] = useState("");
@@ -584,12 +587,24 @@ export function RequestModal({
               onChange={(selected: any) => {
                 setKodeCariData(selected ? String(selected.value) : "");
               }}
+              onInputChange={(
+                inputValue: string,
+                actionMeta: InputActionMeta,
+              ) => {
+                if (actionMeta.action === "input-change") {
+                  setNamaSearchTerm(inputValue);
+                }
+
+                return inputValue;
+              }}
+              filterOption={null}
               placeholder="Kode Cari Data Peserta"
               className="w-full text-xs"
+              noOptionsMessage={() => "Ketik nama peserta untuk mencari"}
               isClearable
             />
             <p className={`mt-1.5 text-xs ${THEME_COLORS.text.muted}`}>
-              Atau masukkan kode cari data peserta yang akan dipindahkan
+              Ketik nama peserta untuk mencari data melalui API.
             </p>
           </div>
 

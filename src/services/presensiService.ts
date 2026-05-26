@@ -179,6 +179,12 @@ export interface CheckPresensiResponse {
   };
 }
 
+export interface PresensiReportPdfResponse {
+  blob: Blob;
+  filename: string;
+  contentDisposition: any;
+}
+
 // ===================== API Functions =====================
 
 /**
@@ -201,6 +207,81 @@ export const fetchPresensiReport = async (
     },
   });
   return response.data;
+};
+
+const extractFilenameFromContentDisposition = (
+  contentDisposition?: string,
+): string | null => {
+  if (!contentDisposition) return null;
+
+  const normalizedDisposition = contentDisposition.trim();
+
+  const filenameStarMatch = contentDisposition.match(
+    /filename\*=UTF-8''([^;]+)/i,
+  );
+  if (filenameStarMatch?.[1]) {
+    try {
+      return decodeURIComponent(filenameStarMatch[1].replace(/"/g, ""));
+    } catch {
+      return filenameStarMatch[1].replace(/"/g, "");
+    }
+  }
+
+  const filenameMatch = normalizedDisposition.match(
+    /filename=\"?([^\";]+)\"?/i,
+  );
+  return filenameMatch?.[1] ?? null;
+};
+
+const getResponseContentDisposition = (response: any): string | undefined => {
+  const headers = response?.headers;
+
+  if (typeof headers?.get === "function") {
+    return headers.get("content-disposition") ?? undefined;
+  }
+
+  const headerValue =
+    headers?.["content-disposition"] ??
+    headers?.["Content-Disposition"] ??
+    headers?.["Content-disposition"];
+
+  if (headerValue) return headerValue;
+
+  const requestHeader = response?.request?.getResponseHeader?.(
+    "content-disposition",
+  );
+
+  return requestHeader ?? undefined;
+};
+
+/**
+ * GET /api/v1/presensi/report/pdf?id_kegiatan={idKegiatan}
+ * Fetch PDF report presensi dalam bentuk blob dan ambil nama file dari header.
+ */
+export const fetchPresensiReportPdf = async (
+  idKegiatan: string | number,
+): Promise<PresensiReportPdfResponse> => {
+  const response = await axiosServices().get(`/api/v1/presensi/report/pdf`, {
+    params: {
+      id_kegiatan: idKegiatan,
+    },
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  });
+
+  const contentDisposition = getResponseContentDisposition(response);
+
+  const filename =
+    extractFilenameFromContentDisposition(contentDisposition) ||
+    `laporan-presensi-${idKegiatan}.pdf`;
+
+  return {
+    blob: response.data,
+    filename,
+    contentDisposition,
+  };
 };
 
 /**

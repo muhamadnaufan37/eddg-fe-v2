@@ -13,9 +13,9 @@ import { PindahSambungCard } from "./components/PindahSambungCard";
 import { HistoryModal, ActionModal, RequestModal } from "./components/Modals";
 import { BASE_TITLE } from "@/store/actions";
 import { handleApiError } from "@/utils/errorUtils";
-import { useFetchOptions } from "@/hooks/useFetchOptions";
 import { getLocalStorage } from "@/services/localStorageService";
 import { toast } from "sonner";
+import { axiosServices } from "@/services/axios";
 
 interface Option {
   value: string | number;
@@ -25,7 +25,6 @@ interface Option {
 const PindahSambungIndex = () => {
   const hasFetched = useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const { fetchOptions } = useFetchOptions();
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<
@@ -46,6 +45,8 @@ const PindahSambungIndex = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [fetchDataPeserta, setFetchDataPeserta] = useState<Option[]>([]);
+  const [namaSearchTerm, setNamaSearchTerm] = useState("");
+  const [loadingPesertaOptions, setLoadingPesertaOptions] = useState(false);
 
   const dataLogin = getLocalStorage("userData");
 
@@ -81,17 +82,45 @@ const PindahSambungIndex = () => {
   const totalPages = pindahSambungData?.meta?.last_page || 1;
   const total = pindahSambungData?.meta?.total || 0;
 
-  const loadAllData = async () => {
-    const [dataPeserta] = await Promise.all([
-      fetchOptions(
-        `/api/v1/data_peserta/all?tmpt_daerah=${dataLogin?.user?.akses_daerah}&tmpt_desa=${dataLogin?.user?.akses_desa}&tmpt_kelompok=${dataLogin?.user?.akses_kelompok}`,
-        "data",
-        "nama_lengkap",
-        "kode_cari_data",
-      ),
-    ]);
+  const loadAllData = async (searchTerm = "") => {
+    setLoadingPesertaOptions(true);
+    try {
+      const params = new URLSearchParams();
 
-    setFetchDataPeserta(dataPeserta);
+      if (dataLogin?.user?.akses_daerah !== undefined) {
+        params.set("tmpt_daerah", String(dataLogin?.user?.akses_daerah));
+      }
+      if (dataLogin?.user?.akses_desa !== undefined) {
+        params.set("tmpt_desa", String(dataLogin?.user?.akses_desa));
+      }
+      if (dataLogin?.user?.akses_kelompok !== undefined) {
+        params.set("tmpt_kelompok", String(dataLogin?.user?.akses_kelompok));
+      }
+      if (searchTerm.trim()) {
+        params.set("search", searchTerm.trim());
+      }
+
+      const response = await axiosServices().get(
+        `/api/v1/data_peserta/all?${params.toString()}`,
+      );
+      const rawData =
+        response?.data?.data ||
+        response?.data?.data_peserta ||
+        response?.data?.data_tempat_sambung ||
+        [];
+
+      setFetchDataPeserta(
+        rawData.map((item: any) => ({
+          value: item.kode_cari_data || item.id,
+          label: item.nama_lengkap,
+        })),
+      );
+    } catch (error) {
+      handleApiError(error, {});
+      setFetchDataPeserta([]);
+    } finally {
+      setLoadingPesertaOptions(false);
+    }
   };
 
   useEffect(() => {
@@ -109,6 +138,16 @@ const PindahSambungIndex = () => {
       hasFetched.current = true;
     }
   }, []);
+
+  useEffect(() => {
+    if (!requestModal) return;
+
+    const timeout = window.setTimeout(() => {
+      loadAllData(namaSearchTerm);
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [requestModal, namaSearchTerm]);
 
   // View history
   const handleViewHistory = async (kodeCariData: string) => {
@@ -198,6 +237,7 @@ const PindahSambungIndex = () => {
     try {
       await requestPindahSambung(data);
       setRequestModal(false);
+      setNamaSearchTerm("");
       await refetchData();
       toast.success("Request pindah sambung berhasil diajukan!");
     } catch (error: any) {
@@ -428,10 +468,14 @@ const PindahSambungIndex = () => {
 
       <RequestModal
         open={requestModal}
-        onClose={() => setRequestModal(false)}
+        onClose={() => {
+          setRequestModal(false);
+          setNamaSearchTerm("");
+        }}
         onSubmit={handleRequestSubmit}
-        loading={actionLoading}
+        loading={actionLoading || loadingPesertaOptions}
         fetchDataPeserta={fetchDataPeserta}
+        setNamaSearchTerm={setNamaSearchTerm}
       />
     </>
   );

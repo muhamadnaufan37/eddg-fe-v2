@@ -409,17 +409,27 @@ const PresensiKegiatanPage = () => {
       ),
     },
     {
-      key: "waktu",
-      header: "Jadwal",
-      render: (item: PresensiKegiatanItem) => (
-        <span>{`${item.tgl_kegiatan} ${item.jam_kegiatan}`}</span>
-      ),
+      key: "tgl_kegiatan",
+      header: "Tanggal",
+      sortable: true,
+    },
+    {
+      key: "jam_kegiatan",
+      header: "Jam Mulai",
+      sortable: true,
     },
     {
       key: "total_presensi",
       header: "Total Presensi",
       render: (item: PresensiKegiatanItem) => (
         <span>{item.total_presensi || 0}</span>
+      ),
+    },
+    {
+      key: "nm_petugas",
+      header: "Petugas",
+      render: (item: PresensiKegiatanItem) => (
+        <span>{item.nm_petugas || "-"}</span>
       ),
     },
     {

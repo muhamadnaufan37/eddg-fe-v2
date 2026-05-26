@@ -74,6 +74,9 @@ type LaporanDetail = {
     total_praremaja: number;
     total_remaja: number;
     total_mumi: number;
+    total_sudah_menikah: number;
+    total_pindah_sambung: number;
+    total_data_diupdate_bulan_ini: number;
     lokasi: {
       daerah: string | null;
       desa: string | null;
@@ -471,6 +474,9 @@ export default function LaporanBulananPage() {
         total_praremaja: 0,
         total_remaja: 0,
         total_mumi: 0,
+        total_sudah_menikah: 0,
+        total_pindah_sambung: 0,
+        total_data_diupdate_bulan_ini: 0,
         lokasi: { daerah: null, desa: null, kelompok: null },
       },
       catatan: null,
@@ -1001,6 +1007,19 @@ export default function LaporanBulananPage() {
                   title="Peserta Baru"
                   value={detailData.data_laporan.peserta_baru_bulan_ini}
                 />
+                <StatMini
+                  title="Data Diupdate Bulan Ini"
+                  value={detailData.data_laporan.total_data_diupdate_bulan_ini}
+                />
+                <StatMini
+                  title="Pindah Sambung"
+                  value={detailData.data_laporan.total_pindah_sambung}
+                />
+                <StatMini
+                  title="Sudah Menikah"
+                  value={detailData.data_laporan.total_sudah_menikah}
+                />
+
                 <StatMini
                   title="Laki-laki"
                   value={detailData.data_laporan.total_laki_laki}

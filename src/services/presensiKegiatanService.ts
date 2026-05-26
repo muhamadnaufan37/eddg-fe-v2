@@ -28,6 +28,7 @@ export interface PresensiKegiatanItem {
   total_hadir: number;
   total_terlambat: number;
   total_tidak_hadir: number;
+  nm_petugas: string;
   created_at: string;
   updated_at: string;
 }

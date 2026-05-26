@@ -773,6 +773,10 @@ const UpdateSensus = () => {
                       placeholder="Pilih salah satu"
                       isClearable
                       isSearchable
+                      isDisabled={
+                        dataBalikan?.balikanLogin?.user?.role_id !==
+                        "219bc0dd-ec72-4618-b22d-5d5ff612dcaf"
+                      }
                     />
 
                     <ErrorMessage

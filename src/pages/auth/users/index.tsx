@@ -284,7 +284,7 @@ const UsersPage = () => {
       switch (visibilityOption) {
         case 5:
           toast.success("Sukses", {
-            description: response?.data?.message || "-",
+            description: response?.message || "-",
             duration: 3000,
           });
           refetchListUsers();

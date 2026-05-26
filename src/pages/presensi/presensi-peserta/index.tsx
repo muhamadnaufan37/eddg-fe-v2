@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/features/Pagination";
@@ -10,11 +10,11 @@ import { THEME_COLORS } from "@/config/theme";
 import { getLocalStorage } from "@/services/localStorageService";
 import {
   fetchPresensiReport,
+  fetchPresensiReportPdf,
   checkPresensi,
   createPresensi,
   storePresensiByCoordinate,
   type PresensiPesertaData,
-  type Statistics,
 } from "@/services/presensiService";
 import { handleApiError } from "@/utils/errorUtils";
 import { formatDistanceToNow } from "date-fns";
@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Check,
   Clock,
+  Download,
   MapPin,
   Search,
   Users,
@@ -30,6 +31,12 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const PDF_FILENAME_REGEX = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i;
+const ALLOWED_ROW_ACTION_ROLE_IDS = [
+  "219bc0dd-ec72-4618-b22d-5d5ff612dcaf",
+  "7352e0d6-f5d0-45f2-8eb4-4880cc72bad6",
+];
 
 interface PresensiModalState {
   open: boolean;
@@ -55,7 +62,7 @@ const PresensiPesertaPage = () => {
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState(10);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   // State untuk presensi modal
@@ -78,6 +85,10 @@ const PresensiPesertaPage = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const canUseRowActions = ALLOWED_ROW_ACTION_ROLE_IDS.includes(
+    String(dataLogin?.user?.role_id || ""),
+  );
 
   const defaultPetugasId = String(dataLogin?.user?.id || "");
 
@@ -88,11 +99,11 @@ const PresensiPesertaPage = () => {
     refetch,
     isLoading,
   } = useQuery({
-    queryKey: ["presensi-report", id_kegiatan, page, rows, debouncedSearch],
+    queryKey: ["presensi-report", id_kegiatan, page, rows, submittedSearch],
     queryFn: () => {
       if (!id_kegiatan) throw new Error("Kode kegiatan tidak ditemukan");
       // Catatan: API report mungkin belum support filter[search], tapi kita siapkan di sini
-      return fetchPresensiReport(id_kegiatan, page, rows, debouncedSearch);
+      return fetchPresensiReport(id_kegiatan, page, rows, submittedSearch);
     },
     enabled: !!id_kegiatan,
     refetchOnWindowFocus: false,
@@ -103,27 +114,12 @@ const PresensiPesertaPage = () => {
   const listData = reportData?.list_data_presensi_peserta;
   const statistics = reportData?.statistics;
 
-  // Filter peserta berdasarkan search (client-side jika API belum support)
-  const filteredData = useMemo(() => {
-    if (!listData?.data) return [];
-    if (!debouncedSearch.trim()) return listData.data;
+  const tableData = listData?.data || [];
 
-    return listData.data.filter(
-      (item: PresensiPesertaData) =>
-        item.nama_lengkap
-          .toLowerCase()
-          .includes(debouncedSearch.toLowerCase()) ||
-        String(item.id).includes(debouncedSearch),
-    );
-  }, [listData?.data, debouncedSearch]);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedSearch(search.trim());
-    }, 300);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [search]);
+  const handleSearch = () => {
+    setPage(1);
+    setSubmittedSearch(search.trim());
+  };
 
   const handlePresensi = async () => {
     if (!presensiModal.pesertaKode) {
@@ -240,6 +236,54 @@ const PresensiPesertaPage = () => {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!id_kegiatan) return;
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const { blob, contentDisposition } =
+        await fetchPresensiReportPdf(id_kegiatan);
+
+      let filename = `laporan-presensi-${kode_kegiatan}-${new Date().toISOString().split("T")[0]}.pdf`;
+
+      if (
+        contentDisposition &&
+        contentDisposition.indexOf("attachment") !== -1
+      ) {
+        const matches = /filename=([^;]+)/.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].trim().replace(/^"|"$/g, "");
+        }
+      }
+
+      const matchedFilename = contentDisposition?.match(PDF_FILENAME_REGEX);
+      const resolvedFilename =
+        (matchedFilename?.[1] || matchedFilename?.[2] || "")
+          .replace(/\"/g, "")
+          .trim() || filename;
+      const blobUrl = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+
+      downloadLink.href = blobUrl;
+      downloadLink.download = resolvedFilename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+
+      window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+
+      toast.success("Berhasil", {
+        description: `Laporan disimpan sebagai ${resolvedFilename}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      handleApiError(error, {});
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   const columns: Column<PresensiPesertaData>[] = [
     { key: "nama_lengkap", header: "Nama Peserta", sortable: true },
     {
@@ -303,6 +347,12 @@ const PresensiPesertaPage = () => {
           <span className="text-xs text-gray-500">-</span>
         ),
     },
+    {
+      key: "keterangan",
+      header: "Keterangan",
+      sortable: true,
+      mobileHidden: true,
+    },
   ];
 
   const rowActions = [
@@ -337,6 +387,7 @@ const PresensiPesertaPage = () => {
     setPage(1);
     setRows(10);
     setSearch("");
+    setSubmittedSearch("");
   };
 
   const totalPresensi = useMemo(() => {
@@ -485,25 +536,46 @@ const PresensiPesertaPage = () => {
                 <Input
                   value={search}
                   className={`w-full pl-11 pr-4 py-3 text-sm border ${THEME_COLORS.border.default} rounded-xl shadow-sm focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent transition-all ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
-                  placeholder="Cari nama peserta..."
+                  placeholder="Cari nama peserta, jenis kelamin, lokasi, atau keterangan..."
                   onChange={(e: any) => setSearch(e.target.value)}
                   onKeyDown={(e: any) => {
                     if (e.key === "Enter") {
-                      setDebouncedSearch(search.trim());
-                      refetch();
+                      e.preventDefault();
+                      handleSearch();
                     }
                   }}
                 />
               </div>
 
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col md:flex-row justify-end gap-4">
+                <div className="flex flex-col md:flex-row items-center gap-3">
                   <button
                     disabled={isFetching}
                     className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleReset}
                   >
                     Reset
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isFetching}
+                    onClick={handleSearch}
+                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cari Data
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDownloadingPdf || isFetching || isLoading}
+                    onClick={handleDownloadPdf}
+                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDownloadingPdf ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Unduh PDF
                   </button>
                 </div>
               </div>
@@ -524,9 +596,9 @@ const PresensiPesertaPage = () => {
               <DataTableAdvanced
                 selectedRows={selectedRows}
                 setSelectedRows={setSelectedRows}
-                data={filteredData || []}
+                data={tableData}
                 columns={columns}
-                rowActions={rowActions}
+                rowActions={canUseRowActions ? rowActions : undefined}
                 onRowAction={handleRowAction}
                 selectable={true}
                 getRowId={(item: PresensiPesertaData) => String(item.id)}

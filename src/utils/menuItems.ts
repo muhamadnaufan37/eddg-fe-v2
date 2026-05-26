@@ -78,6 +78,14 @@ export const menuItems = [
           },
 
           {
+            id: "digitaldata-laporanbulanan-monitoring-users",
+            title: "Monitoring User",
+            icon: "Users",
+            role: ["admin"],
+            link: "/laporan-bulanan/monitoring-users",
+          },
+
+          {
             id: "digitaldata-laporanbulanan-warnings",
             title: "Warnings",
             icon: "AlertTriangle",
@@ -143,7 +151,7 @@ export const menuItems = [
     id: "presensi",
     title: "Presensi",
     icon: "ScanQrCode",
-    role: ["admin"],
+    role: ["admin", "ptgs-sensus"],
     link: "/presensi",
   },
   {
