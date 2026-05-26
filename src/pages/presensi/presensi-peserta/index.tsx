@@ -242,8 +242,10 @@ const PresensiPesertaPage = () => {
     setIsDownloadingPdf(true);
 
     try {
-      const { blob, contentDisposition } =
-        await fetchPresensiReportPdf(id_kegiatan);
+      const { blob, contentDisposition } = await fetchPresensiReportPdf(
+        id_kegiatan,
+        submittedSearch,
+      );
 
       let filename = `laporan-presensi-${kode_kegiatan}-${new Date().toISOString().split("T")[0]}.pdf`;
 

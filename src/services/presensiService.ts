@@ -260,10 +260,12 @@ const getResponseContentDisposition = (response: any): string | undefined => {
  */
 export const fetchPresensiReportPdf = async (
   idKegiatan: string | number,
+  search: any,
 ): Promise<PresensiReportPdfResponse> => {
   const response = await axiosServices().get(`/api/v1/presensi/report/pdf`, {
     params: {
       id_kegiatan: idKegiatan,
+      keyword: search && search.trim() ? search : undefined,
     },
     responseType: "blob",
     headers: {
