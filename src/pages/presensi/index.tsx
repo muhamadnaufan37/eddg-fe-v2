@@ -445,7 +445,7 @@ const PresensiKegiatanPage = () => {
 
   const rowActions = [
     { label: "Lihat Presensi", value: "presensi" },
-    { label: "Detail Presensi", value: "list" },
+    // { label: "Detail Presensi", value: "list" },
     { label: "Detail", value: "detail" },
     { label: "Ubah", value: "edit" },
     { label: "Hapus", value: "delete" },

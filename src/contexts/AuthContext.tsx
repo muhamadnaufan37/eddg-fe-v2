@@ -13,23 +13,17 @@ import {
 import { axiosServices } from "../services/axios";
 import { toast } from "sonner";
 
-type TData = {
-  id?: number;
-  username?: string;
-  email?: string;
-  role?: string;
-  name?: string;
-  token?: string;
-  token_expire?: string;
-};
+type TData = any;
 
 type TAuthContext = {
   isLoggedIn: boolean;
   isLoading: boolean;
   isInitialised: boolean;
   user: TData | null;
+  isNdaPending: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  setNdaAccepted: (userId?: string) => void;
 };
 
 const initialState = {
@@ -41,8 +35,10 @@ const initialState = {
 
 const AuthContext = createContext<TAuthContext>({
   ...initialState,
+  isNdaPending: false,
   login: async () => {},
   logout: () => {},
+  setNdaAccepted: () => {},
 });
 
 const verifyToken = (serviceToken: any): boolean => {
@@ -70,6 +66,35 @@ const setSession = (data: any) => {
 
 export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(accountReducer, initialState);
+
+  const isNdaPending = Boolean(
+    (state.user && (state.user as any).status_nda === 0) ||
+    (state.user && String((state.user as any).status_nda) === "0"),
+  );
+
+  const setNdaAccepted = (userId?: string) => {
+    try {
+      const stored = getLocalStorage("userData");
+      if (!stored || !stored.user) return;
+
+      // update user object
+      const updatedUser = { ...stored.user, status_nda: 1 };
+
+      // update localStorage
+      setLocalStorage("userData", {
+        ...stored,
+        user: updatedUser,
+      });
+
+      // update reducer state
+      dispatch({
+        type: LOGIN,
+        payload: { user: updatedUser, isLoggedIn: true },
+      });
+    } catch (err) {
+      // silent
+    }
+  };
 
   const login = async (username: string, password: string) => {
     dispatch({
@@ -192,7 +217,9 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   //   return <div>Gagal init</div>;
   // }
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider
+      value={{ ...state, isNdaPending, login, logout, setNdaAccepted }}
+    >
       {children}
     </AuthContext.Provider>
   );

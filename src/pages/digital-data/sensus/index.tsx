@@ -58,6 +58,14 @@ interface Option {
   label: string;
 }
 
+const isAtletAsadActive = (value: unknown) => {
+  if (value === true || value === 1 || value === "1") return true;
+  if (typeof value === "string") {
+    return value.trim().toLowerCase() === "true";
+  }
+  return false;
+};
+
 const SensusPage = () => {
   const dataLogin = getLocalStorage("userData");
   const { fetchOptions, loading } = useFetchOptions();
@@ -583,6 +591,26 @@ const SensusPage = () => {
         );
         return (
           <StatusTableBadge label={dataStatus.text} color={dataStatus.color} />
+        );
+      },
+    },
+    {
+      key: "status_atlet_asad",
+      header: "Atlet ASAD",
+      sortable: true,
+      render: (item: any) => {
+        const isAtlet = isAtletAsadActive(item.status_atlet_asad);
+
+        return (
+          <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-300 ${
+              isAtlet
+                ? "border-green-300 bg-green-100 text-green-800 animate-pulse dark:border-green-700 dark:bg-green-900/40 dark:text-green-300"
+                : "border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            }`}
+          >
+            {isAtlet ? "Atlet Aktif" : "Non Atlet"}
+          </span>
         );
       },
     },

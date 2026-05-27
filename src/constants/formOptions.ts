@@ -9,6 +9,11 @@ export const IS_ATLET_ASAD_OPTIONS = [
   { value: true, label: "Ya" },
 ];
 
+export const STATUS_ATLET_ASAD_OPTIONS = [
+  { value: false, label: "Tidak" },
+  { value: true, label: "Ya" },
+];
+
 export const STATUS_PERNIKAHAN_OPTIONS = [
   { value: false, label: "Belum Menikah" },
   { value: true, label: "Sudah Menikah" },

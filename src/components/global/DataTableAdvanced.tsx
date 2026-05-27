@@ -262,13 +262,22 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                 const rowId = getRowId(item);
                 const isSelected = selectedRows.has(rowId);
 
+                // detect atlet status (accept true, 1, "1", "true")
+                const isAtlet = (() => {
+                  const v = item?.status_atlet_asad;
+                  if (v === true || v === 1 || v === "1") return true;
+                  if (typeof v === "string")
+                    return v.trim().toLowerCase() === "true";
+                  return false;
+                })();
+
+                const rowClass =
+                  `hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                    isSelected ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                  } ${!isSelected && isAtlet ? "bg-green-50 dark:bg-green-900/20 motion-safe:animate-pulse" : ""}`.trim();
+
                 return (
-                  <tr
-                    key={rowId}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                      isSelected ? "bg-blue-50 dark:bg-blue-900/20" : ""
-                    }`}
-                  >
+                  <tr key={rowId} className={rowClass}>
                     {/* Checkbox */}
                     {selectable && (
                       <td className="px-3 py-3 sm:px-6 sm:py-4">

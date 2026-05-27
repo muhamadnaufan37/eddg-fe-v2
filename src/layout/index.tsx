@@ -444,20 +444,22 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
               <div className="flex items-center gap-2">
                 {/* PROFILE IMAGE */}
                 <img
-                  src="/user.svg"
+                  src="/user.png"
                   className={`rounded-md h-7 w-7 object-cover ring-2 ${THEME_COLORS.border.default} transition-all duration-300`}
                   alt="Profile"
                 />
 
                 {/* NAME + ROLE */}
-                <div className="flex flex-col leading-tight">
+                <div className="flex flex-col leading-tight min-w-0">
                   <span
-                    className={`font-semibold text-sm ${THEME_COLORS.text.primary} transition-colors duration-300`}
+                    title={userData?.user?.nama_lengkap || ""}
+                    className={`font-semibold text-sm ${THEME_COLORS.text.primary} transition-colors duration-300 truncate`}
                   >
                     {userData?.user?.nama_lengkap || ""}
                   </span>
                   <span
-                    className={`text-sm ${THEME_COLORS.text.muted} -mt-1 transition-colors duration-300`}
+                    title={userData?.user?.nm_role || ""}
+                    className={`text-sm ${THEME_COLORS.text.muted} -mt-1 transition-colors duration-300 truncate`}
                   >
                     {userData?.user?.nm_role}
                   </span>

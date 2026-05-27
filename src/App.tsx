@@ -7,9 +7,21 @@ import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import GlobalImagePreview from "@/components/global/GlobalImagePreview";
 import ScrollToTop from "@/components/global/ScrollToTop";
+import PrivacyAgreementGate from "./components/global/PrivacyAgreementGate";
+import useAuth from "./hooks/useAuth";
 
 function App() {
   const queryClient = new QueryClient();
+
+  const AppRoutes = () => {
+    const { isNdaPending } = useAuth();
+
+    if (isNdaPending) {
+      return <div className="min-h-screen bg-[#EEEEEE] dark:bg-[#212121]" />;
+    }
+
+    return renderRoutes(routes);
+  };
 
   return (
     <Router>
@@ -18,7 +30,11 @@ function App() {
           <Toaster />
           <GlobalImagePreview />
           <ScrollToTop />
-          <AuthContextProvider>{renderRoutes(routes)}</AuthContextProvider>
+          <AuthContextProvider>
+            <PrivacyAgreementGate />
+            {/* <AppRoutes /> */}
+            {renderRoutes(routes)}
+          </AuthContextProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </Router>

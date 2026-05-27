@@ -47,8 +47,16 @@ const UpdateSensus = () => {
     nama_ibu: Yup.string().required("Nama Ibu harus diisi"),
     hoby: Yup.string().required("Hoby harus diisi"),
     pekerjaan: Yup.number().required("Pekerjaan harus diisi"),
-    status_pernikahan: Yup.string().required("Status Pernikahan harus diisi"),
-    status_sambung: Yup.string().required("Status Sambung harus diisi"),
+    status_pernikahan: Yup.mixed().test(
+      "required-status-pernikahan",
+      "Status Pernikahan harus diisi",
+      (value) => value !== null && value !== undefined && value !== "",
+    ),
+    status_sambung: Yup.mixed().test(
+      "required-status-sambung",
+      "Status Sambung harus diisi",
+      (value) => value !== null && value !== undefined && value !== "",
+    ),
     status_atlet_asad: Yup.string().required("Data harus diisi"),
   });
 
@@ -752,7 +760,7 @@ const UpdateSensus = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-4 gap-3">
                   <div>
                     <label className="text-gray-900 dark:text-white">
                       Status Sambung
@@ -768,7 +776,7 @@ const UpdateSensus = () => {
                       }
                       options={STATUS_SAMBUNG_OPTIONS}
                       onChange={(option: any) =>
-                        setFieldValue("status_sambung", option?.value || "")
+                        setFieldValue("status_sambung", option?.value ?? "")
                       }
                       placeholder="Pilih salah satu"
                       isClearable
@@ -801,7 +809,7 @@ const UpdateSensus = () => {
                       }
                       options={STATUS_PERNIKAHAN_OPTIONS}
                       onChange={(option: any) =>
-                        setFieldValue("status_pernikahan", option?.value || "")
+                        setFieldValue("status_pernikahan", option?.value ?? "")
                       }
                       placeholder="Pilih salah satu"
                       isClearable
@@ -810,6 +818,35 @@ const UpdateSensus = () => {
 
                     <ErrorMessage
                       name="status_pernikahan"
+                      component="div"
+                      className="text-red-600 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-gray-900 dark:text-white">
+                      Status Atlet ASAD
+                    </label>
+
+                    <Select
+                      id="status_atlet_asad"
+                      name="status_atlet_asad"
+                      value={
+                        IS_ATLET_ASAD_OPTIONS.find(
+                          (opt) => opt.value === values.status_atlet_asad,
+                        ) || null
+                      }
+                      options={IS_ATLET_ASAD_OPTIONS}
+                      onChange={(option: any) =>
+                        setFieldValue("status_atlet_asad", option?.value ?? "")
+                      }
+                      placeholder="Pilih salah satu"
+                      isClearable
+                      isSearchable
+                    />
+
+                    <ErrorMessage
+                      name="status_atlet_asad"
                       component="div"
                       className="text-red-600 text-sm"
                     />
@@ -835,6 +872,10 @@ const UpdateSensus = () => {
                       placeholder="Pilih salah satu"
                       isClearable
                       isSearchable
+                      isDisabled={
+                        dataBalikan?.balikanLogin?.user?.role_id !==
+                        "219bc0dd-ec72-4618-b22d-5d5ff612dcaf"
+                      }
                     />
 
                     <ErrorMessage
