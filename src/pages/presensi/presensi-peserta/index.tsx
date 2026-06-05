@@ -4,7 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/features/Pagination";
 import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
 import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
-import { DataTableAdvanced, Input, type Column } from "@/components/global";
+import {
+  DataTableAdvanced,
+  Input,
+  type Column,
+  Modal,
+} from "@/components/global";
 import { BASE_TITLE } from "@/store/actions";
 import { THEME_COLORS } from "@/config/theme";
 import { getLocalStorage } from "@/services/localStorageService";
@@ -64,6 +69,10 @@ const PresensiPesertaPage = () => {
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailData, setDetailData] = useState<PresensiPesertaData | null>(
+    null,
+  );
 
   // State untuk presensi modal
   const [presensiModal, setPresensiModal] = useState<PresensiModalState>({
@@ -286,6 +295,34 @@ const PresensiPesertaPage = () => {
     }
   };
 
+  const statusColors = (item: PresensiPesertaData) => {
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+        item.status_presensi === "hadir"
+          ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+          : item.status_presensi === "terlambat"
+            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
+            : item.status_presensi === "izin"
+              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
+              : item.status_presensi === "sakit"
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200"
+                : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+      }`}
+    >
+      {item.status_presensi ? (
+        <>
+          <Check className="w-3 h-3" />
+          {item.status_presensi}
+        </>
+      ) : (
+        <>
+          <Clock className="w-3 h-3" />
+          Belum Absen
+        </>
+      )}
+    </span>;
+  };
+
   const columns: Column<PresensiPesertaData>[] = [
     { key: "nama_lengkap", header: "Nama Peserta", sortable: true },
     {
@@ -349,15 +386,13 @@ const PresensiPesertaPage = () => {
           <span className="text-xs text-gray-500">-</span>
         ),
     },
-    {
-      key: "keterangan",
-      header: "Keterangan",
-      sortable: true,
-      mobileHidden: true,
-    },
   ];
 
   const rowActions = [
+    {
+      label: "Detail",
+      value: "detail",
+    },
     {
       label: "Presensi",
       value: "presensi",
@@ -366,6 +401,12 @@ const PresensiPesertaPage = () => {
   ];
 
   const handleRowAction = (item: PresensiPesertaData, action: string) => {
+    if (action === "detail") {
+      setDetailData(item);
+      setShowDetailModal(true);
+      return;
+    }
+
     if (action === "presensi") {
       setPresensiModal({
         open: true,
@@ -850,7 +891,196 @@ const PresensiPesertaPage = () => {
           </button>
         </div>
       </FilterModal>
+
+      <Modal
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setDetailData(null);
+        }}
+        title="Detail Peserta"
+        size="xl"
+      >
+        {detailData ? (
+          <div className="space-y-5">
+            <div className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/60">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                <Users className="h-7 w-7" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {detailData.nama_lengkap}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {detailData.kode_cari_data}
+                </p>
+              </div>
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                  detailData.status_presensi
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                }`}
+              >
+                {detailData.status_presensi || "Belum Absen"}
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <DetailItem
+                label="ID Peserta"
+                value={detailData.id_peserta ?? detailData.id}
+              />
+              <DetailItem label="Kode CAI" value={detailData.kode_cari_data} />
+              <DetailItem
+                label="Nama Lengkap"
+                value={detailData.nama_lengkap}
+              />
+              <DetailItem
+                label="Tanggal Lahir"
+                value={detailData.tanggal_lahir}
+              />
+              <DetailItem
+                label="Jenis Kelamin"
+                value={detailData.jenis_kelamin}
+              />
+              <DetailItem
+                label="Status Presensi"
+                value={statusColors(detailData)}
+              />
+              <DetailItem
+                label="Status Sambung"
+                value={detailData.status_sambung}
+              />
+              <DetailItem
+                label="Status Pernikahan"
+                value={detailData.status_pernikahan ? "Ya" : "Tidak"}
+              />
+              <DetailItem label="Daerah" value={detailData.nama_daerah} />
+              <DetailItem label="Desa" value={detailData.nama_desa} />
+              <DetailItem label="Kelompok" value={detailData.nama_kelompok} />
+              <DetailItem
+                label="Waktu Presensi"
+                value={detailData.waktu_presensi}
+              />
+              <DetailItem
+                label="Keterangan"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? detailData.keterangan
+                    : (detailData.keterangan?.catatan ?? "-")
+                }
+              />
+              <DetailItem
+                label="Koordinat Latitude"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.koordinat?.latitude
+                }
+              />
+              <DetailItem
+                label="Koordinat Longitude"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.koordinat?.longitude
+                }
+              />
+              <DetailItem
+                label="Jarak Meter"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.jarak_meter
+                }
+              />
+              <DetailItem
+                label="Radius Meter"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.radius_meter
+                }
+              />
+              <DetailItem
+                label="Referensi Level"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.referensi?.level
+                }
+              />
+              <DetailItem
+                label="Referensi ID"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.referensi?.id
+                }
+              />
+              <DetailItem
+                label="Referensi Name"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.referensi?.name
+                }
+              />
+              <DetailItem
+                label="Referensi Latitude"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.referensi?.latitude
+                }
+              />
+              <DetailItem
+                label="Referensi Longitude"
+                value={
+                  typeof detailData.keterangan === "string"
+                    ? "-"
+                    : detailData.keterangan?.referensi?.longitude
+                }
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="px-4 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700"
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setDetailData(null);
+                }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Data detail tidak tersedia.
+          </div>
+        )}
+      </Modal>
     </>
+  );
+};
+
+const DetailItem = ({ label, value }: { label: string; value: unknown }) => {
+  const displayValue =
+    value === null || value === undefined || value === "" ? "-" : String(value);
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-950/60">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-white wrap-break-word">
+        {displayValue}
+      </div>
+    </div>
   );
 };
 

@@ -19,6 +19,7 @@ export interface ListDataPresensiPeserta {
 
 export interface PresensiPesertaData {
   id: number;
+  id_peserta?: number;
   nama_lengkap: string;
   kode_cari_data: string;
   tanggal_lahir: string;
@@ -27,11 +28,48 @@ export interface PresensiPesertaData {
   status_pernikahan: boolean;
   presensi_id: number | null;
   status_presensi: string | null;
-  keterangan: string | null;
+  keterangan: PresensiKeterangan | string | null;
   nama_daerah: string;
   nama_desa: string;
   nama_kelompok: string;
   waktu_presensi: string | null;
+  kode_peserta?: string;
+  nama_peserta?: string;
+  nomor_urut?: number;
+  koordinat?: {
+    latitude?: number;
+    longitude?: number;
+  } | null;
+  jarak_meter?: number | null;
+  radius_meter?: number | null;
+  referensi?: {
+    level?: string;
+    id?: number;
+    name?: string;
+    latitude?: number;
+    longitude?: number;
+  } | null;
+}
+
+export interface PresensiKeterangan {
+  koordinat: Koordinat;
+  jarak_meter: number;
+  radius_meter: number;
+  referensi: Referensi;
+  catatan: any;
+}
+
+export interface Koordinat {
+  latitude: number;
+  longitude: number;
+}
+
+export interface Referensi {
+  level: string;
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface DataPresensiPeserum {

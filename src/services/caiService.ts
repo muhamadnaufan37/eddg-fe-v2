@@ -17,6 +17,7 @@ export interface CaiOption {
 export interface CaiListItem {
   id: number;
   uuid: string;
+  id_card: string;
   kode_cari_data: string;
   nama_lengkap: string;
   tgl_lahir: string;
@@ -70,6 +71,7 @@ export interface CaiDetailResponse {
 export interface CaiDetailData {
   id: number;
   uuid: string;
+  id_card: string;
   kode_cari_data: string;
   nama_lengkap: string;
   tgl_lahir: string;
@@ -91,6 +93,7 @@ export interface CaiDetailData {
 }
 
 export interface CaiFormValues {
+  id_card: string;
   nama_lengkap: string;
   tgl_lahir: string;
   jenis_kelamin: string;

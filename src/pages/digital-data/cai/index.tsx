@@ -71,6 +71,7 @@ const createEmptyFormValues = (akses: {
   desa: string;
   kelompok: string;
 }): CaiFormValues => ({
+  id_card: "",
   nama_lengkap: "",
   tgl_lahir: "",
   jenis_kelamin: "",
@@ -125,6 +126,7 @@ const CaiPage = () => {
   const [detailData, setDetailData] = useState<CaiDetailData | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isFormLoading, setIsFormLoading] = useState(false);
   const [imagePreviewSrc, setImagePreviewSrc] = useState("");
   const [imagePreviewTitle, setImagePreviewTitle] = useState("");
   const [showImagePreview, setShowImagePreview] = useState(false);
@@ -169,6 +171,7 @@ const CaiPage = () => {
     if (!selectedRecord) return fallback;
 
     return {
+      id_card: selectedRecord.id_card || "",
       nama_lengkap: selectedRecord.nama_lengkap || "",
       tgl_lahir: selectedRecord.tgl_lahir || "",
       jenis_kelamin: selectedRecord.jenis_kelamin || "",
@@ -232,13 +235,31 @@ const CaiPage = () => {
   const openCreateModal = () => {
     setSelectedRecord(null);
     setFormMode("create");
+    setIsFormLoading(false);
     setShowFormModal(true);
   };
 
-  const openUpdateModal = (item: CaiListItem) => {
-    setSelectedRecord(item);
+  const openUpdateModal = async (item: CaiListItem) => {
+    setSelectedRecord(null);
     setFormMode("update");
     setShowFormModal(true);
+    setIsFormLoading(true);
+
+    try {
+      const response = await fetchCaiDetail(item.uuid);
+      if (response?.success) {
+        setSelectedRecord(response.data);
+      } else {
+        toast.error("Gagal", {
+          description: response?.message || "Gagal memuat detail data",
+          duration: 3000,
+        });
+      }
+    } catch (error: any) {
+      handleApiError(error, { showToast: true });
+    } finally {
+      setIsFormLoading(false);
+    }
   };
 
   const openDetailModal = async (item: CaiListItem) => {
@@ -392,6 +413,30 @@ const CaiPage = () => {
           title="Klik untuk menyalin kode"
         >
           <span>{item.kode_cari_data}</span>
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+      ),
+    },
+    {
+      key: "id_card",
+      header: "ID Card",
+      sortable: true,
+      bold: true,
+      render: (item) => (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigator.clipboard?.writeText(item.id_card);
+            toast.success("Berhasil", {
+              description: "Kode berhasil disalin",
+              duration: 1500,
+            });
+          }}
+          title="Klik untuk menyalin kode"
+        >
+          <span>{item.id_card}</span>
           <Copy className="h-3.5 w-3.5" />
         </button>
       ),
@@ -712,9 +757,11 @@ const CaiPage = () => {
         onClose={() => {
           setShowFormModal(false);
           setSelectedRecord(null);
+          setIsFormLoading(false);
         }}
         onSubmit={handleSubmitForm}
         isSubmitting={isSubmitting}
+        isLoading={isFormLoading}
         onPreviewImage={openImagePreview}
       />
 
@@ -809,6 +856,31 @@ const FormikSelectField = ({
   );
 };
 
+const FormikInputField = ({
+  name,
+  type = "text",
+  placeholder,
+}: {
+  name: string;
+  type?: string;
+  placeholder?: string;
+}) => {
+  const [field, meta] = useField(name);
+
+  return (
+    <Input
+      id={name}
+      name={name}
+      type={type}
+      placeholder={placeholder}
+      value={field.value ?? ""}
+      onChange={field.onChange}
+      onBlur={field.onBlur}
+      error={meta.touched && meta.error ? String(meta.error) : undefined}
+    />
+  );
+};
+
 const CaiFormModal = ({
   isOpen,
   mode,
@@ -821,6 +893,7 @@ const CaiFormModal = ({
   onClose,
   onSubmit,
   isSubmitting,
+  isLoading,
   onPreviewImage,
 }: {
   isOpen: boolean;
@@ -834,6 +907,7 @@ const CaiFormModal = ({
   onClose: () => void;
   onSubmit: (values: CaiFormValues) => Promise<void>;
   isSubmitting: boolean;
+  isLoading: boolean;
   onPreviewImage: (
     src?: string | null,
     title?: string,
@@ -857,143 +931,147 @@ const CaiFormModal = ({
       title={mode === "create" ? "Tambah Data CAI" : "Ubah Data CAI"}
       size="xl"
     >
-      <Formik
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        enableReinitialize
-        onSubmit={onSubmit}
-      >
-        {({ values, setFieldValue }) => (
-          <Form className="space-y-5">
-            <CaiCascadeFields
-              values={values}
-              setFieldValue={setFieldValue}
-              daerahOptions={daerahOptions}
-              accessDaerah={accessDaerah}
-              accessDesa={accessDesa}
-              accessKelompok={accessKelompok}
-            />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="nama_lengkap" required>
-                  Nama Lengkap
-                </Label>
-                <Input
-                  id="nama_lengkap"
-                  name="nama_lengkap"
-                  placeholder="Nama lengkap"
-                />
-                <ErrorMessage
-                  name="nama_lengkap"
-                  component="p"
-                  className="text-sm text-red-500"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tgl_lahir" required>
-                  Tanggal Lahir
-                </Label>
-                <Input id="tgl_lahir" name="tgl_lahir" type="date" />
-                <ErrorMessage
-                  name="tgl_lahir"
-                  component="p"
-                  className="text-sm text-red-500"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <FormikSelectField
-                  name="jenis_kelamin"
-                  label="Jenis Kelamin"
-                  required
-                  placeholder="Pilih jenis kelamin"
-                  options={JENIS_KELAMIN_OPTIONS}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <FormikSelectField
-                  name="utusan"
-                  label="Utusan"
-                  required
-                  placeholder="Pilih utusan"
-                  options={UTUSAN_OPTIONS}
-                />
-              </div>
+      <div className="relative">
+        {isLoading && mode === "update" && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm dark:bg-gray-950/70">
+            <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+              Memuat detail data...
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="img">Foto</Label>
-              <input
-                id="img"
-                name="img"
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={(event) => {
-                  const file = event.currentTarget.files?.[0] || null;
-                  setFieldValue("img", file);
-                }}
-                className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-cyan-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-cyan-700 dark:text-gray-300"
-              />
-              {values.img instanceof File ? (
-                <div className="text-xs text-gray-500">{values.img.name}</div>
-              ) : null}
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                <ImageIcon className="h-4 w-4" />
-                Preview Foto
-              </div>
-
-              <button
-                type="button"
-                className="group flex w-full items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white p-3 text-left hover:border-cyan-500 dark:border-gray-600 dark:bg-gray-900"
-                onClick={() =>
-                  onPreviewImage(
-                    values.img instanceof File
-                      ? createObjectPreviewUrl(values.img)
-                      : initialImageUrl ||
-                          getPreviewFallback(values.jenis_kelamin),
-                    values.nama_lengkap || "Preview Foto",
-                    values.jenis_kelamin,
-                  )
-                }
-              >
-                <img
-                  src={
-                    values.img instanceof File
-                      ? createObjectPreviewUrl(values.img)
-                      : initialImageUrl ||
-                        getPreviewFallback(values.jenis_kelamin)
-                  }
-                  alt="Preview"
-                  className="h-16 w-16 rounded-lg object-cover"
-                />
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    Klik untuk melihat preview
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Foto yang dipilih atau placeholder default.
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </div>
-          </Form>
+          </div>
         )}
-      </Formik>
+
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          enableReinitialize
+          onSubmit={onSubmit}
+        >
+          {({ values, setFieldValue }) => (
+            <Form className="space-y-5">
+              <CaiCascadeFields
+                values={values}
+                setFieldValue={setFieldValue}
+                daerahOptions={daerahOptions}
+                accessDaerah={accessDaerah}
+                accessDesa={accessDesa}
+                accessKelompok={accessKelompok}
+              />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="nama_lengkap" required>
+                    Nama Lengkap
+                  </Label>
+                  <FormikInputField
+                    name="nama_lengkap"
+                    placeholder="Nama lengkap"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="id_card">ID Card</Label>
+                  <FormikInputField name="id_card" placeholder="ID Card" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tgl_lahir" required>
+                    Tanggal Lahir
+                  </Label>
+                  <FormikInputField name="tgl_lahir" type="date" />
+                </div>
+
+                <div className="space-y-2">
+                  <FormikSelectField
+                    name="jenis_kelamin"
+                    label="Jenis Kelamin"
+                    required
+                    placeholder="Pilih jenis kelamin"
+                    options={JENIS_KELAMIN_OPTIONS}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <FormikSelectField
+                    name="utusan"
+                    label="Utusan"
+                    required
+                    placeholder="Pilih utusan"
+                    options={UTUSAN_OPTIONS}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="img">Foto</Label>
+                <input
+                  id="img"
+                  name="img"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0] || null;
+                    setFieldValue("img", file);
+                  }}
+                  className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-cyan-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-cyan-700 dark:text-gray-300"
+                />
+                {values.img instanceof File ? (
+                  <div className="text-xs text-gray-500">{values.img.name}</div>
+                ) : null}
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  <ImageIcon className="h-4 w-4" />
+                  Preview Foto
+                </div>
+
+                <button
+                  type="button"
+                  className="group flex w-full items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white p-3 text-left hover:border-cyan-500 dark:border-gray-600 dark:bg-gray-900"
+                  onClick={() =>
+                    onPreviewImage(
+                      values.img instanceof File
+                        ? createObjectPreviewUrl(values.img)
+                        : initialImageUrl ||
+                            getPreviewFallback(values.jenis_kelamin),
+                      values.nama_lengkap || "Preview Foto",
+                      values.jenis_kelamin,
+                    )
+                  }
+                >
+                  <img
+                    src={
+                      values.img instanceof File
+                        ? createObjectPreviewUrl(values.img)
+                        : initialImageUrl ||
+                          getPreviewFallback(values.jenis_kelamin)
+                    }
+                    alt="Preview"
+                    className="h-16 w-16 rounded-lg object-cover"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      Klik untuk melihat preview
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Foto yang dipilih atau placeholder default.
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Batal
+                </Button>
+                <Button type="submit" disabled={isSubmitting || isLoading}>
+                  {isSubmitting ? "Menyimpan..." : "Simpan"}
+                </Button>
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </div>
     </Modal>
   );
 };
@@ -1159,6 +1237,7 @@ const CaiDetailModal = ({
 
             <div className="grid flex-1 gap-3 sm:grid-cols-2">
               <DetailField label="Kode" value={detailData.kode_cari_data} />
+              <DetailField label="ID Card" value={detailData.id_card} />
               <DetailField
                 label="Nama Lengkap"
                 value={detailData.nama_lengkap}
