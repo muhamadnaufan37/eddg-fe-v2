@@ -32,7 +32,7 @@ function App() {
           <ScrollToTop />
           <AuthContextProvider>
             <PrivacyAgreementGate />
-            {/* <AppRoutes /> */}
+            <AppRoutes />
             {renderRoutes(routes)}
           </AuthContextProvider>
         </QueryClientProvider>
