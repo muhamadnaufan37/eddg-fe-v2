@@ -8,8 +8,10 @@ import {
   AlertTriangle,
   Copy,
   Database,
+  Download,
   Filter,
   ImageIcon,
+  Loader2,
   PlusCircle,
   RefreshCcw,
   Search,
@@ -40,6 +42,7 @@ import {
   deleteCaiData,
   fetchCaiData,
   fetchCaiDetail,
+  fetchCaiReportPdf,
   fetchDaerahOptions,
   fetchDesaOptionsByDaerah,
   fetchKelompokOptionsByDesa,
@@ -59,6 +62,16 @@ const UTUSAN_OPTIONS: CaiOption[] = [
   { value: "pengurus", label: "Pengurus" },
   { value: "pondok", label: "Pondok" },
   { value: "perorangan", label: "Perorangan" },
+];
+
+const SIZE_TSHIRT_OPTIONS: CaiOption[] = [
+  { value: "S", label: "S" },
+  { value: "M", label: "M" },
+  { value: "L", label: "L" },
+  { value: "XL", label: "XL" },
+  { value: "2XL", label: "2XL" },
+  { value: "3XL", label: "3XL" },
+  { value: "4XL", label: "4XL" },
 ];
 
 const JENIS_KELAMIN_OPTIONS: CaiOption[] = [
@@ -102,6 +115,8 @@ const getPreviewFallback = (jenisKelamin?: string) =>
     ? "/assets/empty-img-sensus-male.svg"
     : "/assets/empty-img-sensus-female.svg";
 
+const PDF_FILENAME_REGEX = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i;
+
 const CaiPage = () => {
   const dataLogin = getLocalStorage("userData");
   const accessDaerah = dataLogin?.user?.akses_daerah || "";
@@ -114,6 +129,7 @@ const CaiPage = () => {
   const [filterDaerah, setFilterDaerah] = useState(accessDaerah);
   const [filterDesa, setFilterDesa] = useState(accessDesa);
   const [filterKelompok, setFilterKelompok] = useState(accessKelompok);
+  const [filterTshirt, setFilterTshirt] = useState("");
   const [daerahOptions, setDaerahOptions] = useState<CaiOption[]>([]);
   const [desaOptions, setDesaOptions] = useState<CaiOption[]>([]);
   const [kelompokOptions, setKelompokOptions] = useState<CaiOption[]>([]);
@@ -131,10 +147,12 @@ const CaiPage = () => {
   const [imagePreviewTitle, setImagePreviewTitle] = useState("");
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   const activeDaerah = accessDaerah || filterDaerah;
   const activeDesa = accessDesa || filterDesa;
   const activeKelompok = accessKelompok || filterKelompok;
+  const activeTshirt = filterTshirt;
 
   const listQuery = useQuery({
     queryKey: [
@@ -145,6 +163,7 @@ const CaiPage = () => {
       activeDaerah,
       activeDesa,
       activeKelompok,
+      activeTshirt,
     ],
     queryFn: () =>
       fetchCaiData({
@@ -154,6 +173,7 @@ const CaiPage = () => {
         tmptDaerah: activeDaerah,
         tmptDesa: activeDesa,
         tmptKelompok: activeKelompok,
+        sizeTshirt: activeTshirt,
       }),
     refetchOnWindowFocus: false,
   });
@@ -179,6 +199,7 @@ const CaiPage = () => {
       tmpt_desa: selectedRecord.kd_desa || accessDesa,
       tmpt_kelompok: selectedRecord.kd_kelompok || accessKelompok,
       utusan: selectedRecord.utusan || "",
+      size_tshirt: selectedRecord.size_tshirt || "",
       img: null,
     };
   }, [accessDaerah, accessDesa, accessKelompok, selectedRecord]);
@@ -230,6 +251,7 @@ const CaiPage = () => {
     setFilterDaerah(accessDaerah);
     setFilterDesa(accessDesa);
     setFilterKelompok(accessKelompok);
+    setFilterTshirt("");
   };
 
   const openCreateModal = () => {
@@ -509,6 +531,14 @@ const CaiPage = () => {
       ),
     },
     {
+      key: "size_tshirt",
+      header: "Ukuran T-Shirt",
+      sortable: true,
+      render: (item) => (
+        <span className="capitalize">{item.size_tshirt || "-"}</span>
+      ),
+    },
+    {
       key: "img_url",
       header: "Foto",
       sortable: false,
@@ -565,6 +595,59 @@ const CaiPage = () => {
       case "delete":
         handleDeleteSingle(item);
         break;
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setIsDownloadingPdf(true);
+
+    try {
+      const { blob, contentDisposition } = await fetchCaiReportPdf({
+        page,
+        perPage,
+        search,
+        tmptDaerah: activeDaerah,
+        tmptDesa: activeDesa,
+        tmptKelompok: activeKelompok,
+        sizeTshirt: activeTshirt,
+      });
+
+      let filename = `peserta-cai-${new Date().toISOString().split("T")[0]}.pdf`;
+
+      if (
+        contentDisposition &&
+        contentDisposition.indexOf("attachment") !== -1
+      ) {
+        const matches = /filename=([^;]+)/.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].trim().replace(/^"|"$/g, "");
+        }
+      }
+
+      const matchedFilename = contentDisposition?.match(PDF_FILENAME_REGEX);
+      const resolvedFilename =
+        (matchedFilename?.[1] || matchedFilename?.[2] || "")
+          .replace(/\"/g, "")
+          .trim() || filename;
+      const blobUrl = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+
+      downloadLink.href = blobUrl;
+      downloadLink.download = resolvedFilename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+
+      window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+
+      toast.success("Berhasil", {
+        description: `Laporan disimpan sebagai ${resolvedFilename}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      handleApiError(error, {});
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -663,6 +746,22 @@ const CaiPage = () => {
                   }}
                   isDisabled={Boolean(accessKelompok) || !activeDesa}
                 />
+
+                <Select
+                  label="T-Shirt"
+                  isClearable
+                  placeholder="Semua ukuran T-Shirt"
+                  options={SIZE_TSHIRT_OPTIONS}
+                  value={
+                    SIZE_TSHIRT_OPTIONS.find(
+                      (option) => String(option.value) === String(activeTshirt),
+                    ) || null
+                  }
+                  onChange={(option: any) => {
+                    setPage(1);
+                    setFilterTshirt(option?.value || "");
+                  }}
+                />
               </div>
             </div>
 
@@ -690,6 +789,25 @@ const CaiPage = () => {
                 >
                   Tambah Data
                 </Button>
+
+                <button
+                  type="button"
+                  disabled={
+                    isDownloadingPdf ||
+                    !listData.length ||
+                    listQuery.isFetching ||
+                    Boolean(listQuery.error)
+                  }
+                  onClick={handleDownloadPdf}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDownloadingPdf ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  Unduh PDF
+                </button>
               </div>
 
               {selectedRows.size > 0 && (
@@ -999,6 +1117,16 @@ const CaiFormModal = ({
                     options={UTUSAN_OPTIONS}
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <FormikSelectField
+                    name="size_tshirt"
+                    label="Ukuran T-Shirt"
+                    required
+                    placeholder="Pilih ukuran T-Shirt"
+                    options={SIZE_TSHIRT_OPTIONS}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1259,6 +1387,10 @@ const CaiDetailModal = ({
               <DetailField label="Desa" value={detailData.nm_desa} />
               <DetailField label="Kelompok" value={detailData.nm_kelompok} />
               <DetailField label="Utusan" value={detailData.utusan} />
+              <DetailField
+                label="Ukuran T-Shirt"
+                value={detailData.size_tshirt}
+              />
             </div>
           </div>
 

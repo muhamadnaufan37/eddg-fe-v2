@@ -7,6 +7,7 @@ export interface CaiListParams {
   tmptDaerah: string;
   tmptDesa: string;
   tmptKelompok: string;
+  sizeTshirt: string;
 }
 
 export interface CaiOption {
@@ -30,6 +31,7 @@ export interface CaiListItem {
   kd_kelompok?: string;
   nm_kelompok?: string;
   utusan: string;
+  size_tshirt?: string;
   tahun: number;
   img: any;
   img_url: any;
@@ -85,6 +87,7 @@ export interface CaiDetailData {
   kd_kelompok: string;
   nm_kelompok: string;
   utusan: string;
+  size_tshirt?: string;
   tahun: number;
   img: any;
   img_url: any;
@@ -103,6 +106,57 @@ export interface CaiFormValues {
   utusan: string;
   img: File | null;
 }
+
+export interface CaiReportPdfResponse {
+  blob: Blob;
+  filename: string;
+  contentDisposition: any;
+}
+
+const extractFilenameFromContentDisposition = (
+  contentDisposition?: string,
+): string | null => {
+  if (!contentDisposition) return null;
+
+  const normalizedDisposition = contentDisposition.trim();
+
+  const filenameStarMatch = contentDisposition.match(
+    /filename\*=UTF-8''([^;]+)/i,
+  );
+  if (filenameStarMatch?.[1]) {
+    try {
+      return decodeURIComponent(filenameStarMatch[1].replace(/"/g, ""));
+    } catch {
+      return filenameStarMatch[1].replace(/"/g, "");
+    }
+  }
+
+  const filenameMatch = normalizedDisposition.match(
+    /filename=\"?([^\";]+)\"?/i,
+  );
+  return filenameMatch?.[1] ?? null;
+};
+
+const getResponseContentDisposition = (response: any): string | undefined => {
+  const headers = response?.headers;
+
+  if (typeof headers?.get === "function") {
+    return headers.get("content-disposition") ?? undefined;
+  }
+
+  const headerValue =
+    headers?.["content-disposition"] ??
+    headers?.["Content-Disposition"] ??
+    headers?.["Content-disposition"];
+
+  if (headerValue) return headerValue;
+
+  const requestHeader = response?.request?.getResponseHeader?.(
+    "content-disposition",
+  );
+
+  return requestHeader ?? undefined;
+};
 
 const cleanParams = (params: Record<string, any>) =>
   Object.fromEntries(
@@ -130,6 +184,7 @@ export const fetchCaiData = async (params: CaiListParams) => {
       "filter[tmpt_daerah]": params.tmptDaerah,
       "filter[tmpt_desa]": params.tmptDesa,
       "filter[tmpt_kelompok]": params.tmptKelompok,
+      "filter[size_tshirt]": params.sizeTshirt,
     }),
   });
 
@@ -211,4 +266,39 @@ export const fetchKelompokOptionsByDesa = async (
 
   const rawData = response?.data?.data_tempat_sambung || [];
   return mapOptions(rawData, "nama_kelompok");
+};
+
+export const fetchCaiReportPdf = async (
+  params: CaiListParams,
+): Promise<CaiReportPdfResponse> => {
+  const response = await axiosServices().get(
+    `/api/v1/data_cai/report/download`,
+    {
+      params: {
+        page: params.page,
+        per_page: params.perPage,
+        "filter[search]": params.search,
+        "filter[tmpt_daerah]": params.tmptDaerah,
+        "filter[tmpt_desa]": params.tmptDesa,
+        "filter[tmpt_kelompok]": params.tmptKelompok,
+        "filter[size_tshirt]": params.sizeTshirt,
+      },
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    },
+  );
+
+  const contentDisposition = getResponseContentDisposition(response);
+
+  const filename =
+    extractFilenameFromContentDisposition(contentDisposition) ||
+    `peserta-cai-${new Date().toISOString().split("T")[0]}.pdf`;
+
+  return {
+    blob: response.data,
+    filename,
+    contentDisposition,
+  };
 };

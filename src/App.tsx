@@ -1,5 +1,4 @@
 import { BrowserRouter as Router } from "react-router-dom";
-
 import { AuthContextProvider } from "./contexts/AuthContext";
 import renderRoutes, { routes } from "./routes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -33,7 +32,6 @@ function App() {
           <AuthContextProvider>
             <PrivacyAgreementGate />
             <AppRoutes />
-            {renderRoutes(routes)}
           </AuthContextProvider>
         </QueryClientProvider>
       </ThemeProvider>
