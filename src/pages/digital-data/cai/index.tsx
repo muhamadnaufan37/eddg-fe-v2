@@ -56,12 +56,13 @@ import {
 type ModalMode = "create" | "update";
 
 const UTUSAN_OPTIONS: CaiOption[] = [
-  { value: "daerah", label: "Daerah" },
-  { value: "desa", label: "Desa" },
-  { value: "kelompok", label: "Kelompok" },
-  { value: "pengurus", label: "Pengurus" },
-  { value: "pondok", label: "Pondok" },
-  { value: "perorangan", label: "Perorangan" },
+  { label: "Keimaman / 4S", value: "keimaman/4s" },
+  { label: "Organisasi", value: "organisasi" },
+  { label: "MT", value: "mt" },
+  { label: "Panitia / PPG", value: "panitia_ppg" },
+  { label: "Utusan Desa", value: "utusan_desa" },
+  { label: "Utusan Kelompok", value: "utusan_kelompok" },
+  { label: "Pondok", value: "pondok" },
 ];
 
 const SIZE_TSHIRT_OPTIONS: CaiOption[] = [
@@ -527,7 +528,10 @@ const CaiPage = () => {
       header: "Utusan",
       sortable: true,
       render: (item) => (
-        <span className="capitalize">{item.utusan || "-"}</span>
+        <span className="capitalize">
+          {UTUSAN_OPTIONS.find((option) => option.value === item.utusan)
+            ?.label || "-"}
+        </span>
       ),
     },
     {
@@ -766,7 +770,7 @@ const CaiPage = () => {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-end">
-              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+              <div className="grid w-full grid-cols-1 gap-2 items-center sm:flex sm:w-auto sm:flex-wrap">
                 <Button
                   type="button"
                   className="w-full sm:w-auto"
@@ -789,25 +793,20 @@ const CaiPage = () => {
                 >
                   Tambah Data
                 </Button>
-
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  className="w-full sm:w-auto"
+                  onClick={handleDownloadPdf}
                   disabled={
                     isDownloadingPdf ||
                     !listData.length ||
                     listQuery.isFetching ||
                     Boolean(listQuery.error)
                   }
-                  onClick={handleDownloadPdf}
-                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isDownloadingPdf ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
                   Unduh PDF
-                </button>
+                </Button>
               </div>
 
               {selectedRows.size > 0 && (
@@ -1386,7 +1385,14 @@ const CaiDetailModal = ({
               <DetailField label="Daerah" value={detailData.nm_daerah} />
               <DetailField label="Desa" value={detailData.nm_desa} />
               <DetailField label="Kelompok" value={detailData.nm_kelompok} />
-              <DetailField label="Utusan" value={detailData.utusan} />
+              <DetailField
+                label="Utusan"
+                value={
+                  UTUSAN_OPTIONS.find(
+                    (option) => option.value === detailData.utusan,
+                  )?.label || "-"
+                }
+              />
               <DetailField
                 label="Ukuran T-Shirt"
                 value={detailData.size_tshirt}
