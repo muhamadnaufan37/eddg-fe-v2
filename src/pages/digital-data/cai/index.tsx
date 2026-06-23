@@ -56,12 +56,12 @@ import {
 type ModalMode = "create" | "update";
 
 const UTUSAN_OPTIONS: CaiOption[] = [
-  { label: "Keimaman / 4S", value: "keimaman/4s" },
+  { label: "Keimaman / 4S", value: "pengurus" },
   { label: "Organisasi", value: "organisasi" },
   { label: "MT", value: "mt" },
-  { label: "Panitia / PPG", value: "panitia_ppg" },
-  { label: "Utusan Desa", value: "utusan_desa" },
-  { label: "Utusan Kelompok", value: "utusan_kelompok" },
+  { label: "Panitia / PPG", value: "panitia" },
+  { label: "Utusan Desa", value: "desa" },
+  { label: "Utusan Kelompok", value: "kelompok" },
   { label: "Pondok", value: "pondok" },
 ];
 
