@@ -218,6 +218,9 @@ export const createCaiData = async (formData: FormData) => {
 };
 
 export const updateCaiData = async (uuid: string, formData: FormData) => {
+  // 🔥 TAMBAHKAN BARIS INI: Spoofing method agar Laravel mengenalnya sebagai PATCH
+  formData.append("_method", "PATCH");
+
   const response = await axiosServices().post(
     `/api/v1/data_cai/${uuid}`,
     formData,
