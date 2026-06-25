@@ -7,6 +7,10 @@ export interface CaiListParams {
   tmptDaerah: string;
   tmptDesa: string;
   tmptKelompok: string;
+  activeUtusan: string;
+  activeJenisKelamin: string;
+  activeIsActive: string;
+  activeIsPeriode: string;
   sizeTshirt: string;
 }
 
@@ -32,7 +36,7 @@ export interface CaiListItem {
   nm_kelompok?: string;
   utusan: string;
   size_tshirt?: string;
-  tahun: number;
+  tahun: string;
   img: any;
   img_url: any;
   created_at: string;
@@ -88,7 +92,7 @@ export interface CaiDetailData {
   nm_kelompok: string;
   utusan: string;
   size_tshirt?: string;
-  tahun: number;
+  tahun: string;
   img: any;
   img_url: any;
   created_at: string;
@@ -104,6 +108,9 @@ export interface CaiFormValues {
   tmpt_desa: string;
   tmpt_kelompok: string;
   utusan: string;
+  is_active: string;
+  size_tshirt: string;
+  tahun: string;
   img: File | null;
 }
 
@@ -184,6 +191,10 @@ export const fetchCaiData = async (params: CaiListParams) => {
       "filter[tmpt_daerah]": params.tmptDaerah,
       "filter[tmpt_desa]": params.tmptDesa,
       "filter[tmpt_kelompok]": params.tmptKelompok,
+      "filter[utusan]": params.activeUtusan,
+      "filter[jenis_kelamin]": params.activeJenisKelamin,
+      "filter[is_active]": params.activeIsActive,
+      "filter[tahun]": params.activeIsPeriode,
       "filter[size_tshirt]": params.sizeTshirt,
     }),
   });
@@ -207,7 +218,7 @@ export const createCaiData = async (formData: FormData) => {
 };
 
 export const updateCaiData = async (uuid: string, formData: FormData) => {
-  const response = await axiosServices().post(
+  const response = await axiosServices().patch(
     `/api/v1/data_cai/${uuid}`,
     formData,
     {
@@ -301,4 +312,21 @@ export const fetchCaiReportPdf = async (
     filename,
     contentDisposition,
   };
+};
+
+export const fetchPeriodeOptions = async (): Promise<CaiOption[]> => {
+  const response = await axiosServices().get(`/api/v1/data_cai/list-periode`);
+
+  // Menggunakan optional chaining dan memberikan default array kosong langsung
+  const rawData = response?.data?.data_periode;
+
+  if (!Array.isArray(rawData)) {
+    return [];
+  }
+
+  return rawData.map((item) => ({
+    // Menghindari bug jika 'tahun' dari API bertipe number
+    value: item.tahun?.toString() || "",
+    label: item.tahun?.toString() || "Tanpa Tahun",
+  }));
 };

@@ -8,12 +8,7 @@ import {
   AlertTriangle,
   Copy,
   Database,
-  Download,
-  Filter,
   ImageIcon,
-  Loader2,
-  PlusCircle,
-  RefreshCcw,
   Search,
   Trash2,
 } from "lucide-react";
@@ -47,11 +42,15 @@ import {
   fetchDesaOptionsByDaerah,
   fetchKelompokOptionsByDesa,
   updateCaiData,
+  type CaiListParams,
   type CaiDetailData,
   type CaiFormValues,
   type CaiListItem,
   type CaiOption,
+  fetchPeriodeOptions,
 } from "@/services/caiService";
+import type { FilterField, FilterValue } from "@/types/type";
+import { FilterModal } from "@/components/modal/FilterModal";
 
 type ModalMode = "create" | "update";
 
@@ -75,6 +74,11 @@ const SIZE_TSHIRT_OPTIONS: CaiOption[] = [
   { value: "4XL", label: "4XL" },
 ];
 
+const ACCOUNT_OPTIONS: CaiOption[] = [
+  { value: "1", label: "Akun Aktif" },
+  { value: "0", label: "Akun Nonaktif" },
+];
+
 const JENIS_KELAMIN_OPTIONS: CaiOption[] = [
   { value: "LAKI-LAKI", label: "LAKI-LAKI" },
   { value: "PEREMPUAN", label: "PEREMPUAN" },
@@ -93,6 +97,9 @@ const createEmptyFormValues = (akses: {
   tmpt_desa: akses.desa,
   tmpt_kelompok: akses.kelompok,
   utusan: "",
+  is_active: "",
+  size_tshirt: "",
+  tahun: "",
   img: null,
 });
 
@@ -118,11 +125,19 @@ const getPreviewFallback = (jenisKelamin?: string) =>
 
 const PDF_FILENAME_REGEX = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i;
 
+const normalizeFilterPrimitive = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return "";
+};
+
 const CaiPage = () => {
   const dataLogin = getLocalStorage("userData");
   const accessDaerah = dataLogin?.user?.akses_daerah || "";
   const accessDesa = dataLogin?.user?.akses_desa || "";
   const accessKelompok = dataLogin?.user?.akses_kelompok || "";
+  const roleAdmin =
+    dataLogin?.user?.role_id === "219bc0dd-ec72-4618-b22d-5d5ff612dcaf";
 
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -130,10 +145,22 @@ const CaiPage = () => {
   const [filterDaerah, setFilterDaerah] = useState(accessDaerah);
   const [filterDesa, setFilterDesa] = useState(accessDesa);
   const [filterKelompok, setFilterKelompok] = useState(accessKelompok);
+  const [filterUtusan, setFilterUtusan] = useState("");
+  const [filterJenisKelamin, setFilterJenisKelamin] = useState("");
+  const [filterIsActive, setFilterIsActive] = useState("");
+  const [filterIsPeriode, setFilterIsPeriode] = useState("");
   const [filterTshirt, setFilterTshirt] = useState("");
   const [daerahOptions, setDaerahOptions] = useState<CaiOption[]>([]);
+  const [modalDaerah, setModalDaerah] = useState(accessDaerah);
+  const [modalDesa, setModalDesa] = useState(accessDesa);
+  const [modalKelompok, setModalKelompok] = useState(accessKelompok);
+  const [modalDesaOptions, setModalDesaOptions] = useState<CaiOption[]>([]);
+  const [modalKelompokOptions, setModalKelompokOptions] = useState<CaiOption[]>(
+    [],
+  );
   const [desaOptions, setDesaOptions] = useState<CaiOption[]>([]);
   const [kelompokOptions, setKelompokOptions] = useState<CaiOption[]>([]);
+  const [periodeOptions, setPeriodeOptions] = useState<CaiOption[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [showFormModal, setShowFormModal] = useState(false);
   const [formMode, setFormMode] = useState<ModalMode>("create");
@@ -153,31 +180,249 @@ const CaiPage = () => {
   const activeDaerah = accessDaerah || filterDaerah;
   const activeDesa = accessDesa || filterDesa;
   const activeKelompok = accessKelompok || filterKelompok;
+  const activeUtusan = filterUtusan;
+  const activeIsActive = filterIsActive;
+  const activeJenisKelamin = filterJenisKelamin;
+  const activeIsPeriode = filterIsPeriode;
   const activeTshirt = filterTshirt;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<CaiListParams>({
+    page,
+    perPage,
+    search,
+    tmptDaerah: activeDaerah,
+    tmptDesa: activeDesa,
+    tmptKelompok: activeKelompok,
+    sizeTshirt: activeTshirt,
+    activeIsActive: activeIsActive,
+    activeIsPeriode: activeIsPeriode,
+    activeUtusan: activeUtusan,
+    activeJenisKelamin: activeJenisKelamin,
+  });
+
+  const filterSchema = useMemo<FilterField[]>(
+    () => [
+      {
+        id: "tmptDaerah",
+        label: "Daerah",
+        type: "select",
+        options: daerahOptions,
+      },
+      {
+        id: "tmptDesa",
+        label: "Desa",
+        type: "select",
+        options: modalDesaOptions,
+      },
+      {
+        id: "tmptKelompok",
+        label: "Kelompok",
+        type: "select",
+        options: modalKelompokOptions,
+      },
+      {
+        id: "activeJenisKelamin",
+        label: "Jenis Kelamin",
+        type: "radio",
+        options: JENIS_KELAMIN_OPTIONS,
+      },
+      {
+        id: "sizeTshirt",
+        label: "Ukuran T-Shirt",
+        type: "select",
+        options: SIZE_TSHIRT_OPTIONS,
+      },
+      {
+        id: "activeIsActive",
+        label: "Status Akun",
+        type: "radio",
+        options: ACCOUNT_OPTIONS,
+      },
+      {
+        id: "activeUtusan",
+        label: "Status Utusan",
+        type: "select",
+        options: UTUSAN_OPTIONS,
+      },
+      {
+        id: "activeIsPeriode",
+        label: "Periode CAI",
+        type: "checkbox",
+        options: periodeOptions,
+      },
+    ],
+    [daerahOptions, modalDesaOptions, modalKelompokOptions, periodeOptions],
+  );
+
+  const filterModalInitialValues = useMemo(() => {
+    return {
+      ...activeFilters,
+      activeIsPeriode: activeFilters.activeIsPeriode
+        ? [activeFilters.activeIsPeriode]
+        : [],
+    };
+  }, [activeFilters]);
 
   const listQuery = useQuery({
-    queryKey: [
-      "cai-list",
-      page,
-      perPage,
-      search,
-      activeDaerah,
-      activeDesa,
-      activeKelompok,
-      activeTshirt,
-    ],
-    queryFn: () =>
-      fetchCaiData({
-        page,
-        perPage,
-        search,
-        tmptDaerah: activeDaerah,
-        tmptDesa: activeDesa,
-        tmptKelompok: activeKelompok,
-        sizeTshirt: activeTshirt,
-      }),
+    // queryKey membaca object activeFilters, jika isinya berubah, otomatis fetch ulang
+    queryKey: ["cai-list", activeFilters],
+    queryFn: () => fetchCaiData(activeFilters),
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    setModalDaerah(activeDaerah);
+    setModalDesa(activeDesa);
+    setModalKelompok(activeKelompok);
+  }, [activeDaerah, activeDesa, activeKelompok]);
+
+  useEffect(() => {
+    const loadModalDesa = async () => {
+      if (!modalDaerah) {
+        setModalDesaOptions([]);
+        return;
+      }
+
+      const options = await fetchDesaOptionsByDaerah(String(modalDaerah));
+      setModalDesaOptions(options);
+    };
+
+    loadModalDesa();
+  }, [modalDaerah]);
+
+  useEffect(() => {
+    const loadModalKelompok = async () => {
+      if (!modalDesa) {
+        setModalKelompokOptions([]);
+        return;
+      }
+
+      const options = await fetchKelompokOptionsByDesa(String(modalDesa));
+      setModalKelompokOptions(options);
+    };
+
+    loadModalKelompok();
+  }, [modalDesa]);
+
+  const handleApplyFilters = (values?: FilterValue) => {
+    const parsedFilterDaerah = normalizeFilterPrimitive(values?.tmptDaerah);
+    const resolvedFilterDaerah = parsedFilterDaerah || filterDaerah;
+    const parsedFilterDesa = normalizeFilterPrimitive(values?.tmptDesa);
+    const resolvedFilterDesa = parsedFilterDesa || filterDesa;
+    const parsedFilterKelompok = normalizeFilterPrimitive(values?.tmptKelompok);
+    const resolvedFilterKelompok = parsedFilterKelompok || filterKelompok;
+    const resolvedFilterTshirt =
+      typeof values?.sizeTshirt === "string" ? values.sizeTshirt : filterTshirt;
+    const resolvedFilterIsActive =
+      typeof values?.activeIsActive === "string"
+        ? values.activeIsActive
+        : typeof values?.activeIsActive === "boolean"
+          ? values.activeIsActive
+            ? "1"
+            : "0"
+          : filterIsActive;
+    const resolvedFilterIsPeriode = Array.isArray(values?.activeIsPeriode)
+      ? values.activeIsPeriode.length > 0
+        ? String(values.activeIsPeriode[0])
+        : filterIsPeriode
+      : typeof values?.activeIsPeriode === "string"
+        ? values.activeIsPeriode
+        : typeof values?.activePeriode === "string"
+          ? values.activePeriode
+          : filterIsPeriode;
+    const resolvedFilterUtusan =
+      typeof values?.activeUtusan === "string"
+        ? values.activeUtusan
+        : filterUtusan;
+    const resolvedFilterJenisKelamin =
+      typeof values?.activeJenisKelamin === "string"
+        ? values.activeJenisKelamin
+        : filterJenisKelamin;
+
+    setFilterDaerah(resolvedFilterDaerah);
+    setFilterDesa(resolvedFilterDesa);
+    setFilterKelompok(resolvedFilterKelompok);
+    setFilterTshirt(resolvedFilterTshirt);
+    setFilterIsActive(resolvedFilterIsActive);
+    setFilterIsPeriode(resolvedFilterIsPeriode);
+    setFilterUtusan(resolvedFilterUtusan);
+    setFilterJenisKelamin(resolvedFilterJenisKelamin);
+    setModalDaerah(resolvedFilterDaerah);
+    setModalDesa(resolvedFilterDesa);
+    setModalKelompok(resolvedFilterKelompok);
+
+    const nextPage = 1;
+    setPage(nextPage);
+
+    const nextFilters: CaiListParams = {
+      page: nextPage,
+      perPage,
+      search,
+      tmptDaerah: accessDaerah || resolvedFilterDaerah,
+      tmptDesa: accessDesa || resolvedFilterDesa,
+      tmptKelompok: accessKelompok || resolvedFilterKelompok,
+      sizeTshirt: resolvedFilterTshirt,
+      activeIsActive: resolvedFilterIsActive,
+      activeIsPeriode: resolvedFilterIsPeriode,
+      activeUtusan: resolvedFilterUtusan,
+      activeJenisKelamin: resolvedFilterJenisKelamin,
+    };
+
+    const isSameFilters =
+      JSON.stringify(nextFilters) === JSON.stringify(activeFilters);
+
+    setActiveFilters(nextFilters);
+
+    // Jika nilai filter tidak berubah, tetap paksa refresh saat tombol Terapkan Filter ditekan.
+    if (isSameFilters) {
+      listQuery.refetch();
+    }
+  };
+
+  const handleModalFieldChange = (
+    fieldId: string,
+    value: any,
+    values: FilterValue,
+  ) => {
+    if (fieldId === "tmptDaerah") {
+      const nextDaerah = normalizeFilterPrimitive(value);
+      setModalDaerah(nextDaerah);
+      setModalDesa("");
+      setModalKelompok("");
+      setModalDesaOptions([]);
+      setModalKelompokOptions([]);
+
+      if (nextDaerah) {
+        void fetchDesaOptionsByDaerah(nextDaerah)
+          .then((options) => setModalDesaOptions(options))
+          .catch((error) => handleApiError(error, { showToast: true }));
+      }
+      return;
+    }
+
+    if (fieldId === "tmptDesa") {
+      const nextDesa = normalizeFilterPrimitive(value);
+      setModalDesa(nextDesa);
+      setModalKelompok("");
+      setModalKelompokOptions([]);
+
+      if (nextDesa) {
+        void fetchKelompokOptionsByDesa(nextDesa)
+          .then((options) => setModalKelompokOptions(options))
+          .catch((error) => handleApiError(error, { showToast: true }));
+      }
+      return;
+    }
+
+    if (fieldId === "tmptKelompok") {
+      setModalKelompok(normalizeFilterPrimitive(value));
+      return;
+    }
+
+    if (fieldId === "activeIsPeriode") {
+      return;
+    }
+  };
 
   const listData = listQuery.data?.data || [];
   const paginationMeta = listQuery.data?.meta;
@@ -200,7 +445,14 @@ const CaiPage = () => {
       tmpt_desa: selectedRecord.kd_desa || accessDesa,
       tmpt_kelompok: selectedRecord.kd_kelompok || accessKelompok,
       utusan: selectedRecord.utusan || "",
+      is_active:
+        selectedRecord.is_active !== undefined
+          ? selectedRecord.is_active
+            ? "1"
+            : "0"
+          : "",
       size_tshirt: selectedRecord.size_tshirt || "",
+      tahun: selectedRecord.tahun || "",
       img: null,
     };
   }, [accessDaerah, accessDesa, accessKelompok, selectedRecord]);
@@ -243,16 +495,58 @@ const CaiPage = () => {
   }, [activeDesa]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadPeriodeCai = async () => {
+      try {
+        const data = await fetchPeriodeOptions();
+        // Hanya update state jika komponen masih aktif/belum unmount
+        if (isMounted) {
+          setPeriodeOptions(data);
+        }
+      } catch (error: any) {
+        handleApiError(error, { showToast: true });
+      }
+    };
+
+    loadPeriodeCai();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     document.title = `${BASE_TITLE}Data CAI`;
   }, []);
 
   const resetFilters = () => {
-    setPage(1);
+    const nextPage = 1;
+    setPage(nextPage);
     setSearch("");
     setFilterDaerah(accessDaerah);
     setFilterDesa(accessDesa);
     setFilterKelompok(accessKelompok);
     setFilterTshirt("");
+    setFilterIsActive("");
+    setFilterIsPeriode("");
+    setFilterUtusan("");
+    setFilterJenisKelamin("");
+
+    setActiveFilters({
+      page: nextPage,
+      perPage,
+      search: "",
+      tmptDaerah: accessDaerah,
+      tmptDesa: accessDesa,
+      tmptKelompok: accessKelompok,
+      sizeTshirt: "",
+      activeIsActive: "",
+      activeIsPeriode: "",
+      activeUtusan: "",
+      activeJenisKelamin: "",
+    });
   };
 
   const openCreateModal = () => {
@@ -477,6 +771,12 @@ const CaiPage = () => {
       render: (item) => <span>{formatDate(item.tgl_lahir)}</span>,
     },
     {
+      key: "umur",
+      header: "Umur",
+      sortable: true,
+      bold: true,
+    },
+    {
       key: "jenis_kelamin",
       header: "Jenis Kelamin",
       sortable: true,
@@ -508,7 +808,6 @@ const CaiPage = () => {
       key: "tempat_sambung",
       header: "Tempat CAI",
       sortable: false,
-      mobileHidden: true,
       render: (item) => (
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-semibold text-gray-900 dark:text-white">
@@ -574,10 +873,14 @@ const CaiPage = () => {
       },
     },
     {
+      key: "tahun",
+      header: "Periode CAI",
+      sortable: true,
+    },
+    {
       key: "created_at",
       header: "Dibuat",
       sortable: true,
-      mobileHidden: true,
       render: (item) => <span>{formatDate(item.created_at)}</span>,
     },
   ];
@@ -614,6 +917,10 @@ const CaiPage = () => {
         tmptDesa: activeDesa,
         tmptKelompok: activeKelompok,
         sizeTshirt: activeTshirt,
+        activeIsActive: activeIsActive,
+        activeIsPeriode: activeIsPeriode,
+        activeUtusan: activeUtusan,
+        activeJenisKelamin: activeJenisKelamin,
       });
 
       let filename = `peserta-cai-${new Date().toISOString().split("T")[0]}.pdf`;
@@ -694,79 +1001,6 @@ const CaiPage = () => {
                   className="pl-10"
                 />
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Select
-                  label="Daerah"
-                  isClearable
-                  placeholder="Semua daerah"
-                  options={daerahOptions}
-                  value={
-                    daerahOptions.find(
-                      (option) => String(option.value) === String(activeDaerah),
-                    ) || null
-                  }
-                  onChange={(option: any) => {
-                    setPage(1);
-                    setFilterDaerah(option?.value || "");
-                    setFilterDesa("");
-                    setFilterKelompok("");
-                  }}
-                  isDisabled={Boolean(accessDaerah)}
-                />
-
-                <Select
-                  label="Desa"
-                  isClearable
-                  placeholder="Semua desa"
-                  options={desaOptions}
-                  value={
-                    desaOptions.find(
-                      (option) => String(option.value) === String(activeDesa),
-                    ) || null
-                  }
-                  onChange={(option: any) => {
-                    setPage(1);
-                    setFilterDesa(option?.value || "");
-                    setFilterKelompok("");
-                  }}
-                  isDisabled={Boolean(accessDesa) || !activeDaerah}
-                />
-
-                <Select
-                  label="Kelompok"
-                  isClearable
-                  placeholder="Semua kelompok"
-                  options={kelompokOptions}
-                  value={
-                    kelompokOptions.find(
-                      (option) =>
-                        String(option.value) === String(activeKelompok),
-                    ) || null
-                  }
-                  onChange={(option: any) => {
-                    setPage(1);
-                    setFilterKelompok(option?.value || "");
-                  }}
-                  isDisabled={Boolean(accessKelompok) || !activeDesa}
-                />
-
-                <Select
-                  label="T-Shirt"
-                  isClearable
-                  placeholder="Semua ukuran T-Shirt"
-                  options={SIZE_TSHIRT_OPTIONS}
-                  value={
-                    SIZE_TSHIRT_OPTIONS.find(
-                      (option) => String(option.value) === String(activeTshirt),
-                    ) || null
-                  }
-                  onChange={(option: any) => {
-                    setPage(1);
-                    setFilterTshirt(option?.value || "");
-                  }}
-                />
-              </div>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-end">
@@ -774,9 +1008,9 @@ const CaiPage = () => {
                 <Button
                   type="button"
                   className="w-full sm:w-auto"
-                  onClick={() => setPage(1)}
+                  onClick={() => setIsModalOpen(true)}
                 >
-                  Terapkan Filter
+                  Buka Filter
                 </Button>
                 <Button
                   type="button"
@@ -786,13 +1020,17 @@ const CaiPage = () => {
                 >
                   Reset
                 </Button>
-                <Button
-                  type="button"
-                  className="w-full sm:w-auto"
-                  onClick={openCreateModal}
-                >
-                  Tambah Data
-                </Button>
+                {roleAdmin && (
+                  <>
+                    <Button
+                      type="button"
+                      className="w-full sm:w-auto"
+                      onClick={openCreateModal}
+                    >
+                      Tambah Data
+                    </Button>
+                  </>
+                )}
                 <Button
                   type="button"
                   variant="primary"
@@ -839,7 +1077,7 @@ const CaiPage = () => {
         <DataTableAdvanced
           data={listData}
           columns={columns}
-          rowActions={rowActions}
+          rowActions={roleAdmin ? rowActions : undefined}
           onRowAction={handleRowAction}
           selectable
           selectedRows={selectedRows}
@@ -855,8 +1093,15 @@ const CaiPage = () => {
           rowsPerPage={perPage}
           rowsOptions={[10, 25, 50, 100]}
           onPageChange={(params) => {
-            setPage(params.page + 1);
-            setPerPage(params.rows);
+            const nextPage = params.page + 1;
+            const nextRows = params.rows;
+            setPage(nextPage);
+            setPerPage(nextRows);
+            setActiveFilters((prev) => ({
+              ...prev,
+              page: nextPage,
+              perPage: nextRows,
+            }));
           }}
           disabled={listQuery.isFetching}
         />
@@ -919,6 +1164,15 @@ const CaiPage = () => {
         </div>
       </Modal>
 
+      <FilterModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        fields={filterSchema}
+        initialValues={filterModalInitialValues}
+        onApply={handleApplyFilters}
+        onFieldChange={handleModalFieldChange}
+      />
+
       {isDetailLoading && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
           <div className="rounded-xl bg-white px-4 py-3 text-sm shadow-lg dark:bg-gray-900 dark:text-white">
@@ -963,7 +1217,7 @@ const FormikSelectField = ({
         ) || null
       }
       onChange={(option: any) => {
-        const nextValue = option?.value || "";
+        const nextValue = option?.value ?? "";
         helpers.setValue(nextValue);
         onChangeExtra?.(String(nextValue));
       }}
@@ -977,10 +1231,12 @@ const FormikInputField = ({
   name,
   type = "text",
   placeholder,
+  disabled = false,
 }: {
   name: string;
   type?: string;
   placeholder?: string;
+  disabled?: boolean;
 }) => {
   const [field, meta] = useField(name);
 
@@ -994,6 +1250,7 @@ const FormikInputField = ({
       onChange={field.onChange}
       onBlur={field.onBlur}
       error={meta.touched && meta.error ? String(meta.error) : undefined}
+      disabled={disabled}
     />
   );
 };
@@ -1091,6 +1348,15 @@ const CaiFormModal = ({
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="tahun">Periode CAI</Label>
+                  <FormikInputField
+                    name="tahun"
+                    placeholder="Periode CAI"
+                    disabled
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="tgl_lahir" required>
                     Tanggal Lahir
                   </Label>
@@ -1114,6 +1380,16 @@ const CaiFormModal = ({
                     required
                     placeholder="Pilih utusan"
                     options={UTUSAN_OPTIONS}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <FormikSelectField
+                    name="is_active"
+                    label="Status Akun"
+                    required
+                    placeholder="Pilih status akun"
+                    options={ACCOUNT_OPTIONS}
                   />
                 </div>
 
