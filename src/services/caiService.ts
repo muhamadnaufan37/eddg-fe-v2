@@ -218,7 +218,7 @@ export const createCaiData = async (formData: FormData) => {
 };
 
 export const updateCaiData = async (uuid: string, formData: FormData) => {
-  const response = await axiosServices().patch(
+  const response = await axiosServices().post(
     `/api/v1/data_cai/${uuid}`,
     formData,
     {
