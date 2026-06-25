@@ -997,6 +997,10 @@ const CaiPage = () => {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e: any) =>
+                    e.key === "Enter" &&
+                    setActiveFilters((prev) => ({ ...prev, search }))
+                  }
                   placeholder="Cari nama, kode, utusan, daerah, desa, atau kelompok..."
                   className="pl-10"
                 />
