@@ -62,6 +62,7 @@ const UTUSAN_OPTIONS: CaiOption[] = [
   { label: "Utusan Desa", value: "desa" },
   { label: "Utusan Kelompok", value: "kelompok" },
   { label: "Pondok", value: "pondok" },
+  { label: "Asrama CAI MUMI", value: "asrama-mumi" },
 ];
 
 const SIZE_TSHIRT_OPTIONS: CaiOption[] = [
@@ -891,6 +892,11 @@ const CaiPage = () => {
     { label: "Hapus", value: "delete" },
   ];
 
+  const rowActionsBiasa = [
+    { label: "Detail", value: "detail" },
+    { label: "Ubah", value: "edit" },
+  ];
+
   const handleRowAction = (item: CaiListItem, action: string) => {
     switch (action) {
       case "detail":
@@ -1081,7 +1087,7 @@ const CaiPage = () => {
         <DataTableAdvanced
           data={listData}
           columns={columns}
-          rowActions={roleAdmin ? rowActions : undefined}
+          rowActions={roleAdmin ? rowActions : rowActionsBiasa}
           onRowAction={handleRowAction}
           selectable
           selectedRows={selectedRows}
@@ -1129,6 +1135,7 @@ const CaiPage = () => {
         isSubmitting={isSubmitting}
         isLoading={isFormLoading}
         onPreviewImage={openImagePreview}
+        roleAdmin={roleAdmin}
       />
 
       <CaiDetailModal
@@ -1273,6 +1280,7 @@ const CaiFormModal = ({
   isSubmitting,
   isLoading,
   onPreviewImage,
+  roleAdmin,
 }: {
   isOpen: boolean;
   mode: ModalMode;
@@ -1291,6 +1299,7 @@ const CaiFormModal = ({
     title?: string,
     jenisKelamin?: string,
   ) => void;
+  roleAdmin: boolean;
 }) => {
   const validationSchema = Yup.object().shape({
     nama_lengkap: Yup.string().required("Nama lengkap harus diisi"),
@@ -1333,6 +1342,7 @@ const CaiFormModal = ({
                 accessDaerah={accessDaerah}
                 accessDesa={accessDesa}
                 accessKelompok={accessKelompok}
+                roleAdmin={roleAdmin}
               />
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -1343,6 +1353,7 @@ const CaiFormModal = ({
                   <FormikInputField
                     name="nama_lengkap"
                     placeholder="Nama lengkap"
+                    disabled={roleAdmin}
                   />
                 </div>
 
@@ -1364,7 +1375,11 @@ const CaiFormModal = ({
                   <Label htmlFor="tgl_lahir" required>
                     Tanggal Lahir
                   </Label>
-                  <FormikInputField name="tgl_lahir" type="date" />
+                  <FormikInputField
+                    name="tgl_lahir"
+                    type="date"
+                    disabled={roleAdmin}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -1374,6 +1389,7 @@ const CaiFormModal = ({
                     required
                     placeholder="Pilih jenis kelamin"
                     options={JENIS_KELAMIN_OPTIONS}
+                    isDisabled={roleAdmin}
                   />
                 </div>
 
@@ -1384,6 +1400,7 @@ const CaiFormModal = ({
                     required
                     placeholder="Pilih utusan"
                     options={UTUSAN_OPTIONS}
+                    isDisabled={roleAdmin}
                   />
                 </div>
 
@@ -1394,6 +1411,7 @@ const CaiFormModal = ({
                     required
                     placeholder="Pilih status akun"
                     options={ACCOUNT_OPTIONS}
+                    isDisabled={roleAdmin}
                   />
                 </div>
 
@@ -1404,6 +1422,7 @@ const CaiFormModal = ({
                     required
                     placeholder="Pilih ukuran T-Shirt"
                     options={SIZE_TSHIRT_OPTIONS}
+                    isDisabled={roleAdmin}
                   />
                 </div>
               </div>
@@ -1420,6 +1439,7 @@ const CaiFormModal = ({
                     setFieldValue("img", file);
                   }}
                   className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-cyan-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-cyan-700 dark:text-gray-300"
+                  disabled={roleAdmin}
                 />
                 {values.img instanceof File ? (
                   <div className="text-xs text-gray-500">{values.img.name}</div>
@@ -1490,6 +1510,7 @@ const CaiCascadeFields = ({
   accessDaerah,
   accessDesa,
   accessKelompok,
+  roleAdmin,
 }: {
   values: CaiFormValues;
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
@@ -1497,6 +1518,7 @@ const CaiCascadeFields = ({
   accessDaerah: string;
   accessDesa: string;
   accessKelompok: string;
+  roleAdmin: boolean;
 }) => {
   const [desaOptions, setDesaOptions] = useState<CaiOption[]>([]);
   const [kelompokOptions, setKelompokOptions] = useState<CaiOption[]>([]);
@@ -1565,7 +1587,7 @@ const CaiCascadeFields = ({
         required
         placeholder="Pilih daerah"
         options={daerahOptions}
-        isDisabled={Boolean(accessDaerah)}
+        isDisabled={roleAdmin || Boolean(accessDaerah)}
         onChangeExtra={() => {
           setFieldValue("tmpt_desa", "", false);
           setFieldValue("tmpt_kelompok", "", false);
@@ -1577,7 +1599,7 @@ const CaiCascadeFields = ({
         label="Desa"
         placeholder="Pilih desa"
         options={desaOptions}
-        isDisabled={!values.tmpt_daerah || Boolean(accessDesa)}
+        isDisabled={!values.tmpt_daerah || roleAdmin || Boolean(accessDesa)}
         onChangeExtra={() => {
           setFieldValue("tmpt_kelompok", "", false);
         }}
@@ -1588,7 +1610,7 @@ const CaiCascadeFields = ({
         label="Kelompok"
         placeholder="Pilih kelompok"
         options={kelompokOptions}
-        isDisabled={!values.tmpt_desa || Boolean(accessKelompok)}
+        isDisabled={!values.tmpt_desa || roleAdmin || Boolean(accessKelompok)}
       />
     </div>
   );
