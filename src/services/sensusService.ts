@@ -150,6 +150,14 @@ export const fetchDetailPeserta = async (kode: string) => {
   return response.data;
 };
 
+export const searchSensusByIdCard = async (idCard: string) => {
+  const response = await axiosServices().get(
+    "/api/v1/data_center/sensus/search-by-id-card",
+    { params: { id_card: idCard } },
+  );
+  return response.data;
+};
+
 /**
  * Fetch desa by daerah
  */

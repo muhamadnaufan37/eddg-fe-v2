@@ -22,7 +22,7 @@ type TAuthContext = {
   user: TData | null;
   isNdaPending: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: (keterangan?: string) => void;
   setNdaAccepted: (userId?: string) => void;
 };
 
@@ -146,11 +146,13 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const logout = async () => {
+  const logout = async (keterangan?: string) => {
     dispatch({ type: IS_LOADING, payload: { isLoading: true } });
 
     try {
-      const response = await axiosServices().post(`/api/v1/logout`);
+      const response = await axiosServices().post(`/api/v1/logout`, {
+        ...(keterangan?.trim() ? { keterangan: keterangan.trim() } : {}),
+      });
 
       if (response.data.success) {
         setSession({});

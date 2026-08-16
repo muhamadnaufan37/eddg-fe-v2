@@ -95,6 +95,15 @@ const PresensiListPage = () => {
       ),
     },
     {
+      key: "metode_presensi",
+      header: "Metode",
+      render: (item: PresensiListItem) => (
+        <span className="text-xs capitalize">
+          {item.metode_presensi || "-"}
+        </span>
+      ),
+    },
+    {
       key: "waktu_presensi",
       header: "Waktu Presensi",
       render: (item: PresensiListItem) =>

@@ -1587,7 +1587,7 @@ const CaiCascadeFields = ({
         required
         placeholder="Pilih daerah"
         options={daerahOptions}
-        isDisabled={roleAdmin || Boolean(accessDaerah)}
+        isDisabled={Boolean(accessDaerah)}
         onChangeExtra={() => {
           setFieldValue("tmpt_desa", "", false);
           setFieldValue("tmpt_kelompok", "", false);
@@ -1599,7 +1599,7 @@ const CaiCascadeFields = ({
         label="Desa"
         placeholder="Pilih desa"
         options={desaOptions}
-        isDisabled={!values.tmpt_daerah || roleAdmin || Boolean(accessDesa)}
+        isDisabled={!values.tmpt_daerah || Boolean(accessDesa)}
         onChangeExtra={() => {
           setFieldValue("tmpt_kelompok", "", false);
         }}
@@ -1610,7 +1610,7 @@ const CaiCascadeFields = ({
         label="Kelompok"
         placeholder="Pilih kelompok"
         options={kelompokOptions}
-        isDisabled={!values.tmpt_desa || roleAdmin || Boolean(accessKelompok)}
+        isDisabled={!values.tmpt_desa || Boolean(accessKelompok)}
       />
     </div>
   );

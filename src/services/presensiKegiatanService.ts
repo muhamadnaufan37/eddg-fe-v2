@@ -1,5 +1,7 @@
 import { axiosServices } from "@/services/axios";
 
+export type MetodePresensi = "tapping" | "manual" | "both";
+
 export interface PresensiKegiatanItem {
   id: any;
   id_kegiatan: string;
@@ -11,6 +13,7 @@ export interface PresensiKegiatanItem {
   jam_kegiatan: string;
   expired_date_time: string;
   category: string;
+  metode_presensi: MetodePresensi;
   usia_mode: string;
   usia_operator: string;
   usia_min: number;
@@ -20,6 +23,9 @@ export interface PresensiKegiatanItem {
   kd_desa: any;
   nm_desa: any;
   kd_kelompok: any;
+  daerah_ids?: number[];
+  desa_ids?: number[];
+  kelompok_ids?: number[];
   nm_kelompok: any;
   add_by_petugas: number;
   petugas: string;
@@ -78,6 +84,7 @@ export interface UpsertPresensiKegiatanPayload {
   jam_kegiatan: string;
   expired_date_time: string;
   category: string;
+  metode_presensi: MetodePresensi;
   usia_mode: "single" | "range";
   usia_operator?: string;
   usia_min: string;
@@ -85,6 +92,9 @@ export interface UpsertPresensiKegiatanPayload {
   tmpt_daerah: string;
   tmpt_desa?: string;
   tmpt_kelompok?: string;
+  daerah_ids?: number[];
+  desa_ids?: number[];
+  kelompok_ids?: number[];
   add_by_petugas: string;
 }
 

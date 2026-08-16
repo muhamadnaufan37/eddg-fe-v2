@@ -22,6 +22,7 @@ export interface PresensiPesertaData {
   id_peserta?: number;
   nama_lengkap: string;
   kode_cari_data: string;
+  id_card?: string | null;
   tanggal_lahir: string;
   jenis_kelamin: string;
   status_sambung: number;
@@ -33,6 +34,7 @@ export interface PresensiPesertaData {
   nama_desa: string;
   nama_kelompok: string;
   waktu_presensi: string | null;
+  metode_presensi?: "tapping" | "manual" | null;
   kode_peserta?: string;
   nama_peserta?: string;
   nomor_urut?: number;
@@ -141,6 +143,7 @@ export interface PresensiListItem {
   nm_petugas_input: string;
   waktu_presensi: string;
   status_presensi: string;
+  metode_presensi?: "tapping" | "manual" | null;
   keterangan: string;
   created_at: string;
   updated_at: string;
@@ -178,9 +181,11 @@ export interface PresensiDetailResponse {
 // ===================== Interfaces untuk Create Presensi =====================
 export interface CreatePresensiPayload {
   kode_kegiatan: string;
-  id_peserta: string;
+  id_peserta?: string;
+  id_card?: string;
   add_by_petugas: string;
   category: string;
+  metode_presensi: "tapping" | "manual";
   status_presensi?: string;
   keterangan?: string;
 }
@@ -194,19 +199,23 @@ export interface CreatePresensiResponse {
 // ===================== Interfaces untuk Store by Coordinate =====================
 export interface StorePresensiByCoordinatePayload {
   kode_kegiatan: string;
-  id_peserta: string;
+  id_peserta?: string;
+  id_card?: string;
   add_by_petugas: string;
   latitude: string;
   longitude: string;
   radius_meter: number;
   category: string;
+  metode_presensi: "tapping" | "manual";
 }
 
 // ===================== Interfaces untuk Check Presensi =====================
 export interface CheckPresensiPayload {
   kode_kegiatan: string;
-  id_peserta: string;
+  id_peserta?: string;
+  id_card?: string;
   category: string;
+  metode_presensi: "tapping" | "manual";
 }
 
 export interface CheckPresensiResponse {

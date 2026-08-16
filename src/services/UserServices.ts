@@ -78,6 +78,14 @@ export const fetchUnbanUsers = async (uuid: string) => {
   return response.data;
 };
 
+export const forceLogoutUser = async (uuid: string, keterangan: string) => {
+  const response = await axiosServices().post(
+    `/api/v1/users/${uuid}/force-logout`,
+    { keterangan },
+  );
+  return response.data;
+};
+
 export const fetchResetDeviceUsers = async (userUuid: string) => {
   const response = await axiosServices().post(
     `/api/v1/users/admin-reset-device`,

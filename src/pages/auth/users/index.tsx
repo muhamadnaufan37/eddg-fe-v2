@@ -32,6 +32,7 @@ import {
   fetchResetDeviceUsers,
   fetchUnbanUsers,
   fetchUsersData,
+  forceLogoutUser,
 } from "@/services/UserServices";
 import UsersFilterPanel from "./components/UsersFilterPanel";
 import { THEME_COLORS } from "@/config/theme";
@@ -80,6 +81,7 @@ const UsersPage = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isResettingDevice, setIsResettingDevice] = useState(false);
   const [isUnbanning, setIsUnbanning] = useState(false);
+  const [isForceLoggingOut, setIsForceLoggingOut] = useState(false);
 
   const navigate = useNavigate();
 
@@ -355,6 +357,25 @@ const UsersPage = () => {
     }
   };
 
+  const handleForceLogout = async (item: any) => {
+    const keterangan = window.prompt("Masukkan alasan force logout:");
+    if (!keterangan?.trim()) return;
+
+    setIsForceLoggingOut(true);
+    try {
+      const response = await forceLogoutUser(item.uuid, keterangan.trim());
+      if (!response.success) throw new Error(response.message);
+      toast.success("Berhasil", {
+        description: response.message || "User berhasil dikeluarkan",
+      });
+      refetchListUsers();
+    } catch (error: any) {
+      handleApiError(error, { showToast: true });
+    } finally {
+      setIsForceLoggingOut(false);
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedRows.size === 0) {
       toast.warning("Peringatan", {
@@ -498,6 +519,24 @@ const UsersPage = () => {
       },
     },
     {
+      key: "is_online",
+      header: "Online",
+      sortable: true,
+      render: (item: any) => (
+        <StatusTableBadge
+          label={item.is_online ? "Online" : "Offline"}
+          color={item.is_online ? "green" : "gray"}
+        />
+      ),
+    },
+    {
+      key: "last_seen_at",
+      header: "Terakhir Aktif",
+      render: (item: any) => (
+        <span>{formatDateString(item.last_seen_at) || "-"}</span>
+      ),
+    },
+    {
       key: "tempat_sambung_info",
       header: "Tempat Sambung",
       sortable: false,
@@ -561,6 +600,14 @@ const UsersPage = () => {
 
     actions.push({ label: "Hapus", value: "delete" });
 
+    if (
+      String(dataLogin?.user?.role_id) ===
+        "219bc0dd-ec72-4618-b22d-5d5ff612dcaf" &&
+      String(item.uuid) !== String(dataLogin?.user?.uuid)
+    ) {
+      actions.push({ label: "Force Logout", value: "force_logout" });
+    }
+
     return actions;
   };
 
@@ -587,6 +634,9 @@ const UsersPage = () => {
       case "unbanned":
         unbanUsers(item.uuid, 7);
         break;
+      case "force_logout":
+        handleForceLogout(item);
+        break;
     }
   };
 
@@ -607,7 +657,8 @@ const UsersPage = () => {
           isLoadingDetail ||
           isResettingPassword ||
           isResettingDevice ||
-          isUnbanning) && (
+          isUnbanning ||
+          isForceLoggingOut) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-xs">
             <svg
               className="animate-spin h-6 w-6"

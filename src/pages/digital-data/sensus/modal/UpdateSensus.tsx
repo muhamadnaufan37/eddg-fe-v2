@@ -62,6 +62,7 @@ const UpdateSensus = () => {
 
   const initialValues = {
     id: dataBalikan?.detailData?.id,
+    id_card: dataBalikan?.detailData?.id_card || "",
     kode_cari_data: dataBalikan?.detailData?.kode_cari_data,
     nama_lengkap: dataBalikan?.detailData?.nama_lengkap,
     nama_panggilan: dataBalikan?.detailData?.nama_panggilan,
@@ -311,6 +312,25 @@ const UpdateSensus = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-gray-900 dark:text-white">
+                      ID Card RFID{" "}
+                      <span className="text-gray-500 text-xs">(opsional)</span>
+                    </label>
+                    <Field
+                      as={Input}
+                      type="text"
+                      id="id_card"
+                      name="id_card"
+                      placeholder="Masukkan kode kartu RFID"
+                    />
+                    <ErrorMessage
+                      name="id_card"
+                      component="div"
+                      className="text-red-600 text-sm"
+                    />
+                  </div>
+
                   <div>
                     <label className="text-gray-900 dark:text-white">
                       Nama Lengkap

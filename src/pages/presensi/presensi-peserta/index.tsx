@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/features/Pagination";
@@ -21,6 +21,7 @@ import {
   storePresensiByCoordinate,
   type PresensiPesertaData,
 } from "@/services/presensiService";
+import { fetchDetailPresensiKegiatan } from "@/services/presensiKegiatanService";
 import { handleApiError } from "@/utils/errorUtils";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
@@ -48,7 +49,9 @@ interface PresensiModalState {
   pesertaId: string | null;
   pesertaKode: string | null;
   pesertaNama: string | null;
+  pesertaCard: string | null;
   mode: "regular" | "coordinate";
+  metodePresensi: "tapping" | "manual";
   category: string;
   statusPresensi: "hadir" | "izin" | "sakit";
   keterangan: string;
@@ -80,7 +83,9 @@ const PresensiPesertaPage = () => {
     pesertaId: null,
     pesertaKode: null,
     pesertaNama: null,
+    pesertaCard: null,
     mode: "regular",
+    metodePresensi: "manual",
     category: "",
     statusPresensi: "hadir",
     keterangan: "",
@@ -120,10 +125,32 @@ const PresensiPesertaPage = () => {
 
   // Extract data dan statistics dari report
   const dataCategory = reportData?.category;
+  const [activityMethod, setActivityMethod] = useState<
+    "tapping" | "manual" | "both"
+  >("both");
   const listData = reportData?.list_data_presensi_peserta;
   const statistics = reportData?.statistics;
 
   const tableData = listData?.data || [];
+
+  useEffect(() => {
+    if (!id_kegiatan) return;
+    fetchDetailPresensiKegiatan(id_kegiatan)
+      .then((response) => {
+        const method = response.data?.metode_presensi || "both";
+        setActivityMethod(method);
+        setPresensiModal((current) => ({
+          ...current,
+          metodePresensi:
+            method === "tapping"
+              ? "tapping"
+              : method === "manual"
+                ? "manual"
+                : current.metodePresensi,
+        }));
+      })
+      .catch(() => setActivityMethod("both"));
+  }, [id_kegiatan]);
 
   const handleSearch = () => {
     setPage(1);
@@ -131,7 +158,12 @@ const PresensiPesertaPage = () => {
   };
 
   const handlePresensi = async () => {
-    if (!presensiModal.pesertaKode) {
+    const participantIdentifier =
+      presensiModal.metodePresensi === "tapping"
+        ? presensiModal.pesertaCard
+        : presensiModal.pesertaKode;
+
+    if (!participantIdentifier) {
       toast.error("Error", {
         description: "ID peserta tidak ditemukan",
         duration: 3000,
@@ -143,8 +175,11 @@ const PresensiPesertaPage = () => {
     try {
       const checkResponse = await checkPresensi({
         kode_kegiatan: kode_kegiatan || "",
-        id_peserta: presensiModal.pesertaKode,
+        ...(presensiModal.metodePresensi === "tapping"
+          ? { id_card: participantIdentifier }
+          : { id_peserta: participantIdentifier }),
         category: dataCategory || "",
+        metode_presensi: presensiModal.metodePresensi,
       });
 
       if (checkResponse.data?.already_presensi) {
@@ -177,22 +212,28 @@ const PresensiPesertaPage = () => {
 
         response = await storePresensiByCoordinate({
           kode_kegiatan: kode_kegiatan || "",
-          id_peserta: presensiModal.pesertaKode,
+          ...(presensiModal.metodePresensi === "tapping"
+            ? { id_card: participantIdentifier }
+            : { id_peserta: participantIdentifier }),
           add_by_petugas: defaultPetugasId,
           latitude: coordinate.latitude,
           longitude: coordinate.longitude,
           radius_meter: coordinate.radiusMeter,
           category: dataCategory || "",
+          metode_presensi: presensiModal.metodePresensi,
         });
       } else {
         // Regular presensi
         response = await createPresensi({
           kode_kegiatan: kode_kegiatan || "",
-          id_peserta: presensiModal.pesertaKode,
+          ...(presensiModal.metodePresensi === "tapping"
+            ? { id_card: participantIdentifier }
+            : { id_peserta: participantIdentifier }),
           add_by_petugas: defaultPetugasId,
           category: dataCategory || "",
           status_presensi: presensiModal.statusPresensi,
           keterangan: presensiModal.keterangan,
+          metode_presensi: presensiModal.metodePresensi,
         });
       }
 
@@ -372,6 +413,15 @@ const PresensiPesertaPage = () => {
       ),
     },
     {
+      key: "metode_presensi",
+      header: "Metode",
+      render: (item: PresensiPesertaData) => (
+        <span className="text-xs capitalize">
+          {item.metode_presensi || "-"}
+        </span>
+      ),
+    },
+    {
       key: "waktu_presensi",
       header: "Waktu",
       render: (item: PresensiPesertaData) =>
@@ -413,7 +463,9 @@ const PresensiPesertaPage = () => {
         pesertaId: String(item.id),
         pesertaKode: item.kode_cari_data,
         pesertaNama: item.nama_lengkap,
+        pesertaCard: item.id_card || null,
         mode: "regular",
+        metodePresensi: item.id_card ? "manual" : "manual",
         category: "",
         statusPresensi: "hadir",
         keterangan: "",
@@ -686,6 +738,37 @@ const PresensiPesertaPage = () => {
             <label className="text-xs font-medium mb-2 block">
               Tipe Presensi
             </label>
+            <select
+              value={presensiModal.metodePresensi}
+              onChange={(event) =>
+                setPresensiModal({
+                  ...presensiModal,
+                  metodePresensi: event.target.value as "tapping" | "manual",
+                })
+              }
+              className="mb-3 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+            >
+              <option value="manual" disabled={activityMethod === "tapping"}>
+                Manual (kode cari data)
+              </option>
+              <option value="tapping" disabled={activityMethod === "manual"}>
+                Tapping (RFID)
+              </option>
+            </select>
+            {presensiModal.metodePresensi === "tapping" && (
+              <Input
+                value={presensiModal.pesertaCard || ""}
+                onChange={(event) =>
+                  setPresensiModal({
+                    ...presensiModal,
+                    pesertaCard: event.target.value,
+                  })
+                }
+                placeholder="Scan atau masukkan ID card RFID"
+                className="w-full text-xs"
+                autoFocus
+              />
+            )}
             <div className="flex gap-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

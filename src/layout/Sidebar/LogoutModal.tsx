@@ -11,6 +11,7 @@ const LogoutModal = ({ isOpen, onClose }: LogoutModalProps) => {
   const { logout } = useContext(AuthContext);
   const [show, setShow] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+  const [keterangan, setKeterangan] = useState("");
 
   useEffect(() => {
     let timeout: number;
@@ -73,6 +74,14 @@ const LogoutModal = ({ isOpen, onClose }: LogoutModalProps) => {
           Apakah Anda yakin untuk keluar dari akun ini?
         </p>
 
+        <textarea
+          value={keterangan}
+          onChange={(event) => setKeterangan(event.target.value)}
+          placeholder="Keterangan logout (opsional)"
+          rows={3}
+          className={`mb-6 w-full rounded-lg border px-3 py-2 text-sm ${THEME_COLORS.border.default} ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
+        />
+
         {/* Footer Buttons */}
         <div className="flex gap-4">
           <button
@@ -82,7 +91,7 @@ const LogoutModal = ({ isOpen, onClose }: LogoutModalProps) => {
             Kembali
           </button>
           <button
-            onClick={logout}
+            onClick={() => logout(keterangan)}
             className={`w-full transform rounded-lg px-6 py-2.5 text-sm font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
           >
             Ya, saya yakin

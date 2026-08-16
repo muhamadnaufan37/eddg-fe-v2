@@ -19,6 +19,7 @@ import {
   fetchDetailPresensiKegiatan,
   fetchPresensiKegiatanData,
   type PresensiKegiatanItem,
+  type MetodePresensi,
   updatePresensiKegiatan,
 } from "@/services/presensiKegiatanService";
 import { handleApiError } from "@/utils/errorUtils";
@@ -55,6 +56,10 @@ type FormState = {
   tmpt_daerah: string;
   tmpt_desa: string;
   tmpt_kelompok: string;
+  metode_presensi: MetodePresensi;
+  daerah_ids: string[];
+  desa_ids: string[];
+  kelompok_ids: string[];
 };
 
 const toInputDateTime = (value?: string | null) => {
@@ -108,6 +113,10 @@ const PresensiKegiatanPage = () => {
     tmpt_daerah: "",
     tmpt_desa: "",
     tmpt_kelompok: "",
+    metode_presensi: "both",
+    daerah_ids: [],
+    desa_ids: [],
+    kelompok_ids: [],
   });
 
   const defaultPetugasId = 40;
@@ -202,6 +211,10 @@ const PresensiKegiatanPage = () => {
       tmpt_daerah: "",
       tmpt_desa: "",
       tmpt_kelompok: "",
+      metode_presensi: "both",
+      daerah_ids: [],
+      desa_ids: [],
+      kelompok_ids: [],
     });
     setDesaOptions([]);
     setKelompokOptions([]);
@@ -271,6 +284,10 @@ const PresensiKegiatanPage = () => {
         tmpt_daerah: data.kd_daerah ? String(data.kd_daerah) : "",
         tmpt_desa: data.kd_desa ? String(data.kd_desa) : "",
         tmpt_kelompok: data.kd_kelompok ? String(data.kd_kelompok) : "",
+        metode_presensi: data.metode_presensi || "both",
+        daerah_ids: (data.daerah_ids || []).map(String),
+        desa_ids: (data.desa_ids || []).map(String),
+        kelompok_ids: (data.kelompok_ids || []).map(String),
       });
 
       if (data.kd_daerah) {
@@ -356,6 +373,10 @@ const PresensiKegiatanPage = () => {
         : {}),
       ...(form.usia_mode === "range" ? { usia_max: form.usia_max } : {}),
       tmpt_daerah: form.tmpt_daerah,
+      metode_presensi: form.metode_presensi,
+      daerah_ids: form.daerah_ids.map(Number).filter(Number.isInteger),
+      desa_ids: form.desa_ids.map(Number).filter(Number.isInteger),
+      kelompok_ids: form.kelompok_ids.map(Number).filter(Number.isInteger),
       ...(form.tmpt_desa ? { tmpt_desa: form.tmpt_desa } : {}),
       ...(form.tmpt_kelompok ? { tmpt_kelompok: form.tmpt_kelompok } : {}),
       add_by_petugas: defaultPetugasId,
@@ -708,6 +729,25 @@ const PresensiKegiatanPage = () => {
               }
             />
           </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">
+              Metode Presensi
+            </label>
+            <select
+              value={form.metode_presensi}
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  metode_presensi: e.target.value as MetodePresensi,
+                }))
+              }
+            >
+              <option value="both">Tapping dan Manual</option>
+              <option value="tapping">Tapping saja</option>
+              <option value="manual">Manual saja</option>
+            </select>
+          </div>
 
           <div>
             <label className="text-xs font-medium mb-1 block">
@@ -888,6 +928,84 @@ const PresensiKegiatanPage = () => {
               }
             >
               <option value="">Pilih kelompok (opsional)</option>
+              {kelompokOptions.map((option) => (
+                <option key={String(option.value)} value={String(option.value)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium mb-1 block">
+              Daerah Tambahan
+            </label>
+            <select
+              multiple
+              value={form.daerah_ids}
+              className="h-24 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  daerah_ids: Array.from(
+                    e.target.selectedOptions,
+                    (option) => option.value,
+                  ),
+                }))
+              }
+            >
+              {daerahOptions.map((option) => (
+                <option key={String(option.value)} value={String(option.value)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium mb-1 block">
+              Desa Tambahan
+            </label>
+            <select
+              multiple
+              value={form.desa_ids}
+              className="h-24 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  desa_ids: Array.from(
+                    e.target.selectedOptions,
+                    (option) => option.value,
+                  ),
+                }))
+              }
+            >
+              {desaOptions.map((option) => (
+                <option key={String(option.value)} value={String(option.value)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium mb-1 block">
+              Kelompok Tambahan
+            </label>
+            <select
+              multiple
+              value={form.kelompok_ids}
+              className="h-24 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  kelompok_ids: Array.from(
+                    e.target.selectedOptions,
+                    (option) => option.value,
+                  ),
+                }))
+              }
+            >
               {kelompokOptions.map((option) => (
                 <option key={String(option.value)} value={String(option.value)}>
                   {option.label}

@@ -73,6 +73,7 @@ const CreateSensus = () => {
   ];
 
   const initialValues = {
+    id_card: "",
     nama_lengkap: "",
     nama_panggilan: "",
     tempat_lahir: "",
@@ -293,7 +294,25 @@ const CreateSensus = () => {
                 </h1>
                 <div className="w-24" /> {/* Spacer for alignment */}
               </div>
+              <label className="text-gray-900 dark:text-white">
+                ID Card RFID{" "}
+                <span className="text-gray-500 text-xs">(opsional)</span>
+              </label>
+              <Field
+                as={Input}
+                type="text"
+                id="id_card"
+                name="id_card"
+                placeholder="Masukkan kode kartu RFID"
+              />
+              <ErrorMessage
+                name="id_card"
+                component="div"
+                className="text-red-600 text-sm"
+              />
+            </div>
 
+            <div>
               {/* Info Alert */}
               <div className="p-6 pb-4">
                 <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
