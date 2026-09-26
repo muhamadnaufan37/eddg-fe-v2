@@ -492,7 +492,7 @@ export const routes: TRoute[] = [
     layout: Layout,
     guard: AuthGuard,
     path: "/master-data/pindah-sambung",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin", "ptgs-sensus", "admin-data-center"],
     element: React.lazy(() => import("../pages/master-data/pindah-sambung")),
     fullScreen: false,
   },

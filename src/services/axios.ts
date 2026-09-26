@@ -3,6 +3,7 @@ import { getLocalStorage } from "./localStorageService";
 
 // Use proxy in development to avoid CORS, direct API URL in production
 const baseURL = import.meta.env.VITE_PUBLIC_REACT_APP_BASE_URL_API;
+export const AUTH_UNAUTHORIZED_EVENT = "auth:unauthorized";
 
 export const axiosServices = () => {
   const Axios = axios.create({
@@ -19,6 +20,23 @@ export const axiosServices = () => {
     config.headers.Authorization = userToken ? `Bearer ${userToken}` : "";
     return config;
   });
+
+  Axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      const isLoginRequest = error.config?.url?.includes("/api/v1/login");
+
+      if (
+        error.response?.status === 401 &&
+        !isLoginRequest &&
+        getLocalStorage("userData")?.token
+      ) {
+        window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+      }
+
+      return Promise.reject(error);
+    },
+  );
 
   return Axios;
 };

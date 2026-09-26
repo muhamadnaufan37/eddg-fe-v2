@@ -3,7 +3,7 @@ export const menuItems = [
     id: "beranda",
     title: "Beranda",
     icon: "Home",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin", "ptgs-sensus", "admin-data-center"],
     link: "/",
   },
   {
@@ -45,7 +45,7 @@ export const menuItems = [
         id: "digitaldata-sensus",
         title: "Sensus",
         icon: "Users",
-        role: ["admin", "ptgs-sensus"],
+        role: ["admin", "ptgs-sensus", "admin-data-center"],
         link: "/sensus",
       },
       {

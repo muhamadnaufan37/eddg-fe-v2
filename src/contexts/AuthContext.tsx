@@ -10,7 +10,7 @@ import {
   getLocalStorage,
   setLocalStorage,
 } from "../services/localStorageService";
-import { axiosServices } from "../services/axios";
+import { AUTH_UNAUTHORIZED_EVENT, axiosServices } from "../services/axios";
 import { toast } from "sonner";
 
 type TData = any;
@@ -41,12 +41,15 @@ const AuthContext = createContext<TAuthContext>({
   setNdaAccepted: () => {},
 });
 
-const verifyToken = (serviceToken: any): boolean => {
+const verifyToken = (serviceToken: any, expiresAt?: string): boolean => {
   if (!serviceToken) {
     return false;
-  } else {
-    return true;
   }
+
+  if (!expiresAt) return true;
+
+  const expirationTime = Date.parse(expiresAt);
+  return !Number.isFinite(expirationTime) || expirationTime > Date.now();
 };
 
 const setSession = (data: any) => {
@@ -115,6 +118,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
         setSession({
           token,
+          expires_at: response.data.data.expires_at,
           user: dataUser,
         });
 
@@ -181,7 +185,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       try {
         const stored = getLocalStorage("userData");
 
-        if (stored?.token && verifyToken(stored.token)) {
+        if (stored?.token && verifyToken(stored.token, stored.expires_at)) {
           axiosServices().defaults.headers.common["Authorization"] =
             stored.token;
 
@@ -193,6 +197,8 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
             },
           });
         } else {
+          if (stored?.token) setSession(null);
+
           dispatch({
             type: ACCOUNT_INITIALISE,
             payload: {
@@ -213,6 +219,23 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     };
 
     init();
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      const stored = getLocalStorage("userData");
+      if (!stored?.token) return;
+
+      setSession(null);
+      dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
+      toast.warning("Sesi Berakhir", {
+        description: "Sesi Anda telah berakhir. Silakan login kembali.",
+      });
+    };
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () =>
+      window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
   }, []);
 
   // if (!state.isInitialised) {

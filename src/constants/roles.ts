@@ -3,6 +3,7 @@
  */
 export const ROLES = {
   ADMIN: "219bc0dd-ec72-4618-b22d-5d5ff612dcaf",
+  ADMIN_DATA_CENTER: "7352e0d6-f5d0-45f2-8eb4-4880cc72bad6",
   PETUGAS_SENSUS: "aba1b06f-846a-414b-b223-b002a50c5722",
   PETUGAS_KBM: "e2896d58-4831-458c-9fb7-c4f988c0550c",
 } as const;

@@ -16,6 +16,7 @@ import { handleApiError } from "@/utils/errorUtils";
 import { getLocalStorage } from "@/services/localStorageService";
 import { toast } from "sonner";
 import { axiosServices } from "@/services/axios";
+import { ROLES } from "@/constants/roles";
 
 interface Option {
   value: string | number;
@@ -49,12 +50,17 @@ const PindahSambungIndex = () => {
   const [loadingPesertaOptions, setLoadingPesertaOptions] = useState(false);
 
   const dataLogin = getLocalStorage("userData");
+  const canViewAllRequests =
+    dataLogin?.user?.role_id === ROLES.ADMIN ||
+    dataLogin?.user?.role_id === ROLES.ADMIN_DATA_CENTER;
 
   // Fetch data function for useQuery
   const fetchData = async () => {
     try {
       const response = await getPindahSambungList({
-        requested_by: dataLogin?.user?.id || undefined,
+        requested_by: canViewAllRequests
+          ? undefined
+          : dataLogin?.user?.id || undefined,
         status: statusFilter || undefined,
         kode_cari_data: searchQuery || undefined,
         page: currentPage,
