@@ -127,19 +127,19 @@ export default function CalendarEventsView({
 
   return (
     <main className="space-y-4 pb-5 text-zinc-900 dark:text-zinc-100">
-      <header className="flex flex-col justify-between gap-4 rounded-lg bg-[#173b32] p-4 text-white sm:flex-row sm:items-center sm:p-5">
+      <header className="flex flex-col justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 sm:flex-row sm:items-center sm:p-5 dark:border-emerald-900 dark:bg-[#173b32] dark:text-white">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-lime-300 text-[#173b32]">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-emerald-200 text-emerald-950 dark:bg-lime-300 dark:text-[#173b32]">
             <CalendarDays className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lime-200">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-800 dark:text-lime-200">
               Presensi / Kalender
             </p>
             <h1 className="truncate text-xl font-bold sm:text-2xl">
               Agenda kegiatan
             </h1>
-            <p className="mt-0.5 text-xs text-white/70 sm:text-sm">
+            <p className="mt-0.5 text-xs text-emerald-900/75 sm:text-sm dark:text-white/70">
               Jadwal kegiatan dan kehadiran peserta
             </p>
           </div>
@@ -148,7 +148,7 @@ export default function CalendarEventsView({
           type="button"
           onClick={onCreate}
           disabled={isFetching || isSubmitting}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-lime-300 px-4 py-2 text-sm font-bold text-[#173b32] transition hover:bg-lime-200 disabled:cursor-not-allowed disabled:opacity-60 sm:shrink-0"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60 sm:shrink-0 dark:bg-lime-300 dark:text-[#173b32] dark:hover:bg-lime-200"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Tambah kegiatan

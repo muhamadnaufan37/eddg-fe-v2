@@ -509,13 +509,14 @@ const PresensiKegiatanPage = () => {
 
       <FilterModal
         open={showFormModal}
+        size="xl"
         onClose={() => {
           setShowFormModal(false);
           resetForm();
         }}
         title={titleForm}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div>
             <label className="text-xs font-medium mb-1 block">
               Nama Kegiatan
@@ -888,11 +889,12 @@ const PresensiKegiatanPage = () => {
 
       <FilterModal
         open={showDetailModal}
+        size="xl"
         onClose={() => setShowDetailModal(false)}
         title="Detail Presensi Kegiatan"
       >
         {detailData ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-1 gap-3 text-xs md:grid-cols-2 xl:grid-cols-3">
             <div>
               <span className="font-semibold">Kode:</span>{" "}
               {detailData.kode_kegiatan}
