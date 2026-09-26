@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import Pagination from "@/components/features/Pagination";
 import FilterModal from "@/pages/digital-data/sensus/components/FilterModal";
-import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
-import { DataTableAdvanced, Input, type Column } from "@/components/global";
+import { Input } from "@/components/global";
 import { BASE_TITLE } from "@/store/actions";
 import { THEME_COLORS } from "@/config/theme";
 import { useFetchOptions } from "@/hooks/useFetchOptions";
@@ -23,17 +22,8 @@ import {
   updatePresensiKegiatan,
 } from "@/services/presensiKegiatanService";
 import { handleApiError } from "@/utils/errorUtils";
-import { formatDistanceToNow } from "date-fns";
-import { id } from "date-fns/locale";
-import {
-  CalendarDays,
-  Eye,
-  Pencil,
-  PlusCircle,
-  RefreshCcw,
-  Search,
-  Trash2,
-} from "lucide-react";
+import CalendarEventsView from "./CalendarEventsView";
+import { Pencil, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type Option = {
@@ -77,12 +67,11 @@ const toApiDateTime = (value: string) => {
 const PresensiKegiatanPage = () => {
   const dataLogin = getLocalStorage("userData");
   const navigate = useNavigate();
-  const { fetchOptions, loading: loadingOptions } = useFetchOptions();
+  const { fetchOptions } = useFetchOptions();
 
   const [page, setPage] = useState(1);
-  const [rows, setRows] = useState(10);
+  const [rows, setRows] = useState(100);
   const [search, setSearch] = useState("");
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -188,12 +177,6 @@ const PresensiKegiatanPage = () => {
       }),
     refetchOnWindowFocus: false,
   });
-
-  useEffect(() => {
-    if (search === "") {
-      refetch();
-    }
-  }, [search]);
 
   const resetForm = () => {
     setForm({
@@ -408,70 +391,6 @@ const PresensiKegiatanPage = () => {
     }
   };
 
-  const formatDateString = (date: any) => {
-    if (!date) return "";
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: id });
-  };
-
-  const columns: Column<PresensiKegiatanItem>[] = [
-    { key: "kode_kegiatan", header: "Kode", sortable: true },
-    { key: "nama_kegiatan", header: "Kegiatan", sortable: true },
-    {
-      key: "type_kegiatan",
-      header: "Tipe",
-      sortable: true,
-      mobileHidden: true,
-    },
-    {
-      key: "lokasi",
-      header: "Lokasi",
-      render: (item: PresensiKegiatanItem) => (
-        <span>{item.nm_kelompok || item.nm_desa || item.nm_daerah || "-"}</span>
-      ),
-    },
-    {
-      key: "tgl_kegiatan",
-      header: "Tanggal",
-      sortable: true,
-    },
-    {
-      key: "jam_kegiatan",
-      header: "Jam Mulai",
-      sortable: true,
-    },
-    {
-      key: "total_presensi",
-      header: "Total Presensi",
-      render: (item: PresensiKegiatanItem) => (
-        <span>{item.total_presensi || 0}</span>
-      ),
-    },
-    {
-      key: "nm_petugas",
-      header: "Petugas",
-      render: (item: PresensiKegiatanItem) => (
-        <span>{item.nm_petugas || "-"}</span>
-      ),
-    },
-    {
-      key: "created_at",
-      header: "Dibuat",
-      sortable: true,
-      mobileHidden: true,
-      render: (item: PresensiKegiatanItem) => (
-        <span>{formatDateString(item.created_at)}</span>
-      ),
-    },
-  ];
-
-  const rowActions = [
-    { label: "Lihat Presensi", value: "presensi" },
-    // { label: "Detail Presensi", value: "list" },
-    { label: "Detail", value: "detail" },
-    { label: "Ubah", value: "edit" },
-    { label: "Hapus", value: "delete" },
-  ];
-
   const handleRowAction = (item: PresensiKegiatanItem, action: string) => {
     const kegiatanKey = String(item.kode_kegiatan || item.id || "");
     const idKegiatan = String(item.id || "");
@@ -517,7 +436,7 @@ const PresensiKegiatanPage = () => {
 
   const handleReset = () => {
     setPage(1);
-    setRows(10);
+    setRows(100);
     setSearch("");
   };
 
@@ -556,113 +475,35 @@ const PresensiKegiatanPage = () => {
           </div>
         )}
 
-        <div className="flex flex-col gap-5 h-full">
-          <div
-            className={`${THEME_COLORS.background.card} rounded-2xl shadow-lg border ${THEME_COLORS.border.default} overflow-hidden`}
-          >
-            <div className={`${THEME_COLORS.active.background} px-6 py-5`}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <CalendarDays className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="font-bold text-2xl text-white tracking-tight">
-                    Presensi Kegiatan
-                  </h1>
-                  <p className="text-white/80 text-sm mt-0.5">
-                    Kelola kegiatan sebelum proses presensi peserta
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-5">
-              <div className="relative">
-                <div
-                  className={`absolute left-4 top-1/2 -translate-y-1/2 ${THEME_COLORS.text.muted}`}
-                >
-                  <Search className="w-5 h-5" />
-                </div>
-                <Input
-                  value={search}
-                  className={`w-full pl-11 pr-4 py-3 text-sm border ${THEME_COLORS.border.default} rounded-xl shadow-sm focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent transition-all ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
-                  placeholder="Cari nama/kode kegiatan..."
-                  onChange={(e: any) => setSearch(e.target.value)}
-                  onKeyDown={(e: any) => e.key === "Enter" && refetch()}
-                />
-              </div>
-
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    disabled={isFetching}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleReset}
-                  >
-                    <RefreshCcw className="w-4 h-4" />
-                    <span>Reset</span>
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    disabled={isFetching}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText} rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
-                    onClick={openCreateModal}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Tambah Kegiatan</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {loadingOptions && (
-              <div className="flex flex-col gap-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <ParticipantSkeleton key={i} />
-                ))}
-              </div>
-            )}
-
-            {!loadingOptions && (
-              <DataTableAdvanced
-                selectedRows={selectedRows}
-                setSelectedRows={setSelectedRows}
-                data={listData?.data || []}
-                columns={columns}
-                rowActions={rowActions}
-                onRowAction={handleRowAction}
-                selectable={true}
-                getRowId={(item: PresensiKegiatanItem) => item.id}
-                disabled={isSubmitting}
-              />
-            )}
-
-            {isFetching && !loadingOptions && (
-              <div
-                className={`text-xs ${THEME_COLORS.text.muted} text-center animate-pulse`}
-              >
-                Memperbarui data...
-              </div>
-            )}
-
-            <div className="mt-3 shrink-0">
-              <Pagination
-                currentPage={listData?.meta?.current_page || 1}
-                lastPage={listData?.meta?.last_page || 1}
-                totalItems={listData?.meta?.total || 0}
-                rowsPerPage={rows}
-                onPageChange={(params) => {
-                  setPage(params.page + 1);
-                  setRows(params.rows);
-                }}
-                disabled={isFetching}
-              />
-            </div>
-          </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          <CalendarEventsView
+            events={listData?.data || []}
+            isFetching={isFetching}
+            isLoadingDetail={isLoadingDetail}
+            isSubmitting={isSubmitting}
+            search={search}
+            onSearchChange={(value) => {
+              setPage(1);
+              setSearch(value);
+            }}
+            onRefresh={() => refetch()}
+            onReset={handleReset}
+            onCreate={openCreateModal}
+            onAction={handleRowAction}
+          />
+          {(listData?.meta?.last_page || 1) > 1 && (
+            <Pagination
+              currentPage={listData?.meta?.current_page || 1}
+              lastPage={listData?.meta?.last_page || 1}
+              totalItems={listData?.meta?.total || 0}
+              rowsPerPage={rows}
+              onPageChange={(params) => {
+                setPage(params.page + 1);
+                setRows(params.rows);
+              }}
+              disabled={isFetching}
+            />
+          )}
         </div>
       </div>
 
