@@ -232,7 +232,57 @@ export interface PresensiReportPdfResponse {
   contentDisposition: any;
 }
 
+export interface PresensiAnalysisRecentError {
+  type: string;
+  description: string;
+  time: string;
+}
+
+export interface PresensiAnalysisData {
+  rating: "sangat bagus" | "cukup" | "buruk" | string;
+  kegiatan: {
+    nama_kegiatan: string;
+    tgl_kegiatan: string;
+  };
+  statistics: {
+    total_recorded: number;
+    hadir: number;
+    terlambat: number;
+    izin: number;
+    sakit: number;
+  };
+  logs: {
+    total_failed_attempts: number;
+    recent_errors: PresensiAnalysisRecentError[];
+  };
+  analysis: string[];
+}
+
+export interface PresensiAnalysisResponse {
+  success: boolean;
+  message: string;
+  data: PresensiAnalysisData;
+}
+
 // ===================== API Functions =====================
+
+/**
+ * GET /api/v1/presensi/analysis?id_kegiatan={idKegiatan}
+ * Fetch analytics, attendance quality rating, and recent failed attempts.
+ */
+export const fetchPresensiAnalysis = async (
+  idKegiatan: string | number,
+): Promise<PresensiAnalysisResponse> => {
+  const numericId = Number(idKegiatan);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    throw new Error("ID kegiatan tidak valid");
+  }
+
+  const response = await axiosServices().get("/api/v1/presensi/analysis", {
+    params: { id_kegiatan: numericId },
+  });
+  return response.data;
+};
 
 /**
  * GET /api/v1/presensi/report?id_kegiatan=21

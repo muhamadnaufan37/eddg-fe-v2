@@ -1079,12 +1079,13 @@ const PresensiKegiatanPage = () => {
       >
         {detailData ? (
           <div className="space-y-4 text-gray-900 dark:text-gray-100">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
               {[
                 { label: "Total Presensi", value: detailData.total_presensi },
-                { label: "Hadir", value: detailData.total_hadir },
-                { label: "Terlambat", value: detailData.total_terlambat },
-                { label: "Tidak Hadir", value: detailData.total_tidak_hadir },
+                { label: "Hadir", value: detailData.count_hadir },
+                { label: "Terlambat", value: detailData.count_terlambat },
+                { label: "Izin", value: detailData.count_izin },
+                { label: "Sakit", value: detailData.count_sakit },
               ].map((stat) => (
                 <div
                   key={stat.label}

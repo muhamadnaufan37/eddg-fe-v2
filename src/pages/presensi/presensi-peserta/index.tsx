@@ -16,6 +16,7 @@ import { getLocalStorage } from "@/services/localStorageService";
 import {
   fetchPresensiReport,
   fetchPresensiReportPdf,
+  fetchPresensiAnalysis,
   checkPresensi,
   createPresensi,
   storePresensiByCoordinate,
@@ -27,6 +28,9 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   ArrowLeft,
+  Activity,
+  AlertTriangle,
+  BarChart3,
   Check,
   Clock,
   Download,
@@ -73,6 +77,7 @@ const PresensiPesertaPage = () => {
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [detailData, setDetailData] = useState<PresensiPesertaData | null>(
     null,
   );
@@ -122,6 +127,27 @@ const PresensiPesertaPage = () => {
     enabled: !!id_kegiatan,
     refetchOnWindowFocus: false,
   });
+
+  const {
+    data: analysisResponse,
+    isLoading: isLoadingAnalysis,
+    isError: isAnalysisError,
+    refetch: refetchAnalysis,
+  } = useQuery({
+    queryKey: ["presensi-analysis", id_kegiatan],
+    queryFn: async () => {
+      if (!id_kegiatan) throw new Error("ID kegiatan tidak ditemukan");
+      const response = await fetchPresensiAnalysis(id_kegiatan);
+      if (!response.success) {
+        throw new Error(response.message || "Gagal memuat analisis presensi");
+      }
+      return response;
+    },
+    enabled: showAnalysisModal && !!id_kegiatan,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const analysisData = analysisResponse?.data;
 
   // Extract data dan statistics dari report
   const dataCategory = reportData?.category;
@@ -496,6 +522,45 @@ const PresensiPesertaPage = () => {
     );
   }, [statistics]);
 
+  const analysisSummary = analysisData
+    ? [
+        {
+          label: "Total tercatat",
+          value: analysisData.statistics.total_recorded,
+          color: "text-gray-900 dark:text-white",
+        },
+        {
+          label: "Hadir",
+          value: analysisData.statistics.hadir,
+          color: "text-emerald-700 dark:text-emerald-300",
+        },
+        {
+          label: "Terlambat",
+          value: analysisData.statistics.terlambat,
+          color: "text-amber-700 dark:text-amber-300",
+        },
+        {
+          label: "Izin",
+          value: analysisData.statistics.izin,
+          color: "text-sky-700 dark:text-sky-300",
+        },
+        {
+          label: "Sakit",
+          value: analysisData.statistics.sakit,
+          color: "text-rose-700 dark:text-rose-300",
+        },
+      ]
+    : [];
+  const normalizedRating = analysisData?.rating.trim().toLowerCase();
+  const ratingClass =
+    normalizedRating === "sangat bagus"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200"
+      : normalizedRating === "cukup"
+        ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+        : normalizedRating === "buruk"
+          ? "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200"
+          : "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
+
   document.title = BASE_TITLE + "Presensi Peserta";
 
   if (!kode_kegiatan) {
@@ -646,6 +711,14 @@ const PresensiPesertaPage = () => {
 
               <div className="flex flex-col justify-end gap-3 sm:flex-row">
                 <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAnalysisModal(true)}
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Analisis Presensi
+                  </button>
                   <button
                     disabled={isFetching}
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -984,6 +1057,200 @@ const PresensiPesertaPage = () => {
           </button>
         </div>
       </FilterModal>
+
+      <Modal
+        isOpen={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        title="Analisis Presensi"
+        size="xl"
+      >
+        <div className="space-y-5 text-gray-900 dark:text-gray-100">
+          {isLoadingAnalysis && (
+            <div
+              role="status"
+              className="flex min-h-40 flex-col items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300"
+            >
+              <Loader2 className="h-6 w-6 animate-spin text-indigo-600 dark:text-indigo-300" />
+              Memuat analisis kegiatan...
+            </div>
+          )}
+
+          {isAnalysisError && !isLoadingAnalysis && (
+            <div
+              role="alert"
+              className="flex flex-col items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-900 dark:bg-rose-950/40"
+            >
+              <p className="text-sm text-rose-800 dark:text-rose-200">
+                Analisis tidak dapat dimuat. Pastikan kegiatan valid dan Anda
+                memiliki akses, lalu coba lagi.
+              </p>
+              <button
+                type="button"
+                onClick={() => refetchAnalysis()}
+                className="min-h-10 rounded-md border border-rose-300 px-3 text-xs font-semibold text-rose-800 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-200 dark:hover:bg-rose-900/60"
+              >
+                Coba lagi
+              </button>
+            </div>
+          )}
+
+          {analysisData && !isLoadingAnalysis && (
+            <>
+              <header className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {analysisData.kegiatan.tgl_kegiatan ||
+                      "Tanggal belum tersedia"}
+                  </p>
+                  <h3 className="mt-1 wrap-break-word text-base font-semibold sm:text-lg">
+                    {analysisData.kegiatan.nama_kegiatan || kode_kegiatan}
+                  </h3>
+                </div>
+                <span
+                  className={`inline-flex min-h-9 items-center gap-2 self-start rounded-full border px-3 py-1 text-xs font-semibold capitalize sm:self-auto ${ratingClass}`}
+                >
+                  <Activity className="h-4 w-4" />
+                  {analysisData.rating}
+                </span>
+              </header>
+
+              <section aria-label="Ringkasan hasil presensi">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {analysisSummary.map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
+                    >
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {item.label}
+                      </p>
+                      <p className={`mt-1 text-xl font-bold ${item.color}`}>
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                <div className="mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                  <h4 className="text-sm font-semibold">Distribusi status</h4>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    {
+                      label: "Hadir",
+                      value: analysisData.statistics.hadir,
+                      color: "bg-emerald-500",
+                    },
+                    {
+                      label: "Terlambat",
+                      value: analysisData.statistics.terlambat,
+                      color: "bg-amber-500",
+                    },
+                    {
+                      label: "Izin",
+                      value: analysisData.statistics.izin,
+                      color: "bg-sky-500",
+                    },
+                    {
+                      label: "Sakit",
+                      value: analysisData.statistics.sakit,
+                      color: "bg-rose-500",
+                    },
+                  ].map((item) => {
+                    const total = analysisData.statistics.total_recorded;
+                    const percentage =
+                      total > 0 ? Math.round((item.value / total) * 100) : 0;
+                    return (
+                      <div key={item.label}>
+                        <div className="mb-1 flex justify-between gap-3 text-xs">
+                          <span className="text-gray-600 dark:text-gray-300">
+                            {item.label}{" "}
+                            <span className="text-gray-400">
+                              ({item.value})
+                            </span>
+                          </span>
+                          <span className="font-medium text-gray-700 dark:text-gray-200">
+                            {percentage}%
+                          </span>
+                        </div>
+                        <div
+                          className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
+                          role="progressbar"
+                          aria-label={`${item.label} ${percentage}%`}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={percentage}
+                        >
+                          <div
+                            className={`h-full rounded-full ${item.color}`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                  <h4 className="text-sm font-semibold">Kendala teknis</h4>
+                  <span className="ml-auto rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                    {analysisData.logs.total_failed_attempts} gagal
+                  </span>
+                </div>
+                {analysisData.logs.recent_errors.length > 0 ? (
+                  <ul className="mt-3 divide-y divide-amber-200 dark:divide-amber-900">
+                    {analysisData.logs.recent_errors.map((error, index) => (
+                      <li
+                        key={`${error.time}-${error.type}-${index}`}
+                        className="py-3 first:pt-0 last:pb-0"
+                      >
+                        <p className="wrap-break-word text-sm text-gray-800 dark:text-gray-200">
+                          {error.description}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                          <span>{error.type}</span>
+                          <time>{error.time}</time>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-xs text-gray-600 dark:text-gray-300">
+                    Tidak ada kegagalan presensi yang tercatat.
+                  </p>
+                )}
+              </section>
+
+              <section className="rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/20">
+                <h4 className="text-sm font-semibold">Insight kegiatan</h4>
+                {analysisData.analysis.length > 0 ? (
+                  <ul className="mt-3 space-y-2">
+                    {analysisData.analysis.map((insight, index) => (
+                      <li
+                        key={`${index}-${insight}`}
+                        className="flex gap-2 text-sm leading-5 text-gray-700 dark:text-gray-200"
+                      >
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600 dark:bg-indigo-300" />
+                        <span className="wrap-break-word">{insight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                    Belum ada insight untuk kegiatan ini.
+                  </p>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+      </Modal>
 
       <Modal
         isOpen={showDetailModal}

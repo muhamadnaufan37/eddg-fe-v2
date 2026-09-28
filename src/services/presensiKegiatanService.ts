@@ -31,9 +31,10 @@ export interface PresensiKegiatanItem {
   petugas: string;
   presensi: any[];
   total_presensi: number;
-  total_hadir: number;
-  total_terlambat: number;
-  total_tidak_hadir: number;
+  count_hadir: number;
+  count_terlambat: number;
+  count_izin: number;
+  count_sakit: number;
   nm_petugas: string;
   created_at: string;
   updated_at: string;
