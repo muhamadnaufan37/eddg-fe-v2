@@ -151,8 +151,10 @@ const LogsPage = () => {
         if (props?.old && props?.new) {
           return (
             <div className="text-xs">
-              <div className="font-semibold text-gray-700">Update</div>
-              <div className="text-gray-500">
+              <div className="font-semibold text-gray-700 dark:text-gray-200">
+                Update
+              </div>
+              <div className="text-gray-500 dark:text-gray-400">
                 {Object.keys(props.old).length} field berubah
               </div>
             </div>
@@ -163,8 +165,10 @@ const LogsPage = () => {
         if (props?.deleted_data) {
           return (
             <div className="text-xs">
-              <div className="font-semibold text-red-600">Deleted</div>
-              <div className="text-gray-500">
+              <div className="font-semibold text-red-600 dark:text-red-400">
+                Deleted
+              </div>
+              <div className="text-gray-500 dark:text-gray-400">
                 {props.deleted_data?.kode_cari_data || "-"}
               </div>
             </div>
@@ -235,18 +239,18 @@ const LogsPage = () => {
           {/* Modern Header Card with Gradient */}
           <div className="bg-linear-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
             {/* Header Section */}
-            <div className="bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 px-6 py-5">
+            <div className="bg-linear-to-r from-emerald-800 to-teal-700 px-4 py-4 dark:from-emerald-950 dark:to-teal-900 sm:px-6 sm:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/15 backdrop-blur-sm">
                     <Logs className="w-6 h-6 text-white" />
                   </div>
-                  <div>
-                    <h1 className="font-bold text-2xl text-white tracking-tight">
+                  <div className="min-w-0">
+                    <h1 className="truncate font-bold text-xl text-white sm:text-2xl">
                       Logs Aktivitas Users
                     </h1>
-                    <p className="text-blue-100 text-sm mt-0.5">
-                      Kelola dan pantau logs aktivitas users dengan mudah
+                    <p className="mt-0.5 text-xs text-emerald-100 sm:text-sm">
+                      Pantau aktivitas dan perubahan data pengguna
                     </p>
                   </div>
                 </div>
@@ -254,7 +258,7 @@ const LogsPage = () => {
             </div>
 
             {/* Content Section */}
-            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg">
+            <div className="rounded-lg bg-white p-4 dark:bg-gray-900 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 {/* --- LEFT: Search Bar --- */}
                 <div className="relative w-full sm:max-w-md">
@@ -275,8 +279,10 @@ const LogsPage = () => {
                   {/* Optional: Clear Button inside input if text exists */}
                   {filterInput && (
                     <button
+                      type="button"
+                      aria-label="Hapus pencarian"
                       onClick={() => setFilterInput("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -284,12 +290,12 @@ const LogsPage = () => {
                 </div>
 
                 {/* --- RIGHT: Actions --- */}
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
                   {/* Reset Button */}
                   <button
                     onClick={onResetFilter}
                     disabled={isRefetchingLogs}
-                    className={`group w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all border ${
+                    className={`group flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all sm:w-auto ${
                       selectedRows.size > 0
                         ? `${THEME_COLORS.background.card} ${THEME_COLORS.border.default} ${THEME_COLORS.text.secondary} ${THEME_COLORS.hover.item}`
                         : `${THEME_COLORS.background.card} border-dashed ${THEME_COLORS.border.input} ${THEME_COLORS.text.muted} hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/10`
@@ -322,6 +328,14 @@ const LogsPage = () => {
                 setSelectedRows={setSelectedRows}
                 data={dataListLogs?.data || []}
                 columns={columns}
+                mobileCardView
+                mobileCardTitleKey="user"
+                mobileCardColumns={[
+                  "activity_type",
+                  "description",
+                  "model_type",
+                  "created_at",
+                ]}
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}

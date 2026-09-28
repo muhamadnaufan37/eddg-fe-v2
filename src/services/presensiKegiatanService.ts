@@ -87,15 +87,15 @@ export interface UpsertPresensiKegiatanPayload {
   metode_presensi: MetodePresensi;
   usia_mode: "single" | "range";
   usia_operator?: string;
-  usia_min: string;
-  usia_max?: string;
-  tmpt_daerah: string;
-  tmpt_desa?: string;
-  tmpt_kelompok?: string;
+  usia_min: number;
+  usia_max?: number;
+  tmpt_daerah: number;
+  tmpt_desa?: number;
+  tmpt_kelompok?: number;
   daerah_ids?: number[];
   desa_ids?: number[];
   kelompok_ids?: number[];
-  add_by_petugas: string;
+  add_by_petugas: number;
 }
 
 export const fetchPresensiKegiatanData = async (

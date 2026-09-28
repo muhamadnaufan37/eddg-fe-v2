@@ -33,6 +33,9 @@ export interface DataTableAdvancedProps<T> {
 
   // Table scroll behavior
   maxHeightClassName?: string;
+  mobileCardView?: boolean;
+  mobileCardTitleKey?: string;
+  mobileCardColumns?: string[];
 
   // Row actions
   onRowAction?: (item: T, action: string) => void;
@@ -55,6 +58,9 @@ export function DataTableAdvanced<T extends Record<string, any>>({
   data,
   columns,
   maxHeightClassName = "max-h-[70vh]",
+  mobileCardView = false,
+  mobileCardTitleKey,
+  mobileCardColumns,
   onRowAction,
   rowActions,
   selectable = true,
@@ -131,6 +137,11 @@ export function DataTableAdvanced<T extends Record<string, any>>({
   const tableMinWidthClass = hasMobileHiddenColumns
     ? "min-w-[960px] md:min-w-[1100px]"
     : "min-w-[1100px]";
+  const mobileTitleColumn =
+    columns.find((column) => column.key === mobileCardTitleKey) || columns[0];
+  const mobileVisibleColumns = mobileCardColumns
+    ? columns.filter((column) => mobileCardColumns.includes(column.key))
+    : columns.filter((column) => !column.mobileHidden);
 
   const getActionIcon = (actionValue: string) => {
     switch (actionValue) {
@@ -197,7 +208,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
     <>
       {/* Table */}
       <div
-        className={`w-full max-w-full ${maxHeightClassName} overflow-auto rounded-2xl border border-gray-200 dark:border-gray-700`}
+        className={`${mobileCardView ? "hidden lg:block" : ""} w-full max-w-full ${maxHeightClassName} overflow-auto rounded-2xl border border-gray-200 dark:border-gray-700`}
       >
         <div className="min-w-max">
           <table className={`${tableMinWidthClass} w-full table-auto`}>
@@ -362,6 +373,91 @@ export function DataTableAdvanced<T extends Record<string, any>>({
           </div>
         )}
       </div>
+
+      {mobileCardView && (
+        <div className="space-y-3 lg:hidden">
+          {sortedData.map((item, index) => {
+            const rowId = getRowId(item);
+            const actions =
+              typeof rowActions === "function" ? rowActions(item) : rowActions;
+            const titleValue = mobileTitleColumn?.render
+              ? mobileTitleColumn.render(item, index)
+              : item[mobileTitleColumn?.key || ""];
+
+            return (
+              <article
+                key={rowId}
+                className={`min-w-0 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900 ${
+                  selectedRows.has(rowId)
+                    ? "ring-1 ring-blue-500 dark:ring-blue-400"
+                    : ""
+                }`}
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  {selectable && (
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.has(rowId)}
+                      onChange={(event) =>
+                        handleSelectRow(rowId, event.target.checked)
+                      }
+                      aria-label={`Pilih baris ${index + 1}`}
+                      className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-blue-400"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="wrap-break-word text-sm font-semibold text-gray-900 dark:text-white">
+                      {titleValue}
+                    </div>
+                    {mobileVisibleColumns
+                      .filter((column) => column.key !== mobileTitleColumn?.key)
+                      .map((column) => (
+                        <div
+                          key={column.key}
+                          className="mt-3 grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-2 border-t border-gray-100 pt-2 text-xs dark:border-gray-800"
+                        >
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {column.header}
+                          </span>
+                          <span className="min-w-0 wrap-break-word text-gray-800 dark:text-gray-200">
+                            {column.render
+                              ? column.render(item, index)
+                              : (item[column.key] ?? "-")}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+                {actions && actions.length > 0 && (
+                  <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                    {actions.map((action) => {
+                      const ActionIcon = getActionIcon(action.value);
+                      return (
+                        <button
+                          key={action.value}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => onRowAction?.(item, action.value)}
+                          className={`${getActionButtonClass(action.value)} h-9 w-9`}
+                          title={action.label}
+                          aria-label={action.label}
+                        >
+                          <ActionIcon className="h-4 w-4" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+          {data.length === 0 && (
+            <div className="rounded-lg border border-dashed border-gray-300 px-4 py-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              No data available
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }

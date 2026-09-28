@@ -261,23 +261,25 @@ const PengaduanPage = () => {
         <div
           className={`${THEME_COLORS.background.card} rounded-2xl shadow-lg border ${THEME_COLORS.border.default} overflow-hidden`}
         >
-          <div className={`${THEME_COLORS.active.background} px-6 py-5`}>
+          <div
+            className={`${THEME_COLORS.active.background} px-4 py-4 sm:px-6 sm:py-5`}
+          >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/20 backdrop-blur-sm">
                 <MailWarning className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h1 className="font-bold text-2xl text-white tracking-tight">
+              <div className="min-w-0">
+                <h1 className="truncate font-bold text-xl text-white sm:text-2xl">
                   Pengaduan
                 </h1>
-                <p className="text-white/80 text-sm mt-0.5">
+                <p className="mt-0.5 text-xs text-white/80 sm:text-sm">
                   Kelola data pengaduan pengguna
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-6 space-y-5">
+          <div className="space-y-4 p-4 sm:space-y-5 sm:p-6">
             <div className="relative">
               <div
                 className={`absolute left-4 top-1/2 -translate-y-1/2 ${THEME_COLORS.text.muted}`}
@@ -295,11 +297,11 @@ const PengaduanPage = () => {
               />
             </div>
 
-            <div className="flex flex-col md:flex-row justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <button
                   disabled={isRefetchingPengaduan}
-                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 sm:w-auto"
                   onClick={onResetFilter}
                 >
                   <RefreshCcw className="w-4 h-4" />
@@ -310,7 +312,7 @@ const PengaduanPage = () => {
               <div className="flex items-center gap-2">
                 <button
                   disabled={isRefetchingPengaduan}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText} rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
                   onClick={() =>
                     navigate("/pengaduan/create", {
                       replace: true,
@@ -334,6 +336,16 @@ const PengaduanPage = () => {
           <DataTableAdvanced
             data={dataListPengaduan?.data || []}
             columns={columns}
+            mobileCardView
+            mobileCardTitleKey="nama_lengkap"
+            mobileCardColumns={[
+              "kontak",
+              "jenis_pengaduan",
+              "subjek",
+              "nama_kelompok",
+              "status_pengaduan",
+              "created_at",
+            ]}
             rowActions={rowActions}
             onRowAction={handleRowAction}
             selectable={false}

@@ -125,7 +125,7 @@ const DetailUsers = () => {
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Informasi Utama */}
           <div
-            className={`rounded-xl border ${THEME_COLORS.border.default} p-5 space-y-4`}
+            className={`rounded-lg border ${THEME_COLORS.border.default} p-3 sm:p-5 space-y-4`}
           >
             <h3
               className={`text-sm font-semibold ${THEME_COLORS.text.primary} flex items-center gap-2 border-b ${THEME_COLORS.border.default} pb-3`}
@@ -145,7 +145,7 @@ const DetailUsers = () => {
                   className={`flex items-center gap-2 p-3 rounded-lg ${THEME_COLORS.background.input} border ${THEME_COLORS.border.default}`}
                 >
                   <span
-                    className={`text-sm font-mono ${THEME_COLORS.text.primary}`}
+                    className={`break-all text-sm font-mono ${THEME_COLORS.text.primary}`}
                   >
                     {userData.uuid || "-"}
                   </span>
@@ -256,7 +256,7 @@ const DetailUsers = () => {
 
           {/* Role & Akses */}
           <div
-            className={`rounded-xl border ${THEME_COLORS.border.default} p-5 space-y-4`}
+            className={`rounded-lg border ${THEME_COLORS.border.default} p-3 sm:p-5 space-y-4`}
           >
             <h3
               className={`text-sm font-semibold ${THEME_COLORS.text.primary} flex items-center gap-2 border-b ${THEME_COLORS.border.default} pb-3`}
@@ -306,7 +306,7 @@ const DetailUsers = () => {
 
           {/* Lokasi Akses */}
           <div
-            className={`rounded-xl border ${THEME_COLORS.border.default} p-5 space-y-4`}
+            className={`rounded-lg border ${THEME_COLORS.border.default} p-3 sm:p-5 space-y-4`}
           >
             <h3
               className={`text-sm font-semibold ${THEME_COLORS.text.primary} flex items-center gap-2 border-b ${THEME_COLORS.border.default} pb-3`}

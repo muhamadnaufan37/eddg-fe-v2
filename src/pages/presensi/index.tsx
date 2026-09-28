@@ -19,6 +19,7 @@ import {
   fetchPresensiKegiatanData,
   type PresensiKegiatanItem,
   type MetodePresensi,
+  type UpsertPresensiKegiatanPayload,
   updatePresensiKegiatan,
 } from "@/services/presensiKegiatanService";
 import { handleApiError } from "@/utils/errorUtils";
@@ -30,6 +31,15 @@ type Option = {
   value: string | number;
   label: string;
 };
+
+const CATEGORY_OPTIONS = [
+  "sensus",
+  "cai",
+  "mumi",
+  "remaja",
+  "praremaja",
+  "caberawit",
+];
 
 type FormState = {
   nama_kegiatan: string;
@@ -86,6 +96,10 @@ const PresensiKegiatanPage = () => {
   const [daerahOptions, setDaerahOptions] = useState<Option[]>([]);
   const [desaOptions, setDesaOptions] = useState<Option[]>([]);
   const [kelompokOptions, setKelompokOptions] = useState<Option[]>([]);
+  const [targetDesaOptions, setTargetDesaOptions] = useState<Option[]>([]);
+  const [targetKelompokOptions, setTargetKelompokOptions] = useState<Option[]>(
+    [],
+  );
 
   const [form, setForm] = useState<FormState>({
     nama_kegiatan: "",
@@ -108,15 +122,15 @@ const PresensiKegiatanPage = () => {
     kelompok_ids: [],
   });
 
-  const defaultPetugasId = 40;
+  const defaultPetugasId = String(dataLogin?.user?.id || "");
 
   const loadDaerahOptions = async () => {
-    const daerah = await fetchOptions(
-      "/api/v1/daerah/all",
-      "data_tempat_sambung",
-      "nama_daerah",
-    );
+    const [daerah, targetDesa] = await Promise.all([
+      fetchOptions("/api/v1/daerah/all", "data_tempat_sambung", "nama_daerah"),
+      fetchOptions("/api/v1/desa/all", "data_tempat_sambung", "nama_desa"),
+    ]);
     setDaerahOptions(daerah);
+    setTargetDesaOptions(targetDesa);
   };
 
   const loadDesaOptions = async (daerahId: string) => {
@@ -157,6 +171,54 @@ const PresensiKegiatanPage = () => {
     }
 
     setKelompokOptions([]);
+  };
+
+  const loadTargetKelompokOptions = async (
+    desaIds: string[],
+    selectedGroupIds: string[] = form.kelompok_ids,
+  ) => {
+    if (desaIds.length === 0) {
+      setTargetKelompokOptions([]);
+      setForm((previous) => ({ ...previous, kelompok_ids: [] }));
+      return;
+    }
+
+    const responses = await Promise.all(
+      desaIds.map((desaId) => fetchKelompokByDesa(desaId)),
+    );
+    const optionsById = new Map<string, Option>();
+
+    responses.forEach((response) => {
+      response?.data_tempat_sambung?.forEach((item: any) => {
+        optionsById.set(String(item.id), {
+          value: item.id,
+          label: item.nama_kelompok,
+        });
+      });
+    });
+
+    const options = Array.from(optionsById.values());
+    const availableIds = new Set(options.map((option) => String(option.value)));
+    setTargetKelompokOptions(options);
+    setForm((previous) => ({
+      ...previous,
+      kelompok_ids: selectedGroupIds.filter((id) => availableIds.has(id)),
+    }));
+  };
+
+  const toggleTargetId = (
+    field: "daerah_ids" | "desa_ids" | "kelompok_ids",
+    id: string,
+  ) => {
+    const currentIds = form[field];
+    const nextIds = currentIds.includes(id)
+      ? currentIds.filter((currentId) => currentId !== id)
+      : [...currentIds, id];
+
+    setForm((previous) => ({ ...previous, [field]: nextIds }));
+    if (field === "desa_ids") {
+      void loadTargetKelompokOptions(nextIds, form.kelompok_ids);
+    }
   };
 
   useEffect(() => {
@@ -201,6 +263,7 @@ const PresensiKegiatanPage = () => {
     });
     setDesaOptions([]);
     setKelompokOptions([]);
+    setTargetKelompokOptions([]);
     setEditingId(null);
   };
 
@@ -273,6 +336,11 @@ const PresensiKegiatanPage = () => {
         kelompok_ids: (data.kelompok_ids || []).map(String),
       });
 
+      await loadTargetKelompokOptions(
+        (data.desa_ids || []).map(String),
+        (data.kelompok_ids || []).map(String),
+      );
+
       if (data.kd_daerah) {
         await loadDesaOptions(String(data.kd_daerah));
       } else {
@@ -319,6 +387,10 @@ const PresensiKegiatanPage = () => {
     if (!form.category.trim()) return "Kategori wajib diisi";
     if (!form.tmpt_daerah) return "Daerah wajib dipilih";
     if (!form.usia_min) return "Usia minimum wajib diisi";
+    if (!defaultPetugasId) return "Akun petugas tidak teridentifikasi";
+    if (!Number.isInteger(Number(form.usia_min)) || Number(form.usia_min) < 0) {
+      return "Usia minimum harus berupa bilangan bulat non-negatif";
+    }
 
     if (form.usia_mode === "single" && !form.usia_operator) {
       return "Operator usia wajib dipilih untuk mode single";
@@ -326,6 +398,13 @@ const PresensiKegiatanPage = () => {
 
     if (form.usia_mode === "range" && !form.usia_max) {
       return "Usia maksimum wajib diisi untuk mode range";
+    }
+    if (
+      form.usia_mode === "range" &&
+      (!Number.isInteger(Number(form.usia_max)) ||
+        Number(form.usia_max) < Number(form.usia_min))
+    ) {
+      return "Usia maksimum harus bilangan bulat dan tidak lebih kecil dari usia minimum";
     }
 
     return null;
@@ -341,7 +420,7 @@ const PresensiKegiatanPage = () => {
       return;
     }
 
-    const payload = {
+    const payload: UpsertPresensiKegiatanPayload = {
       nama_kegiatan: form.nama_kegiatan.trim(),
       tmpt_kegiatan: form.tmpt_kegiatan.trim(),
       type_kegiatan: form.type_kegiatan.trim(),
@@ -350,20 +429,24 @@ const PresensiKegiatanPage = () => {
       expired_date_time: toApiDateTime(form.expired_date_time),
       category: form.category.trim(),
       usia_mode: form.usia_mode,
-      usia_min: form.usia_min,
+      usia_min: Number(form.usia_min),
       ...(form.usia_mode === "single"
         ? { usia_operator: form.usia_operator }
         : {}),
-      ...(form.usia_mode === "range" ? { usia_max: form.usia_max } : {}),
-      tmpt_daerah: form.tmpt_daerah,
+      ...(form.usia_mode === "range"
+        ? { usia_max: Number(form.usia_max) }
+        : {}),
+      tmpt_daerah: Number(form.tmpt_daerah),
       metode_presensi: form.metode_presensi,
       daerah_ids: form.daerah_ids.map(Number).filter(Number.isInteger),
       desa_ids: form.desa_ids.map(Number).filter(Number.isInteger),
       kelompok_ids: form.kelompok_ids.map(Number).filter(Number.isInteger),
-      ...(form.tmpt_desa ? { tmpt_desa: form.tmpt_desa } : {}),
-      ...(form.tmpt_kelompok ? { tmpt_kelompok: form.tmpt_kelompok } : {}),
-      add_by_petugas: defaultPetugasId,
-    } as any;
+      ...(form.tmpt_desa ? { tmpt_desa: Number(form.tmpt_desa) } : {}),
+      ...(form.tmpt_kelompok
+        ? { tmpt_kelompok: Number(form.tmpt_kelompok) }
+        : {}),
+      add_by_petugas: Number(defaultPetugasId),
+    };
 
     setIsSubmitting(true);
     try {
@@ -445,6 +528,57 @@ const PresensiKegiatanPage = () => {
     [editingId],
   );
 
+  const detailFields = detailData
+    ? [
+        { label: "Kode Kegiatan", value: detailData.kode_kegiatan },
+        { label: "Nama Kegiatan", value: detailData.nama_kegiatan },
+        { label: "Tipe", value: detailData.type_kegiatan },
+        { label: "Tanggal", value: detailData.tgl_kegiatan },
+        { label: "Jam", value: detailData.jam_kegiatan },
+        { label: "Batas Presensi", value: detailData.expired_date_time },
+        { label: "Kategori", value: detailData.category },
+        { label: "Metode Presensi", value: detailData.metode_presensi },
+        { label: "Mode Usia", value: detailData.usia_mode },
+        { label: "Operator Usia", value: detailData.usia_operator },
+        { label: "Usia Minimum", value: detailData.usia_min },
+        { label: "Usia Maksimum", value: detailData.usia_max },
+        { label: "Petugas", value: detailData.petugas },
+      ]
+    : [];
+  const venueFields = detailData
+    ? [
+        { label: "Tempat Acara", value: detailData.tmpt_kegiatan },
+        {
+          label: "Daerah Venue",
+          value: detailData.nm_daerah || detailData.kd_daerah,
+        },
+        {
+          label: "Desa Venue",
+          value: detailData.nm_desa || detailData.kd_desa,
+        },
+        {
+          label: "Kelompok Venue",
+          value: detailData.nm_kelompok || detailData.kd_kelompok,
+        },
+      ]
+    : [];
+  const targetFields = detailData
+    ? [
+        {
+          label: "ID Daerah Sasaran",
+          value: detailData.daerah_ids?.join(", ") || "-",
+        },
+        {
+          label: "ID Desa Sasaran",
+          value: detailData.desa_ids?.join(", ") || "-",
+        },
+        {
+          label: "ID Kelompok Sasaran",
+          value: detailData.kelompok_ids?.join(", ") || "-",
+        },
+      ]
+    : [];
+
   document.title = BASE_TITLE + "Presensi Kegiatan";
 
   return (
@@ -516,9 +650,15 @@ const PresensiKegiatanPage = () => {
         }}
         title={titleForm}
       >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 text-gray-900 md:grid-cols-2 xl:grid-cols-3 dark:text-gray-100">
+          <div className="border-b border-gray-200 pb-2 md:col-span-2 xl:col-span-3 dark:border-gray-700">
+            <h3 className="text-sm font-semibold">Informasi kegiatan</h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Waktu, kategori peserta, dan aturan keikutsertaan.
+            </p>
+          </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               Nama Kegiatan
             </label>
             <Input
@@ -531,7 +671,7 @@ const PresensiKegiatanPage = () => {
             />
           </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               Tempat Kegiatan
             </label>
             <Input
@@ -545,7 +685,7 @@ const PresensiKegiatanPage = () => {
           </div>
 
           <div>
-            <label className="text-xs font-medium mb-1 block">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               Tipe Kegiatan
             </label>
             <select
@@ -561,18 +701,26 @@ const PresensiKegiatanPage = () => {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">Kategori</label>
-            <Input
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+              Kategori
+            </label>
+            <select
               value={form.category}
-              className="w-full text-xs"
-              placeholder="Contoh: mumi"
-              onChange={(e: any) =>
+              className="min-h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+              onChange={(e) =>
                 setForm((prev) => ({ ...prev, category: e.target.value }))
               }
-            />
+            >
+              <option value="">Pilih kategori</option>
+              {CATEGORY_OPTIONS.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               Metode Presensi
             </label>
             <select
@@ -592,7 +740,7 @@ const PresensiKegiatanPage = () => {
           </div>
 
           <div>
-            <label className="text-xs font-medium mb-1 block">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               Tanggal Kegiatan
             </label>
             <Input
@@ -605,7 +753,7 @@ const PresensiKegiatanPage = () => {
             />
           </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               Jam Kegiatan
             </label>
             <Input
@@ -621,7 +769,7 @@ const PresensiKegiatanPage = () => {
 
           <div className="md:col-span-2">
             <label className="text-xs font-medium mb-1 block">
-              Expired Date Time
+              Batas Waktu Presensi
             </label>
             <Input
               type="datetime-local"
@@ -710,8 +858,17 @@ const PresensiKegiatanPage = () => {
             </div>
           )}
 
+          <div className="border-b border-gray-200 pb-2 md:col-span-2 xl:col-span-3 dark:border-gray-700">
+            <h3 className="text-sm font-semibold">Venue kegiatan</h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Lokasi acara sebagai titik pusat untuk verifikasi radius presensi.
+              Bagian ini bukan daftar peserta yang boleh hadir.
+            </p>
+          </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">Daerah</label>
+            <label className="text-xs font-medium mb-1 block">
+              Daerah venue
+            </label>
             <select
               value={form.tmpt_daerah}
               className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-xs"
@@ -737,7 +894,7 @@ const PresensiKegiatanPage = () => {
           </div>
 
           <div>
-            <label className="text-xs font-medium mb-1 block">Desa</label>
+            <label className="text-xs font-medium mb-1 block">Desa venue</label>
             <select
               value={form.tmpt_desa}
               className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-xs"
@@ -761,7 +918,9 @@ const PresensiKegiatanPage = () => {
           </div>
 
           <div className="md:col-span-2">
-            <label className="text-xs font-medium mb-1 block">Kelompok</label>
+            <label className="text-xs font-medium mb-1 block">
+              Kelompok venue
+            </label>
             <select
               value={form.tmpt_kelompok}
               className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-xs"
@@ -778,89 +937,114 @@ const PresensiKegiatanPage = () => {
             </select>
           </div>
 
+          <div className="border-b border-gray-200 pb-2 md:col-span-2 xl:col-span-3 dark:border-gray-700">
+            <h3 className="text-sm font-semibold">Sasaran peserta</h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Pilih wilayah peserta yang boleh mengikuti kegiatan. Sasaran ini
+              terpisah dari venue dan boleh mencakup beberapa lokasi.
+            </p>
+          </div>
           <div>
-            <label className="text-xs font-medium mb-1 block">
-              Daerah Tambahan
-            </label>
-            <select
-              multiple
-              value={form.daerah_ids}
-              className="h-24 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  daerah_ids: Array.from(
-                    e.target.selectedOptions,
-                    (option) => option.value,
-                  ),
-                }))
-              }
-            >
-              {daerahOptions.map((option) => (
-                <option key={String(option.value)} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <fieldset>
+              <legend className="text-xs font-medium">Daerah sasaran</legend>
+              <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-md border border-gray-300 p-2 dark:border-gray-700">
+                {daerahOptions.map((option) => {
+                  const id = String(option.value);
+                  return (
+                    <label
+                      key={id}
+                      className="flex min-h-10 cursor-pointer items-center gap-2 rounded px-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.daerah_ids.includes(id)}
+                        onChange={() => toggleTargetId("daerah_ids", id)}
+                        className="h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-600 dark:border-gray-600"
+                      />
+                      <span className="wrap-break-word">{option.label}</span>
+                    </label>
+                  );
+                })}
+                {daerahOptions.length === 0 && (
+                  <p className="px-2 py-3 text-xs text-gray-500 dark:text-gray-400">
+                    Opsi daerah belum tersedia.
+                  </p>
+                )}
+              </div>
+            </fieldset>
           </div>
 
           <div>
-            <label className="text-xs font-medium mb-1 block">
-              Desa Tambahan
-            </label>
-            <select
-              multiple
-              value={form.desa_ids}
-              className="h-24 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  desa_ids: Array.from(
-                    e.target.selectedOptions,
-                    (option) => option.value,
-                  ),
-                }))
-              }
-            >
-              {desaOptions.map((option) => (
-                <option key={String(option.value)} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <fieldset>
+              <legend className="text-xs font-medium">Desa sasaran</legend>
+              <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-md border border-gray-300 p-2 dark:border-gray-700">
+                {targetDesaOptions.map((option) => {
+                  const id = String(option.value);
+                  return (
+                    <label
+                      key={id}
+                      className="flex min-h-10 cursor-pointer items-center gap-2 rounded px-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.desa_ids.includes(id)}
+                        onChange={() => toggleTargetId("desa_ids", id)}
+                        className="h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-600 dark:border-gray-600"
+                      />
+                      <span className="wrap-break-word">{option.label}</span>
+                    </label>
+                  );
+                })}
+                {targetDesaOptions.length === 0 && (
+                  <p className="px-2 py-3 text-xs text-gray-500 dark:text-gray-400">
+                    Opsi desa belum tersedia.
+                  </p>
+                )}
+              </div>
+            </fieldset>
           </div>
 
           <div className="md:col-span-2">
-            <label className="text-xs font-medium mb-1 block">
-              Kelompok Tambahan
-            </label>
-            <select
-              multiple
-              value={form.kelompok_ids}
-              className="h-24 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900"
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  kelompok_ids: Array.from(
-                    e.target.selectedOptions,
-                    (option) => option.value,
-                  ),
-                }))
-              }
-            >
-              {kelompokOptions.map((option) => (
-                <option key={String(option.value)} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <fieldset>
+              <legend className="text-xs font-medium">Kelompok sasaran</legend>
+              <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-md border border-gray-300 p-2 dark:border-gray-700">
+                {targetKelompokOptions.map((option) => {
+                  const id = String(option.value);
+                  return (
+                    <label
+                      key={id}
+                      className="flex min-h-10 cursor-pointer items-center gap-2 rounded px-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.kelompok_ids.includes(id)}
+                        onChange={() => toggleTargetId("kelompok_ids", id)}
+                        className="h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-600 dark:border-gray-600"
+                      />
+                      <span className="wrap-break-word">{option.label}</span>
+                    </label>
+                  );
+                })}
+                {form.desa_ids.length === 0 && (
+                  <p className="px-2 py-3 text-xs text-gray-500 dark:text-gray-400">
+                    Pilih desa sasaran untuk memuat kelompok.
+                  </p>
+                )}
+                {form.desa_ids.length > 0 &&
+                  targetKelompokOptions.length === 0 && (
+                    <p className="px-2 py-3 text-xs text-gray-500 dark:text-gray-400">
+                      Tidak ada opsi kelompok untuk desa sasaran yang dipilih.
+                    </p>
+                  )}
+              </div>
+            </fieldset>
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            className="px-4 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700"
+            className="min-h-10 w-full rounded-lg border border-gray-300 px-4 py-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200 sm:w-auto"
             onClick={() => {
               setShowFormModal(false);
               resetForm();
@@ -870,7 +1054,7 @@ const PresensiKegiatanPage = () => {
           </button>
           <button
             type="button"
-            className={`px-4 py-2 text-xs rounded-lg ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
+            className={`min-h-10 w-full rounded-lg px-4 py-2 text-xs ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText} sm:w-auto`}
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
@@ -894,87 +1078,94 @@ const PresensiKegiatanPage = () => {
         title="Detail Presensi Kegiatan"
       >
         {detailData ? (
-          <div className="grid grid-cols-1 gap-3 text-xs md:grid-cols-2 xl:grid-cols-3">
-            <div>
-              <span className="font-semibold">Kode:</span>{" "}
-              {detailData.kode_kegiatan}
+          <div className="space-y-4 text-gray-900 dark:text-gray-100">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                { label: "Total Presensi", value: detailData.total_presensi },
+                { label: "Hadir", value: detailData.total_hadir },
+                { label: "Terlambat", value: detailData.total_terlambat },
+                { label: "Tidak Hadir", value: detailData.total_tidak_hadir },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-950/60"
+                >
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {stat.label}
+                  </p>
+                  <p className="mt-1 text-lg font-semibold">
+                    {stat.value || 0}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div>
-              <span className="font-semibold">Nama:</span>{" "}
-              {detailData.nama_kegiatan}
-            </div>
-            <div>
-              <span className="font-semibold">Tempat:</span>{" "}
-              {detailData.tmpt_kegiatan}
-            </div>
-            <div>
-              <span className="font-semibold">Tipe:</span>{" "}
-              {detailData.type_kegiatan}
-            </div>
-            <div>
-              <span className="font-semibold">Tanggal:</span>{" "}
-              {detailData.tgl_kegiatan}
-            </div>
-            <div>
-              <span className="font-semibold">Jam:</span>{" "}
-              {detailData.jam_kegiatan}
-            </div>
-            <div>
-              <span className="font-semibold">Expired:</span>{" "}
-              {detailData.expired_date_time}
-            </div>
-            <div>
-              <span className="font-semibold">Kategori:</span>{" "}
-              {detailData.category}
-            </div>
-            <div>
-              <span className="font-semibold">Mode Usia:</span>{" "}
-              {detailData.usia_mode}
-            </div>
-            <div>
-              <span className="font-semibold">Operator:</span>{" "}
-              {detailData.usia_operator || "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Usia Min:</span>{" "}
-              {detailData.usia_min ?? "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Usia Max:</span>{" "}
-              {detailData.usia_max ?? "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Daerah:</span>{" "}
-              {detailData.nm_daerah || "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Desa:</span>{" "}
-              {detailData.nm_desa || "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Kelompok:</span>{" "}
-              {detailData.nm_kelompok || "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Petugas:</span>{" "}
-              {detailData.petugas || "-"}
-            </div>
-            <div>
-              <span className="font-semibold">Total Presensi:</span>{" "}
-              {detailData.total_presensi || 0}
-            </div>
-            <div>
-              <span className="font-semibold">Total Hadir:</span>{" "}
-              {detailData.total_hadir || 0}
-            </div>
-            <div>
-              <span className="font-semibold">Total Terlambat:</span>{" "}
-              {detailData.total_terlambat || 0}
-            </div>
-            <div>
-              <span className="font-semibold">Total Tidak Hadir:</span>{" "}
-              {detailData.total_tidak_hadir || 0}
-            </div>
+            <section>
+              <h3 className="mb-2 text-xs font-semibold uppercase text-gray-600 dark:text-gray-300">
+                Informasi kegiatan
+              </h3>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {detailFields.map((field) => (
+                  <div
+                    key={field.label}
+                    className="min-w-0 rounded-md border border-gray-200 p-3 dark:border-gray-700"
+                  >
+                    <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                      {field.label}
+                    </p>
+                    <p className="mt-1 wrap-break-word text-sm font-medium">
+                      {field.value ?? "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-md border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+              <h3 className="text-xs font-semibold uppercase text-emerald-900 dark:text-emerald-200">
+                Venue / titik lokasi acara
+              </h3>
+              <p className="mt-1 text-xs text-emerald-800 dark:text-emerald-300">
+                Lokasi yang menjadi pusat verifikasi radius presensi.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {venueFields.map((field) => (
+                  <div
+                    key={field.label}
+                    className="min-w-0 rounded-md border border-emerald-200 bg-white p-3 dark:border-emerald-900 dark:bg-gray-900"
+                  >
+                    <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                      {field.label}
+                    </p>
+                    <p className="mt-1 wrap-break-word text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {field.value ?? "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-md border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-900 dark:bg-sky-950/30">
+              <h3 className="text-xs font-semibold uppercase text-sky-900 dark:text-sky-200">
+                Sasaran peserta
+              </h3>
+              <p className="mt-1 text-xs text-sky-800 dark:text-sky-300">
+                ID wilayah yang diizinkan mengikuti kegiatan, terpisah dari
+                venue.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {targetFields.map((field) => (
+                  <div
+                    key={field.label}
+                    className="min-w-0 rounded-md border border-sky-200 bg-white p-3 dark:border-sky-900 dark:bg-gray-900"
+                  >
+                    <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                      {field.label}
+                    </p>
+                    <p className="mt-1 wrap-break-word text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {field.value ?? "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         ) : (
           <div className="text-xs text-gray-500">
@@ -985,7 +1176,7 @@ const PresensiKegiatanPage = () => {
         <div className="mt-4 flex justify-end">
           <button
             type="button"
-            className="px-4 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700"
+            className="min-h-10 w-full rounded-lg border border-gray-300 px-4 py-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200 sm:w-auto"
             onClick={() => setShowDetailModal(false)}
           >
             Tutup

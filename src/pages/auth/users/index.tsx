@@ -700,17 +700,19 @@ const UsersPage = () => {
             className={`${THEME_COLORS.background.card} rounded-2xl shadow-lg border ${THEME_COLORS.border.default} overflow-hidden`}
           >
             {/* Header Section */}
-            <div className={`${THEME_COLORS.active.background} px-6 py-5`}>
+            <div
+              className={`${THEME_COLORS.active.background} px-4 py-4 sm:px-6 sm:py-5`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/20 backdrop-blur-sm">
                     <Users className="w-6 h-6 text-white" />
                   </div>
-                  <div>
-                    <h1 className="font-bold text-2xl text-white tracking-tight">
+                  <div className="min-w-0">
+                    <h1 className="truncate font-bold text-xl text-white sm:text-2xl">
                       Users Management
                     </h1>
-                    <p className="text-white/80 text-sm mt-0.5">
+                    <p className="mt-0.5 text-xs text-white/80 sm:text-sm">
                       Kelola dan pantau data users dengan mudah
                     </p>
                   </div>
@@ -719,7 +721,7 @@ const UsersPage = () => {
             </div>
 
             {/* Content Section */}
-            <div className="p-6 space-y-5">
+            <div className="space-y-4 p-4 sm:space-y-5 sm:p-6">
               {/* Search Bar with Modern Design */}
               <div className="relative">
                 <div
@@ -738,13 +740,13 @@ const UsersPage = () => {
                 />
               </div>
 
-              <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
                 {/* Bulk Delete Button - Only show when rows are selected */}
                 {selectedRows.size > 0 && (
-                  <div className="flex items-center gap-2 mr-auto">
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:mr-auto">
                     <button
                       disabled={isBulkDeleting}
-                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all hover:bg-red-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={handleBulkDelete}
                     >
                       {isBulkDeleting ? (
@@ -788,14 +790,14 @@ const UsersPage = () => {
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
                   {/* Filter & Reset Group */}
                   <div
-                    className={`flex items-center gap-2 ${selectedRows.size > 0 ? "" : "mr-auto"}`}
+                    className={`flex w-full items-center gap-2 sm:w-auto ${selectedRows.size > 0 ? "" : "sm:mr-auto"}`}
                   >
                     <button
                       disabled={isRefetchingUsers}
-                      className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.background.card} border-2 ${THEME_COLORS.border.default} rounded-lg ${THEME_COLORS.hover.item} transition-all disabled:opacity-50 disabled:cursor-not-allowed ${THEME_COLORS.text.secondary}`}
+                      className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-4 ${THEME_COLORS.background.card} ${THEME_COLORS.border.default} ${THEME_COLORS.hover.item} ${THEME_COLORS.text.secondary}`}
                       onClick={() => setOpenFilter(true)}
                     >
                       <Filter className="w-4 h-4" />
@@ -803,7 +805,7 @@ const UsersPage = () => {
                     </button>
                     <button
                       disabled={isRefetchingUsers}
-                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 sm:flex-none sm:px-4"
                       onClick={onResetFilter}
                     >
                       <RefreshCcw className="w-4 h-4" />
@@ -813,10 +815,10 @@ const UsersPage = () => {
                 </div>
 
                 {/* Main Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
                   <button
                     disabled={isRefetchingUsers}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText} rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
                     onClick={() =>
                       navigate("/auth/users/create", {
                         state: {
@@ -875,6 +877,18 @@ const UsersPage = () => {
                 setSelectedRows={setSelectedRows}
                 data={dataListUsers?.data || []}
                 columns={columns}
+                mobileCardView
+                mobileCardTitleKey="nama_lengkap"
+                mobileCardColumns={[
+                  "uuid",
+                  "username",
+                  "email",
+                  "nm_role",
+                  "status",
+                  "is_online",
+                  "last_seen_at",
+                  "tempat_sambung_info",
+                ]}
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}

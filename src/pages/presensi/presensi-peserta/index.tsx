@@ -336,7 +336,7 @@ const PresensiPesertaPage = () => {
     }
   };
 
-  const statusColors = (item: PresensiPesertaData) => {
+  const statusColors = (item: PresensiPesertaData) => (
     <span
       className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
         item.status_presensi === "hadir"
@@ -361,8 +361,8 @@ const PresensiPesertaPage = () => {
           Belum Absen
         </>
       )}
-    </span>;
-  };
+    </span>
+  );
 
   const columns: Column<PresensiPesertaData>[] = [
     { key: "nama_lengkap", header: "Nama Peserta", sortable: true },
@@ -542,7 +542,9 @@ const PresensiPesertaPage = () => {
           <div
             className={`${THEME_COLORS.background.card} rounded-2xl shadow-lg border ${THEME_COLORS.border.default} overflow-hidden`}
           >
-            <div className={`${THEME_COLORS.active.background} px-6 py-5`}>
+            <div
+              className={`${THEME_COLORS.active.background} px-4 py-4 sm:px-6 sm:py-5`}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <button
                   onClick={() => navigate("/presensi")}
@@ -550,14 +552,14 @@ const PresensiPesertaPage = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </button>
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/20 backdrop-blur-sm">
                   <Users className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="font-bold text-2xl text-white tracking-tight">
+                <div className="min-w-0">
+                  <h1 className="truncate font-bold text-xl text-white sm:text-2xl">
                     Presensi Peserta
                   </h1>
-                  <p className="text-white/80 text-sm mt-0.5">
+                  <p className="mt-0.5 text-xs text-white/80 sm:text-sm">
                     Kode Kegiatan: {kode_kegiatan}
                   </p>
                 </div>
@@ -566,8 +568,8 @@ const PresensiPesertaPage = () => {
 
             {/* Statistics */}
             {statistics && (
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+              <div className="border-t border-gray-200 p-4 dark:border-gray-700 sm:p-6">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       Hadir
@@ -621,7 +623,7 @@ const PresensiPesertaPage = () => {
             )}
 
             {/* Search */}
-            <div className="p-6 space-y-5 border-t border-gray-200 dark:border-gray-700">
+            <div className="space-y-4 border-t border-gray-200 p-4 dark:border-gray-700 sm:space-y-5 sm:p-6">
               <div className="relative">
                 <div
                   className={`absolute left-4 top-1/2 -translate-y-1/2 ${THEME_COLORS.text.muted}`}
@@ -642,11 +644,11 @@ const PresensiPesertaPage = () => {
                 />
               </div>
 
-              <div className="flex flex-col md:flex-row justify-end gap-4">
-                <div className="flex flex-col md:flex-row items-center gap-3">
+              <div className="flex flex-col justify-end gap-3 sm:flex-row">
+                <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-3">
                   <button
                     disabled={isFetching}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
                     onClick={handleReset}
                   >
                     Reset
@@ -655,7 +657,7 @@ const PresensiPesertaPage = () => {
                     type="button"
                     disabled={isFetching}
                     onClick={handleSearch}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Cari Data
                   </button>
@@ -663,7 +665,7 @@ const PresensiPesertaPage = () => {
                     type="button"
                     disabled={isDownloadingPdf || isFetching || isLoading}
                     onClick={handleDownloadPdf}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isDownloadingPdf ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -693,6 +695,14 @@ const PresensiPesertaPage = () => {
                 setSelectedRows={setSelectedRows}
                 data={tableData}
                 columns={columns}
+                mobileCardView
+                mobileCardTitleKey="nama_lengkap"
+                mobileCardColumns={[
+                  "lokasi",
+                  "status_presensi",
+                  "metode_presensi",
+                  "waktu_presensi",
+                ]}
                 rowActions={canUseRowActions ? rowActions : undefined}
                 onRowAction={handleRowAction}
                 selectable={true}
@@ -986,20 +996,20 @@ const PresensiPesertaPage = () => {
       >
         {detailData ? (
           <div className="space-y-5">
-            <div className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/60">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+            <div className="flex flex-wrap items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/60 sm:flex-nowrap sm:gap-4 sm:p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm sm:h-14 sm:w-14">
                 <Users className="h-7 w-7" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 className="wrap-break-word text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
                   {detailData.nama_lengkap}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="break-all text-sm text-gray-500 dark:text-gray-400">
                   {detailData.kode_cari_data}
                 </p>
               </div>
               <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                className={`inline-flex max-w-full items-center rounded-full px-3 py-1 text-xs font-semibold ${
                   detailData.status_presensi
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
                     : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
@@ -1029,7 +1039,7 @@ const PresensiPesertaPage = () => {
               />
               <DetailItem
                 label="Status Presensi"
-                value={statusColors(detailData)}
+                value={detailData.status_presensi || "Belum Absen"}
               />
               <DetailItem
                 label="Status Sambung"
@@ -1156,7 +1166,7 @@ const DetailItem = ({ label, value }: { label: string; value: unknown }) => {
     value === null || value === undefined || value === "" ? "-" : String(value);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-950/60">
+    <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-950/60">
       <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
         {label}
       </div>

@@ -126,7 +126,7 @@ const LogDetailPage = () => {
   const activity = getActivityBadge(logDetail.activity_type);
 
   return (
-    <div className="container mx-auto max-w-6xl">
+    <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -142,17 +142,17 @@ const LogDetailPage = () => {
             Kembali
           </Button>
 
-          <div className="bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-2xl p-6 shadow-lg">
-            <div className="flex items-start justify-between">
+          <div className="rounded-lg bg-linear-to-r from-emerald-800 to-teal-700 p-4 shadow-lg dark:from-emerald-950 dark:to-teal-900 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white/15 backdrop-blur-sm sm:h-12 sm:w-12">
                   <Activity className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">
+                  <h1 className="text-xl font-bold text-white sm:text-2xl">
                     Detail Log Aktivitas
                   </h1>
-                  <p className="text-blue-100 text-sm mt-1">
+                  <p className="mt-1 text-sm text-emerald-100">
                     ID: {logDetail.id}
                   </p>
                 </div>
@@ -166,7 +166,7 @@ const LogDetailPage = () => {
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* User Information */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -174,27 +174,27 @@ const LogDetailPage = () => {
                 </h2>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col gap-1 border-b border-gray-100 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Nama Lengkap
                   </span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <span className="break-all text-sm font-semibold text-gray-900 dark:text-white sm:text-right">
                     {logDetail.user?.nama_lengkap || "-"}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col gap-1 border-b border-gray-100 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Username
                   </span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <span className="break-all text-sm font-semibold text-gray-900 dark:text-white sm:text-right">
                     @{logDetail.user?.username || "-"}
                   </span>
                 </div>
-                <div className="flex justify-between py-2">
+                <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     User ID
                   </span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <span className="break-all text-sm font-semibold text-gray-900 dark:text-white sm:text-right">
                     {logDetail.user?.id || "-"}
                   </span>
                 </div>
@@ -202,7 +202,7 @@ const LogDetailPage = () => {
             </Card>
 
             {/* Activity Information */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -210,7 +210,7 @@ const LogDetailPage = () => {
                 </h2>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col gap-1 border-b border-gray-100 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Tipe Aktivitas
                   </span>
@@ -219,19 +219,19 @@ const LogDetailPage = () => {
                     color={activity.color}
                   />
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col gap-1 border-b border-gray-100 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Model Type
                   </span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <span className="break-all text-sm font-semibold text-gray-900 dark:text-white sm:text-right">
                     {logDetail.model_type || "-"}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col gap-1 border-b border-gray-100 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Model ID
                   </span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <span className="break-all text-sm font-semibold text-gray-900 dark:text-white sm:text-right">
                     {logDetail.model_id || "-"}
                   </span>
                 </div>
@@ -248,7 +248,7 @@ const LogDetailPage = () => {
 
             {/* Properties - Conditional Rendering */}
             {logDetail.properties && (
-              <Card className="p-6">
+              <Card className="p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-6">
                   <Info className="w-5 h-5 text-purple-600 dark:text-purple-400" />
 
@@ -309,7 +309,7 @@ const LogDetailPage = () => {
           {/* Right Column - Meta Info */}
           <div className="space-y-6">
             {/* System Information */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Monitor className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
