@@ -1,5 +1,6 @@
-import { createContext, useEffect, useReducer, type ReactNode } from "react";
+﻿import { createContext, useEffect, useReducer, type ReactNode } from "react";
 import accountReducer from "../store/accountReducer";
+import type { User } from "../store/accountReducer";
 import {
   ACCOUNT_INITIALISE,
   IS_LOADING,
@@ -10,21 +11,25 @@ import {
   getLocalStorage,
   setLocalStorage,
 } from "../services/localStorageService";
-import { AUTH_UNAUTHORIZED_EVENT, axiosServices } from "../services/axios";
+import {
+  AUTH_UNAUTHORIZED_EVENT,
+  axiosServices,
+  getAccessToken,
+  refreshAccessToken,
+  setAccessToken,
+} from "../services/axios";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
-
-type TData = any;
 
 type TAuthContext = {
   isLoggedIn: boolean;
   isLoading: boolean;
   isInitialised: boolean;
-  user: TData | null;
+  user: User | null;
   isNdaPending: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: (keterangan?: string) => void;
-  setNdaAccepted: (userId?: string) => void;
+  setNdaAccepted: (_userId?: string) => void;
 };
 
 const initialState = {
@@ -42,29 +47,29 @@ const AuthContext = createContext<TAuthContext>({
   setNdaAccepted: () => { },
 });
 
-const verifyToken = (serviceToken: any, expiresAt?: string): boolean => {
-  if (!serviceToken) {
+const verifyToken = (expiresAt?: string): boolean => {
+  if (!expiresAt) {
     return false;
   }
 
-  if (!expiresAt) return true;
-
   const expirationTime = Date.parse(expiresAt);
-  return !Number.isFinite(expirationTime) || expirationTime > Date.now();
+  return Number.isFinite(expirationTime) && expirationTime > Date.now();
 };
 
-const setSession = (data: any) => {
-  if (data) {
+const setSession = (data?: {
+  token?: string;
+  expires_at?: string;
+  user?: Record<string, unknown>;
+} | null) => {
+  if (data?.token) {
+    setAccessToken(data.token);
     setLocalStorage("userData", {
-      token: data.token,
       expires_at: data.expires_at,
       user: data.user,
     });
-
-    axiosServices().defaults.headers.common["Authorization"] = data.token;
   } else {
+    setAccessToken(null);
     localStorage.removeItem("userData");
-    delete axiosServices().defaults.headers.common["Authorization"];
   }
 };
 
@@ -72,30 +77,28 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(accountReducer, initialState);
 
   const isNdaPending = Boolean(
-    (state.user && (state.user as any).status_nda === 0) ||
-    (state.user && String((state.user as any).status_nda) === "0"),
+    state.user?.status_nda === 0 || String(state.user?.status_nda) === "0",
   );
 
-  const setNdaAccepted = (userId?: string) => {
+  const setNdaAccepted = (_userId?: string) => {
+    void _userId;
+
     try {
       const stored = getLocalStorage("userData");
       if (!stored || !stored.user) return;
 
-      // update user object
       const updatedUser = { ...stored.user, status_nda: 1 };
 
-      // update localStorage
       setLocalStorage("userData", {
         ...stored,
         user: updatedUser,
       });
 
-      // update reducer state
       dispatch({
         type: LOGIN,
         payload: { user: updatedUser, isLoggedIn: true },
       });
-    } catch (err) {
+    } catch {
       // silent
     }
   };
@@ -107,6 +110,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         isLoading: true,
       },
     });
+
     try {
       const response = await axiosServices().post(`/api/v1/login`, {
         username: username,
@@ -114,7 +118,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (response.data.data.token) {
-        let dataUser = response.data.data.user;
+        const dataUser = response.data.data.user;
         const token = response.data.data.token;
 
         setSession({
@@ -136,13 +140,15 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
           description: "Username atau kata sandi yang Anda masukkan salah",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err?.response?.data?.message || "Tidak dapat terhubung ke server";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Tidak dapat terhubung ke server";
       toast.error("Terjadi Kesalahan", {
         description: errorMessage,
       });
     }
+
     dispatch({
       type: IS_LOADING,
       payload: {
@@ -160,8 +166,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (response.data.success) {
-        setSession({});
-        localStorage.removeItem("userData");
+        setSession(null);
         dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
         toast.success("Logout Berhasil", {
           description: "Anda telah keluar dari sistem",
@@ -172,7 +177,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         });
       }
       dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
-    } catch (error: any) {
+    } catch {
       toast.error("Logout Gagal", {
         description: "Terjadi kesalahan, tetapi Anda akan tetap dikeluarkan",
       });
@@ -185,21 +190,9 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     const init = async () => {
       try {
         const stored = getLocalStorage("userData");
+        const hasStoredUser = Boolean(stored?.user);
 
-        if (stored?.token && verifyToken(stored.token, stored.expires_at)) {
-          axiosServices().defaults.headers.common["Authorization"] =
-            stored.token;
-
-          dispatch({
-            type: ACCOUNT_INITIALISE,
-            payload: {
-              isLoggedIn: true,
-              user: stored.user,
-            },
-          });
-        } else {
-          if (stored?.token) setSession(null);
-
+        if (!hasStoredUser) {
           dispatch({
             type: ACCOUNT_INITIALISE,
             payload: {
@@ -207,8 +200,51 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
               user: null,
             },
           });
+          return;
         }
-      } catch (err) {
+
+        if (verifyToken(stored.expires_at)) {
+          const currentToken = getAccessToken();
+
+          if (currentToken) {
+            dispatch({
+              type: ACCOUNT_INITIALISE,
+              payload: {
+                isLoggedIn: true,
+                user: stored.user,
+              },
+            });
+            return;
+          }
+
+          try {
+            const refreshedToken = await refreshAccessToken();
+
+            if (refreshedToken) {
+              dispatch({
+                type: ACCOUNT_INITIALISE,
+                payload: {
+                  isLoggedIn: true,
+                  user: getLocalStorage("userData")?.user || stored.user,
+                },
+              });
+              return;
+            }
+          } catch {
+            // Ignore and continue to unauthorised cleanup below.
+          }
+        }
+
+        setSession(null);
+        dispatch({
+          type: ACCOUNT_INITIALISE,
+          payload: {
+            isLoggedIn: false,
+            user: null,
+          },
+        });
+      } catch {
+        setSession(null);
         dispatch({
           type: ACCOUNT_INITIALISE,
           payload: {
@@ -225,7 +261,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleUnauthorized = async (e: Event) => {
       const stored = getLocalStorage("userData");
-      if (!stored?.token) return;
+      if (!stored?.user) return;
 
       const detail = (e as CustomEvent)?.detail;
       const serverMessage: string | null = detail?.message || null;
@@ -254,9 +290,6 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
   }, []);
 
-  // if (!state.isInitialised) {
-  //   return <div>Gagal init</div>;
-  // }
   return (
     <AuthContext.Provider
       value={{ ...state, isNdaPending, login, logout, setNdaAccepted }}

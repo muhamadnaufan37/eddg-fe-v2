@@ -1,6 +1,6 @@
 import { ACCOUNT_INITIALISE, IS_LOADING, LOGIN, LOGOUT } from "./actions";
 
-interface User {
+export interface User {
   // Define the properties of the user object
   // For example, the user's name and email
   email: string;
@@ -10,6 +10,7 @@ interface User {
   token: string;
   token_expire: string;
   username: string;
+  status_nda?: number | string;
 }
 
 interface AccountState {
