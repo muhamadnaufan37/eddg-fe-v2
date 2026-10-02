@@ -27,6 +27,7 @@ const UpdateSensus = () => {
   );
   const [loadingData, setLoadingData] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const location = useLocation();
   const dataBalikan = location?.state;
   const navigate = useNavigate();
@@ -206,7 +207,12 @@ const UpdateSensus = () => {
         validateOnChange={true}
         validateOnBlur={true}
       >
-        {({ isSubmitting, setFieldValue, values }) => (
+        {({ isSubmitting, setFieldValue, values, errors }) => {
+          const tab1HasError = !!(errors.nama_lengkap || errors.nama_panggilan || errors.tempat_lahir || errors.tanggal_lahir || errors.alamat || errors.jenis_kelamin || errors.no_telepon || errors.img);
+          const tab2HasError = !!(errors.nama_ayah || errors.nama_ibu || errors.hoby || errors.pekerjaan || errors.kriteria_pasangan);
+          const tab3HasError = !!(errors.status_pernikahan || errors.status_sambung || errors.status_atlet_asad || errors.tmpt_daerah || errors.tmpt_desa || errors.tmpt_kelompok);
+          
+          return (
           <Form>
             {showModal && <ModalInvalidId />}
 
@@ -240,28 +246,45 @@ const UpdateSensus = () => {
                   </div>
                 </div>
               )}
+              
               <div className="flex justify-between items-center p-3 border-b-2 border-gray-200 dark:border-gray-700 gap-2">
                 <div className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white">
                   Update Sensus
                 </div>
-                {dataBalikan?.detailData?.status_sambung === 0 && (
-                  <div className="text-[14px] text-center font-normal leading-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg p-2.5">
-                    Tidak Sambung
-                  </div>
-                )}
-                {dataBalikan?.detailData?.status_sambung === 1 && (
-                  <div className="text-[14px] text-center font-normal leading-4 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg p-2.5">
-                    Sambung
-                  </div>
-                )}
-                {dataBalikan?.detailData?.status_sambung === 2 && (
-                  <div className="text-[14px] text-center font-normal leading-4 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg p-2.5">
-                    Pindah Sambung
-                  </div>
-                )}
+              </div>
+              
+              <div className="flex gap-2 p-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                {[
+                  { name: 'Data Pribadi', hasError: tab1HasError }, 
+                  { name: 'Data Keluarga & Detail', hasError: tab2HasError }, 
+                  { name: 'Status & Wilayah Tambahan', hasError: tab3HasError }
+                ].map((tab, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveTab(idx)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap relative ${
+                      activeTab === idx 
+                        ? 'bg-blue-600 text-white shadow-md transform scale-[1.02]' 
+                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {tab.name}
+                    {tab.hasError && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
 
-              <div className="flex flex-col gap-3 p-4">
+              <div className="p-4">
+                <div className={`flex flex-col gap-3 transition-opacity duration-300 ${activeTab === 0 ? 'block opacity-100' : 'hidden opacity-0'}`}>
+
+                
+
                 <div className="flex flex-col gap-2">
                   <label className="text-gray-900 dark:text-white">
                     Foto Peserta
@@ -500,7 +523,11 @@ const UpdateSensus = () => {
                       className="text-red-600 text-sm"
                     />
                   </div>
+                </div>
 
+                </div><div className={`flex flex-col gap-3 transition-opacity duration-300 ${activeTab === 1 ? 'block opacity-100' : 'hidden opacity-0'}`}>
+
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
                   <div>
                     <label className="text-gray-900 dark:text-white">
                       Nama Bapak
@@ -780,6 +807,8 @@ const UpdateSensus = () => {
                   </div>
                 </div>
 
+                </div><div className={`flex flex-col gap-3 transition-opacity duration-300 ${activeTab === 2 ? 'block opacity-100' : 'hidden opacity-0'}`}>
+
                 <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-4 gap-3">
                   <div>
                     <label className="text-gray-900 dark:text-white">
@@ -1007,7 +1036,9 @@ const UpdateSensus = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-b-lg">
+              </div>
+
+<div className="flex justify-end items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-b-lg">
                 <Button
                   type="button"
                   variant="outline"
@@ -1025,7 +1056,8 @@ const UpdateSensus = () => {
               </div>
             </div>
           </Form>
-        )}
+          );
+        }}
       </Formik>
     </>
   );

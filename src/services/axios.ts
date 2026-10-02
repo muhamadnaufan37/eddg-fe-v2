@@ -31,7 +31,11 @@ export const axiosServices = () => {
         !isLoginRequest &&
         getLocalStorage("userData")?.token
       ) {
-        window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+        const message =
+          error.response?.data?.message || null;
+        window.dispatchEvent(
+          new CustomEvent(AUTH_UNAUTHORIZED_EVENT, { detail: { message } }),
+        );
       }
 
       return Promise.reject(error);

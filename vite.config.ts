@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import viteCompression from "vite-plugin-compression";
 
 const copyHtaccessPlugin = () => {
   let projectRoot = process.cwd();
@@ -35,7 +36,13 @@ export default defineConfig(({ mode }) => {
   console.log("🔧 [Vite Config] API URL from .env:", apiUrl);
 
   return {
-    plugins: [react(), tailwindcss(), copyHtaccessPlugin()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      copyHtaccessPlugin(),
+      viteCompression({ algorithm: "brotliCompress" }),
+      viteCompression({ algorithm: "gzip" }),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

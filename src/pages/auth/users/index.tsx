@@ -16,7 +16,8 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { BASE_TITLE } from "@/store/actions";
 import { toast } from "sonner";
-import { DataTableAdvanced, Input, type Column } from "@/components/global";
+import Swal from "sweetalert2";
+import { DataTableAdvanced, Input, Dropdown, DropdownItem, type Column } from "@/components/global";
 import {
   Copy,
   Filter,
@@ -25,6 +26,9 @@ import {
   RefreshCcw,
   Search,
   Users,
+  MoreVertical,
+  ChartLine,
+  Database,
 } from "lucide-react";
 import {
   fetchDetailUsers,
@@ -358,15 +362,46 @@ const UsersPage = () => {
   };
 
   const handleForceLogout = async (item: any) => {
-    const keterangan = window.prompt("Masukkan alasan force logout:");
-    if (!keterangan?.trim()) return;
+    const result = await Swal.fire({
+      title: "Force Logout",
+      html: `Yakin ingin force logout user <b>${item.username}</b>?<br/><br/>Masukkan alasan:`,
+      input: "text",
+      inputPlaceholder: "Contoh: Sesi ganda, keamanan akun...",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Force Logout!",
+      cancelButtonText: "Batal",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      customClass: {
+        container: "!z-[99999]",
+      },
+      inputValidator: (value) => {
+        if (!value?.trim()) {
+          return "Alasan force logout wajib diisi!";
+        }
+      },
+    });
+
+    if (!result.isConfirmed) return;
 
     setIsForceLoggingOut(true);
     try {
-      const response = await forceLogoutUser(item.uuid, keterangan.trim());
-      if (!response.success) throw new Error(response.message);
+      const response = await forceLogoutUser(item.uuid, result.value.trim());
+
+      if (!response.success) {
+        toast.error("Gagal!", {
+          description: response.message || "Gagal melakukan force logout",
+          duration: 3000,
+        });
+        return;
+      }
+
       toast.success("Berhasil", {
-        description: response.message || "User berhasil dikeluarkan",
+        description: response.message || "User berhasil dilogout paksa",
+        duration: 3000,
       });
       refetchListUsers();
     } catch (error: any) {
@@ -648,7 +683,155 @@ const UsersPage = () => {
     setShowModalBanned(false);
   };
 
+  const customUserCardRender = (
+    item: any,
+    actions: { label: string; value: string }[] | undefined,
+    isSelected: boolean,
+    onSelect: (checked: boolean) => void
+  ) => {
+    const dataStatus = resolveStatus(STATUS_USERS_MAP, item.status);
+    const rowActs = actions || rowActions(item);
+
+    return (
+      <article
+        key={item.uuid}
+        className={`relative h-full flex flex-col rounded-2xl border transition-all duration-300 bg-white dark:bg-gray-800 border-gray-100 hover:border-gray-200 hover:shadow-lg dark:border-gray-700 dark:hover:border-gray-600 ${
+          isSelected
+            ? "border-blue-500 bg-blue-50/30 dark:border-blue-400 dark:bg-blue-900/20 shadow-md ring-1 ring-blue-500 dark:ring-blue-400"
+            : ""
+        }`}
+      >
+        <div className="flex flex-col flex-grow p-4">
+          <div className="flex items-start justify-between gap-3 pb-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="pt-1">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => onSelect(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-blue-400"
+                />
+              </div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                {item.username ? item.username.substring(0, 2).toUpperCase() : "-"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                  {item.username || "-"}
+                </h3>
+                <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">
+                  {item.email}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0">
+              <StatusTableBadge
+                label={item.is_online ? "Online" : "Offline"}
+                color={item.is_online ? "green" : "gray"}
+              />
+            </div>
+          </div>
+
+          <div className="mb-3 h-px w-full bg-gray-100 dark:bg-gray-700" />
+
+          <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+            <div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Role</p>
+              <div className="mt-1 flex flex-col gap-1">
+                <span className="truncate text-xs font-medium text-gray-900 dark:text-gray-100">{item.nm_role}</span>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Status Akun</p>
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                <StatusTableBadge label={dataStatus.text} color={dataStatus.color} />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Status NDA</p>
+              <div className="mt-1 flex items-center">
+                {item.status_nda === 1 ? (
+                  <StatusTableBadge label="NDA" color="green" />
+                ) : (
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">-</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Aktivitas</p>
+              <div className="mt-1 flex flex-col gap-0.5">
+                <span className="text-[10px] text-gray-700 dark:text-gray-300">
+                  Login: {item.login_terakhir ? formatDateString(item.login_terakhir) : "-"}
+                </span>
+                <span className="text-[10px] text-gray-700 dark:text-gray-300">
+                  Aktif: {item.last_seen_at ? formatDateString(item.last_seen_at) : "-"}
+                </span>
+                {Number(item.failed_device_attempts) > 0 && (
+                  <span className="text-[10px] text-red-500">
+                    Gagal Device: {item.failed_device_attempts}x
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Wilayah Sambung</p>
+              <div className="mt-1 flex flex-col gap-0.5">
+                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                  {item.nm_daerah || "-"}
+                </span>
+                {(item.nm_desa || item.nm_kelompok) && (
+                  <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
+                    {item.nm_desa ? item.nm_desa : ""}
+                    {item.nm_desa && item.nm_kelompok ? " • " : ""}
+                    {item.nm_kelompok ? item.nm_kelompok : ""}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-800/50 rounded-b-2xl">
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+            Dibuat: {item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "-"}
+          </p>
+          <div className="flex gap-2">
+            <Dropdown
+              trigger={
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-all hover:bg-gray-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-blue-400 dark:focus:ring-blue-400 dark:focus:ring-offset-gray-900"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              }
+              align="right"
+            >
+              {rowActs.map((action: any, i: number) => (
+                <DropdownItem
+                  key={i}
+                  onClick={() => handleRowAction(item, action.value)}
+                  danger={action.value === "delete" || action.value === "banned"}
+                >
+                  {action.label}
+                </DropdownItem>
+              ))}
+            </Dropdown>
+          </div>
+        </div>
+      </article>
+    );
+  };
+
   document.title = BASE_TITLE + "Users Management";
+
+  const hasActiveFilters = Boolean(
+    status || statusNda || filterDaerah || filterDesa || filterKelompok
+  );
 
   return (
     <>
@@ -659,7 +842,7 @@ const UsersPage = () => {
           isResettingDevice ||
           isUnbanning ||
           isForceLoggingOut) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-xs">
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-[999] bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-xl">
             <svg
               className="animate-spin h-6 w-6"
               xmlns="http://www.w3.org/2000/svg"
@@ -695,181 +878,89 @@ const UsersPage = () => {
         )}
 
         <div className="flex flex-col gap-5 h-full">
-          {/* Modern Header Card with Gradient */}
-          <div
-            className={`${THEME_COLORS.background.card} rounded-2xl shadow-lg border ${THEME_COLORS.border.default} overflow-hidden`}
-          >
-            {/* Header Section */}
-            <div
-              className={`${THEME_COLORS.active.background} px-4 py-4 sm:px-6 sm:py-5`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/20 backdrop-blur-sm">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <h1 className="truncate font-bold text-xl text-white sm:text-2xl">
-                      Users Management
-                    </h1>
-                    <p className="mt-0.5 text-xs text-white/80 sm:text-sm">
-                      Kelola dan pantau data users dengan mudah
-                    </p>
-                  </div>
-                </div>
-              </div>
+          {/* Top Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Users Management
+            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={isRefetchingUsers}
+                className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-emerald-700"
+                onClick={() =>
+                  navigate("/auth/users/create", {
+                    state: {
+                      balikanLogin: dataLogin,
+                      fetchdataDearah: fetchDataDaerah,
+                      fetchDataRoles: fetchDataRoles,
+                    },
+                    replace: true,
+                  })
+                }
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>Tambah User</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Bulk Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white p-2 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              {selectedRows.size > 0 && (
+                <button
+                  disabled={isBulkDeleting}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-900/50 dark:bg-red-900/20 dark:hover:bg-red-900/40"
+                  onClick={handleBulkDelete}
+                >
+                  {isBulkDeleting ? (
+                    <span className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full" />
+                  ) : (
+                    <span className="flex items-center gap-1">Hapus {selectedRows.size} Data</span>
+                  )}
+                </button>
+              )}
             </div>
 
-            {/* Content Section */}
-            <div className="space-y-4 p-4 sm:space-y-5 sm:p-6">
-              {/* Search Bar with Modern Design */}
-              <div className="relative">
-                <div
-                  className={`absolute left-4 top-1/2 -translate-y-1/2 ${THEME_COLORS.text.muted}`}
-                >
-                  <Search className="w-5 h-5" />
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search className="h-4 w-4" />
                 </div>
                 <Input
                   value={filterInput}
-                  className={`w-full pl-11 pr-4 py-3 text-sm border ${THEME_COLORS.border.default} rounded-xl shadow-sm focus:ring-2 ${THEME_COLORS.focus.ring} focus:border-transparent transition-all ${THEME_COLORS.background.input} ${THEME_COLORS.text.primary}`}
-                  placeholder="Cari berdasarkan Kode, Nama, Daerah, Desa, Kelompok, atau Petugas..."
                   onChange={(e: any) => setFilterInput(e.target.value)}
-                  onKeyDown={(e: any) =>
-                    e.key === "Enter" && refetchListUsers()
-                  }
+                  onKeyDown={(e: any) => e.key === "Enter" && refetchListUsers()}
+                  placeholder="Cari Users..."
+                  className="w-full rounded-lg border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm text-gray-900 transition-all focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:bg-gray-900"
                 />
               </div>
-
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
-                {/* Bulk Delete Button - Only show when rows are selected */}
-                {selectedRows.size > 0 && (
-                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:mr-auto">
-                    <button
-                      disabled={isBulkDeleting}
-                      className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all hover:bg-red-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={handleBulkDelete}
-                    >
-                      {isBulkDeleting ? (
-                        <>
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                            />
-                          </svg>
-                          <span>Menghapus...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>🗑️</span>
-                          <span>Hapus {selectedRows.size} Data</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      disabled={isBulkDeleting}
-                      className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline disabled:opacity-50"
-                      onClick={() => setSelectedRows(new Set())}
-                    >
-                      Batalkan Pilihan
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
-                  {/* Filter & Reset Group */}
-                  <div
-                    className={`flex w-full items-center gap-2 sm:w-auto ${selectedRows.size > 0 ? "" : "sm:mr-auto"}`}
-                  >
-                    <button
-                      disabled={isRefetchingUsers}
-                      className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-4 ${THEME_COLORS.background.card} ${THEME_COLORS.border.default} ${THEME_COLORS.hover.item} ${THEME_COLORS.text.secondary}`}
-                      onClick={() => setOpenFilter(true)}
-                    >
-                      <Filter className="w-4 h-4" />
-                      <span>Filter Lanjutan</span>
-                    </button>
-                    <button
-                      disabled={isRefetchingUsers}
-                      className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 sm:flex-none sm:px-4"
-                      onClick={onResetFilter}
-                    >
-                      <RefreshCcw className="w-4 h-4" />
-                      <span>Reset</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Main Action Buttons */}
-                <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
-                  <button
-                    disabled={isRefetchingUsers}
-                    className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${THEME_COLORS.button.primary} ${THEME_COLORS.button.primaryText}`}
-                    onClick={() =>
-                      navigate("/auth/users/create", {
-                        state: {
-                          balikanLogin: dataLogin,
-                          fetchdataDearah: fetchDataDaerah,
-                          fetchDataRoles: fetchDataRoles,
-                        },
-                        replace: true,
-                      })
-                    }
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Tambah Data</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Info Badge - Optional: showing active filters count */}
-              {(status ||
-                statusNda ||
-                filterDaerah ||
-                filterDesa ||
-                filterKelompok) && (
-                <div
-                  className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs ${THEME_COLORS.text.secondary} bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800`}
+              <button
+                disabled={isRefetchingUsers}
+                className={`flex items-center justify-center gap-2 rounded-lg border p-2 text-sm font-medium transition-all ${
+                  hasActiveFilters
+                    ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                    : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
+                onClick={() => setOpenFilter(true)}
+                title="Filter Lanjutan"
+              >
+                <Filter className="h-4 w-4" />
+              </button>
+              {(hasActiveFilters || filterInput) && (
+                <button
+                  disabled={isRefetchingUsers}
+                  onClick={onResetFilter}
+                  className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 transition-all hover:bg-gray-50 hover:text-red-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                  title="Reset Filter"
                 >
-                  <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
-                    <span className="font-medium">Filter aktif diterapkan</span>
-                  </div>
-                  <button
-                    onClick={onResetFilter}
-                    className="sm:ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
-                  >
-                    Hapus Semua Filter
-                  </button>
-                </div>
+                  <RefreshCcw className={`h-4 w-4 transition-transform hover:rotate-180 ${isRefetchingUsers ? "animate-spin" : ""}`} />
+                </button>
               )}
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            {/* Initial loading */}
-            {loading && (
-              <div className="flex flex-col gap-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <ParticipantSkeleton key={i} />
-                ))}
-              </div>
-            )}
-
             {/* Data Table */}
             {!loading && (
               <DataTableAdvanced
@@ -892,6 +983,9 @@ const UsersPage = () => {
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}
+                alwaysCardView={true}
+                customCardRender={customUserCardRender}
+                gridCols="grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
                 getRowId={(item: any) => item.uuid}
                 disabled={isLoadingDetail || isResettingPassword || isUnbanning}
               />

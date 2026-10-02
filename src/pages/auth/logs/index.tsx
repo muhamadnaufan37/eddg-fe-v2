@@ -8,8 +8,8 @@ import { handleApiError } from "@/utils/errorUtils";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { BASE_TITLE } from "@/store/actions";
-import { DataTableAdvanced, Input, type Column } from "@/components/global";
-import { Logs, RefreshCcw, Search, X } from "lucide-react";
+import { DataTableAdvanced, Input, Dropdown, DropdownItem, type Column } from "@/components/global";
+import { Logs, RefreshCcw, Search, X, Activity, FileText, Clock, MoreVertical } from "lucide-react";
 import { fetchLogsData } from "@/services/logsServoces";
 import { THEME_COLORS } from "@/config/theme";
 import ParticipantSkeleton from "@/pages/digital-data/sensus/components/ParticipantSkeleton";
@@ -207,6 +207,108 @@ const LogsPage = () => {
 
   document.title = BASE_TITLE + "Logs Users";
 
+  const customLogCardRender = (
+    item: any,
+    actions: { label: string; value: string }[] | undefined,
+    isSelected: boolean,
+    onSelect: (checked: boolean) => void
+  ) => {
+    const type = item?.activity_type;
+    const map: Record<string, { text: string; color: any }> = {
+      view: { text: "View", color: "blue" },
+      update: { text: "Update", color: "yellow" },
+      delete: { text: "Delete", color: "red" },
+      create: { text: "Create", color: "green" },
+      login: { text: "Login", color: "green" },
+      logout: { text: "Logout", color: "gray" },
+    };
+    const badgeInfo = map[type?.toLowerCase()] || {
+      text: type || "Unknown",
+      color: "gray",
+    };
+    const rowActs = actions || rowActions;
+
+    return (
+      <div className={`relative h-full flex flex-col rounded-2xl border transition-all duration-300 bg-white dark:bg-gray-800 border-gray-100 hover:border-gray-200 hover:shadow-lg dark:border-gray-700 dark:hover:border-gray-600 ${isSelected ? "border-blue-500 bg-blue-50/30 dark:border-blue-400 dark:bg-blue-900/20 shadow-md ring-1 ring-blue-500 dark:ring-blue-400" : ""}`}>
+        <div className="flex flex-col flex-grow p-4">
+          <div className="flex items-start justify-between gap-3 pb-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="pt-1">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => onSelect(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-blue-400"
+                />
+              </div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                  {item?.user?.nama_lengkap || "Sistem"}
+                </h3>
+                <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">
+                  @{item?.user?.username || "sistem"}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0">
+              <StatusTableBadge label={badgeInfo.text} color={badgeInfo.color} />
+            </div>
+          </div>
+
+          <div className="mb-3 h-px w-full bg-gray-100 dark:bg-gray-700" />
+
+          <div className="grid grid-cols-1 gap-y-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-500 dark:text-gray-400">
+                <FileText className="h-3 w-3" />
+                <span>Deskripsi</span>
+              </div>
+              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 break-words line-clamp-2">
+                {item.description}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-3 dark:border-gray-800 dark:bg-gray-800/50 rounded-b-2xl">
+          <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400">
+            <Clock className="h-3 w-3" />
+            <span>{formatDateString(item.created_at)}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">
+              ID: {item.id}
+            </p>
+            <Dropdown
+              trigger={
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-all hover:bg-gray-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400 dark:focus:ring-blue-400 dark:focus:ring-offset-gray-900"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              }
+              align="right"
+            >
+              {rowActs.map((action, i) => (
+                <DropdownItem
+                  key={i}
+                  onClick={() => handleRowAction(item, action.value)}
+                  danger={action.value === "delete" || action.value === "banned"}
+                >
+                  {action.label}
+                </DropdownItem>
+              ))}
+            </Dropdown>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="relative md:h-full">
@@ -236,77 +338,37 @@ const LogsPage = () => {
         )}
 
         <div className="flex flex-col gap-5 h-full">
-          {/* Modern Header Card with Gradient */}
-          <div className="bg-linear-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-            {/* Header Section */}
-            <div className="bg-linear-to-r from-emerald-800 to-teal-700 px-4 py-4 dark:from-emerald-950 dark:to-teal-900 sm:px-6 sm:py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/15 backdrop-blur-sm">
-                    <Logs className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <h1 className="truncate font-bold text-xl text-white sm:text-2xl">
-                      Logs Aktivitas Users
-                    </h1>
-                    <p className="mt-0.5 text-xs text-emerald-100 sm:text-sm">
-                      Pantau aktivitas dan perubahan data pengguna
-                    </p>
-                  </div>
-                </div>
-              </div>
+          {/* Top Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Logs Aktivitas Users
+            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={isRefetchingLogs}
+                onClick={onResetFilter}
+                className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+              >
+                <RefreshCcw className={`h-4 w-4 ${isRefetchingLogs ? "animate-spin" : ""}`} />
+                <span>Refresh Data</span>
+              </button>
             </div>
+          </div>
 
-            {/* Content Section */}
-            <div className="rounded-lg bg-white p-4 dark:bg-gray-900 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                {/* --- LEFT: Search Bar --- */}
-                <div className="relative w-full sm:max-w-md">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <Search className="w-5 h-5" />
-                  </div>
-                  <Input
-                    value={filterInput}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFilterInput(e.target.value)
-                    }
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
-                      e.key === "Enter" && refetchListLogs()
-                    }
-                    placeholder="Cari Type Aktivitas, Model, Nama..."
-                    className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-                  />
-                  {/* Optional: Clear Button inside input if text exists */}
-                  {filterInput && (
-                    <button
-                      type="button"
-                      aria-label="Hapus pencarian"
-                      onClick={() => setFilterInput("")}
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
+          {/* Search & Bulk Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-4 rounded-xl border border-gray-100 bg-white p-2 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search className="h-4 w-4" />
                 </div>
-
-                {/* --- RIGHT: Actions --- */}
-                <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
-                  {/* Reset Button */}
-                  <button
-                    onClick={onResetFilter}
-                    disabled={isRefetchingLogs}
-                    className={`group flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all sm:w-auto ${
-                      selectedRows.size > 0
-                        ? `${THEME_COLORS.background.card} ${THEME_COLORS.border.default} ${THEME_COLORS.text.secondary} ${THEME_COLORS.hover.item}`
-                        : `${THEME_COLORS.background.card} border-dashed ${THEME_COLORS.border.input} ${THEME_COLORS.text.muted} hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/10`
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <RefreshCcw
-                      className={`w-4 h-4 transition-transform group-hover:rotate-180 ${isRefetchingLogs ? "animate-spin" : ""}`}
-                    />{" "}
-                    Reset
-                  </button>
-                </div>
+                <Input
+                  value={filterInput}
+                  onChange={(e: any) => setFilterInput(e.target.value)}
+                  onKeyDown={(e: any) => e.key === "Enter" && refetchListLogs()}
+                  placeholder="Cari Type Aktivitas, Model, Nama..."
+                  className="w-full rounded-lg border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm text-gray-900 transition-all focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:bg-gray-900"
+                />
               </div>
             </div>
           </div>
@@ -339,6 +401,9 @@ const LogsPage = () => {
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}
+                alwaysCardView={true}
+                customCardRender={customLogCardRender}
+                gridCols="grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
                 getRowId={(item: any) => item.id}
               />
             )}

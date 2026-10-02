@@ -22,6 +22,7 @@ const DetailSensus = () => {
     [],
   );
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const location = useLocation();
   const dataBalikan = location?.state;
   const navigate = useNavigate();
@@ -118,27 +119,35 @@ const DetailSensus = () => {
             {showModal && <ModalInvalidId />}
 
             <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-xl">
+              
               <div className="flex justify-between items-center p-3 border-b-2 border-gray-200 dark:border-gray-700 gap-2">
                 <div className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white">
                   Detail Sensus
                 </div>
-                {dataBalikan?.detailData?.status_sambung === 0 && (
-                  <div className="text-sm text-center font-normal leading-4 border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg p-2.5">
-                    Tidak Sambung
-                  </div>
-                )}
-                {dataBalikan?.detailData?.status_sambung === 1 && (
-                  <div className="text-sm text-center font-normal leading-4 border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg p-2.5">
-                    Sambung
-                  </div>
-                )}
-                {dataBalikan?.detailData?.status_sambung === 2 && (
-                  <div className="text-sm text-center font-normal leading-4 border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-lg p-2.5">
-                    Pindah Sambung
-                  </div>
-                )}
               </div>
-              <div className="flex flex-col gap-3 p-4">
+              
+              <div className="flex gap-2 p-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                {['Data Pribadi', 'Data Keluarga & Detail', 'Status & Wilayah Tambahan'].map((tab, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveTab(idx)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                      activeTab === idx 
+                        ? 'bg-blue-600 text-white shadow-md transform scale-[1.02]' 
+                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-4">
+                <div className={`flex flex-col gap-3 transition-opacity duration-300 ${activeTab === 0 ? 'block opacity-100' : 'hidden opacity-0'}`}>
+
+                
+                
                 <label className="text-gray-900 dark:text-white">
                   Foto Peserta
                 </label>
@@ -378,7 +387,11 @@ const DetailSensus = () => {
                       className="p-error"
                     />
                   </div>
+                </div>
 
+                </div><div className={`flex flex-col gap-3 transition-opacity duration-300 ${activeTab === 1 ? 'block opacity-100' : 'hidden opacity-0'}`}>
+
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
                   <div>
                     <label className="text-gray-900 dark:text-white">
                       Nama Bapak
@@ -646,6 +659,8 @@ const DetailSensus = () => {
                   </div>
                 </div>
 
+                </div><div className={`flex flex-col gap-3 transition-opacity duration-300 ${activeTab === 2 ? 'block opacity-100' : 'hidden opacity-0'}`}>
+
                 <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-3 gap-3">
                   <div>
                     <label className="text-gray-900 dark:text-white">
@@ -766,6 +781,8 @@ const DetailSensus = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
 
               <div className="flex justify-end items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
                 <Button

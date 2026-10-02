@@ -11,6 +11,7 @@ import {
   setLocalStorage,
 } from "../services/localStorageService";
 import { AUTH_UNAUTHORIZED_EVENT, axiosServices } from "../services/axios";
+import Swal from "sweetalert2";
 import { toast } from "sonner";
 
 type TData = any;
@@ -36,9 +37,9 @@ const initialState = {
 const AuthContext = createContext<TAuthContext>({
   ...initialState,
   isNdaPending: false,
-  login: async () => {},
-  logout: () => {},
-  setNdaAccepted: () => {},
+  login: async () => { },
+  logout: () => { },
+  setNdaAccepted: () => { },
 });
 
 const verifyToken = (serviceToken: any, expiresAt?: string): boolean => {
@@ -222,15 +223,30 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const handleUnauthorized = () => {
+    const handleUnauthorized = async (e: Event) => {
       const stored = getLocalStorage("userData");
       if (!stored?.token) return;
 
+      const detail = (e as CustomEvent)?.detail;
+      const serverMessage: string | null = detail?.message || null;
+
+      await Swal.fire({
+        title: serverMessage ? "Anda Dikeluarkan" : "Sesi Berakhir",
+        html: serverMessage
+          ? `<p style="color:#374151;font-size:14px;">${serverMessage}</p>`
+          : `<p style="color:#374151;font-size:14px;">Sesi Anda telah berakhir. Silakan login kembali.</p>`,
+        icon: serverMessage ? "error" : "warning",
+        confirmButtonText: "OK, Mengerti",
+        confirmButtonColor: "#2563eb",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        customClass: {
+          container: "!z-[99999]",
+        },
+      });
+
       setSession(null);
       dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
-      toast.warning("Sesi Berakhir", {
-        description: "Sesi Anda telah berakhir. Silakan login kembali.",
-      });
     };
 
     window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);

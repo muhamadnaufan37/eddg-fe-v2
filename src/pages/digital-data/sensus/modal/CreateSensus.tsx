@@ -294,22 +294,6 @@ const CreateSensus = () => {
                 </h1>
                 <div className="w-24" /> {/* Spacer for alignment */}
               </div>
-              <label className="text-gray-900 dark:text-white">
-                ID Card RFID{" "}
-                <span className="text-gray-500 text-xs">(opsional)</span>
-              </label>
-              <Field
-                as={Input}
-                type="text"
-                id="id_card"
-                name="id_card"
-                placeholder="Masukkan kode kartu RFID"
-              />
-              <ErrorMessage
-                name="id_card"
-                component="div"
-                className="text-red-600 text-sm"
-              />
             </div>
 
             <div>
@@ -344,6 +328,28 @@ const CreateSensus = () => {
                     Data Pribadi
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* ID Card */}
+                    <div className="md:col-span-2">
+                      <Label htmlFor="id_card">
+                        ID Card RFID <span className="text-gray-500 text-xs font-normal ml-1">(Opsional)</span>
+                      </Label>
+                      <Field
+                        as={Input}
+                        type="text"
+                        id="id_card"
+                        name="id_card"
+                        placeholder="Scan atau masukkan kode kartu RFID"
+                        className={cn(
+                          errors.id_card && touched.id_card && "border-red-500"
+                        )}
+                      />
+                      <ErrorMessage
+                        name="id_card"
+                        component="div"
+                        className="text-xs text-red-500 mt-1"
+                      />
+                    </div>
+
                     <div>
                       <Label htmlFor="nama_lengkap">
                         Nama Lengkap <span className="text-red-500">*</span>

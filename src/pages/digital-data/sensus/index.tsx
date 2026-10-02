@@ -41,6 +41,8 @@ import { id } from "date-fns/locale";
 import { BASE_TITLE } from "@/store/actions";
 import { toast } from "sonner";
 import { DataTableAdvanced, Input, type Column } from "@/components/global";
+import { getActionIcon, getActionButtonClass } from "@/components/global/DataTableAdvanced";
+import usePermission from "@/hooks/usePermission";
 import {
   ChartLine,
   Copy,
@@ -52,6 +54,7 @@ import {
   RefreshCcw,
   Search,
 } from "lucide-react";
+import { THEME_COLORS } from "@/config/theme";
 
 interface Option {
   value: string | number;
@@ -603,11 +606,10 @@ const SensusPage = () => {
 
         return (
           <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-300 ${
-              isAtlet
-                ? "border-green-300 bg-green-100 text-green-800 animate-pulse dark:border-green-700 dark:bg-green-900/40 dark:text-green-300"
-                : "border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-            }`}
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-300 ${isAtlet
+              ? "border-green-300 bg-green-100 text-green-800 animate-pulse dark:border-green-700 dark:bg-green-900/40 dark:text-green-300"
+              : "border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              }`}
           >
             {isAtlet ? "Atlet Aktif" : "Non Atlet"}
           </span>
@@ -638,14 +640,177 @@ const SensusPage = () => {
     },
   ];
 
-  // Row actions (menu 3 titik)
-  const rowActions = [
-    { label: "Detail", value: "detail" },
-    { label: "Ubah", value: "edit" },
-    { label: "QR Code", value: "qrcode" },
-    { label: "Cek Presensi", value: "presensi" },
-    { label: "Hapus", value: "delete" },
-  ];
+  const { isViewOnly } = usePermission();
+
+  // Row actions (menu 3 titik) — pengurus hanya bisa view
+  const rowActions = isViewOnly
+    ? [
+        { label: "Detail", value: "detail" },
+      ]
+    : [
+        { label: "Detail", value: "detail" },
+        { label: "Ubah", value: "edit" },
+        { label: "QR Code", value: "qrcode" },
+        { label: "Cek Presensi", value: "presensi" },
+        { label: "Hapus", value: "delete" },
+      ];
+
+  // Custom Card Render for Sensus to match UI mockup
+  const customSensusCardRender = (
+    item: any,
+    actions: Array<{ label: string; value: string }> | undefined,
+    isSelected: boolean,
+    onSelect: (checked: boolean) => void
+  ) => {
+    const initials = item.nama_lengkap
+      ? item.nama_lengkap
+        .split(" ")
+        .map((n: string) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+      : "??";
+
+    const isAtlet = isAtletAsadActive(item.status_atlet_asad);
+    const genderData = resolveStatus(GENDER_MAP, item.jenis_kelamin);
+    const nikahData = resolveStatus(STATUS_PERNIKAHAN_MAP, item.status_pernikahan);
+    const sambungData = resolveStatus(STATUS_SAMBUNG_MAP, item.status_sambung);
+
+    return (
+      <article
+        key={item.kode_cari_data}
+        className={`relative flex flex-col rounded-xl border p-4 shadow-sm transition-all duration-300 ${isAtlet
+            ? "bg-gradient-to-br from-green-50/60 via-white to-red-50/60 dark:from-green-900/10 dark:via-gray-900 dark:to-red-900/10 border-green-200/80 dark:border-green-800/50 shadow-[0_0_15px_-3px_rgba(34,197,94,0.15)] dark:shadow-[0_0_15px_-3px_rgba(34,197,94,0.05)] ring-1 ring-green-500/20 dark:ring-green-500/10"
+            : "bg-white dark:bg-gray-900 border-gray-100 hover:border-gray-200 hover:shadow-md dark:border-gray-800"
+          } ${isSelected
+            ? "!border-blue-500 ring-2 ring-blue-500 dark:!border-blue-400 dark:ring-blue-400"
+            : ""
+          }`}
+      >
+        {/* Glow effect for Atlet */}
+        {isAtlet && (
+          <>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-red-500 rounded-t-xl" />
+            <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 shadow-sm border-2 border-white dark:border-gray-900"></span>
+            </div>
+          </>
+        )}
+        {/* Top Section */}
+        <div className="flex items-start justify-between gap-3 pb-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="pt-1">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => onSelect(e.target.checked)}
+                className="h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-blue-400"
+              />
+            </div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                {item.nama_lengkap || "-"}
+              </h3>
+              <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">
+                {item.nm_daerah} {item.nm_desa ? `• ${item.nm_desa}` : ""}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="mb-3 h-px w-full bg-gray-100 dark:bg-gray-800" />
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+          {/* Kode Data */}
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Kode Data</p>
+            <div className="mt-1 flex items-center gap-1">
+              <span className="truncate text-xs font-medium text-gray-900 dark:text-gray-100">
+                {item.kode_cari_data}
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleCopyKode(item.kode_cari_data); }}
+                className="text-gray-400 hover:text-blue-500"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Umur */}
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Umur</p>
+            <p className="mt-1 truncate text-xs font-medium text-gray-900 dark:text-gray-100">
+              {item.umur} Tahun
+            </p>
+          </div>
+
+          {/* Gender / Nikah */}
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Gender / Nikah</p>
+            <div className="mt-1 flex flex-wrap gap-1">
+              <StatusTableBadge label={genderData.text} color={genderData.color} />
+              <StatusTableBadge label={nikahData.text} color={nikahData.color} />
+            </div>
+          </div>
+
+          {/* Status Sambung */}
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Status Sambung</p>
+            <div className="mt-1">
+              <StatusTableBadge label={sambungData.text} color={sambungData.color} />
+            </div>
+          </div>
+
+          {/* Status Atlet */}
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Status Atlet</p>
+            <div className="mt-1">
+              <span
+                className={`inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[10px] font-medium transition-all ${isAtlet
+                    ? "border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 shadow-sm shadow-emerald-100 dark:shadow-emerald-900/20"
+                    : "border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  }`}
+              >
+                {isAtlet && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
+                {isAtlet ? "Atlet Aktif" : "Non Atlet"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons at the Bottom */}
+        {actions && actions.length > 0 && (
+          <>
+            <div className="mt-4 mb-3 h-px w-full bg-gray-100 dark:bg-gray-800" />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {actions.map((action) => {
+                const ActionIcon = getActionIcon(action.value);
+                return (
+                  <button
+                    key={action.value}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleRowAction(item, action.value); }}
+                    className={`${getActionButtonClass(action.value)} !h-auto !w-auto !rounded-lg flex items-center justify-center gap-1.5 px-2.5 py-1.5 hover:shadow-sm`}
+                    title={action.label}
+                  >
+                    <ActionIcon className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">{action.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </article>
+    );
+  };
 
   const handleRowAction = (item: any, action: string) => {
     switch (action) {
@@ -697,183 +862,169 @@ const SensusPage = () => {
           </div>
         )}
 
-        <div className="flex flex-col gap-5 h-full">
-          {/* Modern Header Card with Gradient */}
-          <div className="bg-linear-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-            {/* Header Section */}
-            <div className="bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 px-4 sm:px-6 py-4 sm:py-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
-                  <Database className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="font-bold text-lg sm:text-2xl text-white tracking-tight truncate">
-                    Data Digital Generus
-                  </h1>
-                  <p className="text-blue-100 text-xs sm:text-sm mt-0.5 line-clamp-1">
-                    Kelola dan pantau data digital generus dengan mudah
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Section */}
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-              {/* Search Bar with Modern Design */}
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                  <Search className="w-5 h-5" />
-                </div>
-                <Input
-                  value={filterInput}
-                  className="w-full pl-11 pr-4 py-3 text-sm border-gray-200 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                  placeholder="Cari berdasarkan Kode, Nama, Daerah, Desa, Kelompok, atau Petugas..."
-                  onChange={(e: any) => setFilterInput(e.target.value)}
-                  onKeyDown={(e: any) =>
-                    e.key === "Enter" && refetchListSensus()
+        <div className="flex flex-col gap-6 h-full">
+          {/* Top Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Sensus Data
+            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={isRefetchingSensus}
+                onClick={loadDataRincian}
+                className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+              >
+                <File className="h-4 w-4" />
+                <span>Pelaporan</span>
+              </button>
+              {!isViewOnly && (
+                <button
+                  disabled={isRefetchingSensus}
+                  onClick={() =>
+                    navigate("/sensus/create", {
+                      state: {
+                        balikanLogin: dataLogin,
+                        fetchdataDearah: fetchDataDaerah,
+                        dataPekerjaan: fetchDataPekerjaan,
+                      },
+                      replace: true,
+                    })
                   }
-                />
-              </div>
-
-              {/* Action Buttons with Better Layout */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {/* Bulk Delete Button - Only show when rows are selected */}
-                {selectedRows.size > 0 && (
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:mr-auto">
-                    <button
-                      disabled={isBulkDeleting}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleBulkDelete}
-                    >
-                      {isBulkDeleting ? (
-                        <>
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                            />
-                          </svg>
-                          <span>Menghapus...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>🗑️</span>
-                          <span>Hapus {selectedRows.size} Data</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      disabled={isBulkDeleting}
-                      className="text-xs text-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline disabled:opacity-50 py-1"
-                      onClick={() => setSelectedRows(new Set())}
-                    >
-                      Batalkan Pilihan
-                    </button>
-                  </div>
-                )}
-
-                {/* Filter & Reset Group */}
-                <div
-                  className={`flex items-center gap-2 w-full sm:w-auto ${selectedRows.size > 0 ? "" : "sm:mr-auto"}`}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-emerald-700"
                 >
-                  <button
-                    disabled={isRefetchingSensus}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => setOpenFilter(true)}
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span className="hidden sm:inline">Filter Lanjutan</span>
-                    <span className="sm:hidden">Filter</span>
-                  </button>
-                  <button
-                    disabled={isRefetchingSensus}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={onResetFilter}
-                  >
-                    <RefreshCcw className="w-4 h-4" />
-                    <span>Reset</span>
-                  </button>
-                </div>
-
-                {/* Main Action Buttons */}
-                <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
-                  <button
-                    disabled={isRefetchingSensus}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={loadDataRincian}
-                  >
-                    <File className="w-4 h-4" />
-                    <span className="hidden sm:inline">Pelaporan</span>
-                    <span className="sm:hidden">Laporan</span>
-                  </button>
-                  <button
-                    disabled={isRefetchingSensus}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={loadStatistikGenerus}
-                  >
-                    <ChartLine className="w-4 h-4" />
-                    <span>Statistik</span>
-                  </button>
-                  <button
-                    disabled={isRefetchingSensus}
-                    className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() =>
-                      navigate("/sensus/create", {
-                        state: {
-                          balikanLogin: dataLogin,
-                          fetchdataDearah: fetchDataDaerah,
-                          dataPekerjaan: fetchDataPekerjaan,
-                        },
-                        replace: true,
-                      })
-                    }
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Tambah Data</span>
-                    <span className="sm:hidden">Tambah</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Info Badge - Optional: showing active filters count */}
-              {(statusSambung ||
-                statusPernikahan ||
-                statusAtletAsad ||
-                statusGender ||
-                filterDaerah ||
-                filterDesa ||
-                filterKelompok ||
-                rangeUmurMin ||
-                rangeUmurMax) && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800">
-                  <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
-                    <span className="font-medium">Filter aktif diterapkan</span>
-                  </div>
-                  <button
-                    onClick={onResetFilter}
-                    className="sm:ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
-                  >
-                    Hapus Semua Filter
-                  </button>
-                </div>
+                  <PlusCircle className="h-4 w-4" />
+                  <span>Tambah Data</span>
+                </button>
               )}
             </div>
           </div>
+
+          {/* Statistic Cards Computed from dataListSensus */}
+          {/* {(() => {
+            const listData = dataListSensus?.data || [];
+            const totalSensus = dataListSensus?.meta?.total || 0;
+            const aktif = listData.filter((item: any) => String(item.status_sambung) === "1").length;
+            const lakiLaki = listData.filter((item: any) => String(item.jenis_kelamin).toUpperCase() === "LAKI-LAKI").length;
+            const perempuan = listData.filter((item: any) => String(item.jenis_kelamin).toUpperCase() === "PEREMPUAN").length;
+
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                    <Database className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Data</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{totalSensus}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                    <ChartLine className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Aktif (Hal. Ini)</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{aktif}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                    <ChartLine className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Laki-Laki (Hal. Ini)</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{lakiLaki}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-50 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400">
+                    <ChartLine className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Perempuan (Hal. Ini)</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{perempuan}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()} */}
+
+          {/* Search & Bulk Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white p-2 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <button
+                disabled={isRefetchingSensus}
+                onClick={loadStatistikGenerus}
+                className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <ChartLine className="h-4 w-4" />
+                <span className="hidden sm:inline">Statistik</span>
+              </button>
+
+              {selectedRows.size > 0 && !isViewOnly && (
+                <button
+                  disabled={isBulkDeleting}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-900/50 dark:bg-red-900/20 dark:hover:bg-red-900/40"
+                  onClick={handleBulkDelete}
+                >
+                  {isBulkDeleting ? (
+                    <span className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full" />
+                  ) : (
+                    <span className="flex items-center gap-1">Hapus {selectedRows.size} Data</span>
+                  )}
+                </button>
+              )}
+            </div>
+
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search className="h-4 w-4" />
+                </div>
+                <Input
+                  value={filterInput}
+                  onChange={(e: any) => setFilterInput(e.target.value)}
+                  onKeyDown={(e: any) => e.key === "Enter" && refetchListSensus()}
+                  placeholder="Cari Sensus..."
+                  className="w-full rounded-lg border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm text-gray-900 transition-all focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:bg-gray-900"
+                />
+              </div>
+              <button
+                disabled={isRefetchingSensus}
+                className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white p-2 text-gray-700 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                onClick={() => setOpenFilter(true)}
+                title="Filter Lanjutan"
+              >
+                <Filter className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+
+
+          {/* Info Badge - Optional: showing active filters count */}
+          {(statusSambung ||
+            statusPernikahan ||
+            statusAtletAsad ||
+            statusGender ||
+            filterDaerah ||
+            filterDesa ||
+            filterKelompok ||
+            rangeUmurMin ||
+            rangeUmurMax) && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 sm:py-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
+                  <span className="font-medium">Filter aktif diterapkan</span>
+                </div>
+                <button
+                  onClick={onResetFilter}
+                  className="sm:ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
+                >
+                  Hapus Semua Filter
+                </button>
+              </div>
+            )}
 
           <div className="flex flex-col gap-2">
             {/* Initial loading */}
@@ -895,6 +1046,9 @@ const SensusPage = () => {
                 rowActions={rowActions}
                 onRowAction={handleRowAction}
                 selectable={true}
+                alwaysCardView={true}
+                gridCols="grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+                customCardRender={customSensusCardRender}
                 getRowId={(item: any) => item.kode_cari_data}
               />
             )}

@@ -36,6 +36,14 @@ export interface DataTableAdvancedProps<T> {
   mobileCardView?: boolean;
   mobileCardTitleKey?: string;
   mobileCardColumns?: string[];
+  alwaysCardView?: boolean;
+  gridCols?: string;
+  customCardRender?: (
+    item: T,
+    actions: Array<{ label: string; value: string }> | undefined,
+    isSelected: boolean,
+    onSelect: (checked: boolean) => void
+  ) => React.ReactNode;
 
   // Row actions
   onRowAction?: (item: T, action: string) => void;
@@ -61,6 +69,9 @@ export function DataTableAdvanced<T extends Record<string, any>>({
   mobileCardView = false,
   mobileCardTitleKey,
   mobileCardColumns,
+  alwaysCardView = false,
+  gridCols = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+  customCardRender,
   onRowAction,
   rowActions,
   selectable = true,
@@ -143,74 +154,14 @@ export function DataTableAdvanced<T extends Record<string, any>>({
     ? columns.filter((column) => mobileCardColumns.includes(column.key))
     : columns.filter((column) => !column.mobileHidden);
 
-  const getActionIcon = (actionValue: string) => {
-    switch (actionValue) {
-      case "detail":
-        return Eye;
-      case "edit":
-      case "update":
-        return Pencil;
-      case "qrcode":
-        return QrCode;
-      case "presensi":
-        return ClipboardCheck;
-      case "list":
-        return ClipboardList;
-      case "reply":
-        return Reply;
-      case "reset":
-        return KeyRound;
-      case "reset_device":
-        return RotateCcw;
-      case "banned":
-        return Ban;
-      case "unbanned":
-        return ShieldCheck;
-      case "delete":
-      case "hapus":
-        return Trash2;
-      default:
-        return MoreVertical;
-    }
-  };
-
-  const getActionButtonClass = (actionValue: string) => {
-    const baseClass =
-      "inline-flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900";
-    switch (actionValue) {
-      case "delete":
-      case "hapus":
-        return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
-      case "banned":
-        return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
-      case "unbanned":
-        return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
-      case "edit":
-      case "update":
-        return `${baseClass} border-amber-200 bg-amber-50 text-amber-600 hover:border-amber-300 hover:bg-amber-100 focus:ring-amber-500 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/35`;
-      case "qrcode":
-        return `${baseClass} border-violet-200 bg-violet-50 text-violet-600 hover:border-violet-300 hover:bg-violet-100 focus:ring-violet-500 dark:border-violet-900/60 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/35`;
-      case "presensi":
-      case "list":
-        return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
-      case "reset":
-        return `${baseClass} border-indigo-200 bg-indigo-50 text-indigo-600 hover:border-indigo-300 hover:bg-indigo-100 focus:ring-indigo-500 dark:border-indigo-900/60 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/35`;
-      case "reset_device":
-        return `${baseClass} border-sky-200 bg-sky-50 text-sky-600 hover:border-sky-300 hover:bg-sky-100 focus:ring-sky-500 dark:border-sky-900/60 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/35`;
-      case "reply":
-        return `${baseClass} border-cyan-200 bg-cyan-50 text-cyan-600 hover:border-cyan-300 hover:bg-cyan-100 focus:ring-cyan-500 dark:border-cyan-900/60 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-900/35`;
-      default:
-        return `${baseClass} border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700`;
-    }
-  };
-
   return (
     <>
-      {/* Table */}
-      <div
-        className={`${mobileCardView ? "hidden lg:block" : ""} w-full max-w-full ${maxHeightClassName} overflow-auto rounded-2xl border border-gray-200 dark:border-gray-700`}
-      >
-        <div className="min-w-max">
+      {/* Table View */}
+      {!alwaysCardView && (
+        <div
+          className={`${mobileCardView ? "hidden lg:block" : ""} w-full max-w-full ${maxHeightClassName} overflow-auto rounded-2xl border border-gray-200 dark:border-gray-700`}
+        >
+          <div className="min-w-max">
           <table className={`${tableMinWidthClass} w-full table-auto`}>
             <thead className="sticky top-0 z-20 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
               <tr>
@@ -373,9 +324,11 @@ export function DataTableAdvanced<T extends Record<string, any>>({
           </div>
         )}
       </div>
+      )}
 
-      {mobileCardView && (
-        <div className="space-y-3 lg:hidden">
+      {/* Card View */}
+      {(mobileCardView || alwaysCardView) && (
+        <div className={`gap-4 ${alwaysCardView ? `grid ${gridCols}` : "space-y-3 lg:hidden"}`}>
           {sortedData.map((item, index) => {
             const rowId = getRowId(item);
             const actions =
@@ -384,13 +337,22 @@ export function DataTableAdvanced<T extends Record<string, any>>({
               ? mobileTitleColumn.render(item, index)
               : item[mobileTitleColumn?.key || ""];
 
+            if (customCardRender) {
+              return customCardRender(
+                item,
+                actions,
+                selectedRows.has(rowId),
+                (checked) => handleSelectRow(rowId, checked)
+              );
+            }
+
             return (
               <article
                 key={rowId}
-                className={`min-w-0 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900 ${
+                className={`min-w-0 rounded-xl border bg-white p-4 transition-all duration-200 dark:bg-gray-900 ${
                   selectedRows.has(rowId)
-                    ? "ring-1 ring-blue-500 dark:ring-blue-400"
-                    : ""
+                    ? "border-blue-500 ring-1 ring-blue-500 dark:border-blue-400 dark:ring-blue-400"
+                    : "border-gray-200 hover:shadow-md dark:border-gray-800"
                 }`}
               >
                 <div className="flex min-w-0 items-start gap-3">
@@ -419,7 +381,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                           <span className="text-gray-500 dark:text-gray-400">
                             {column.header}
                           </span>
-                          <span className="min-w-0 wrap-break-word text-gray-800 dark:text-gray-200">
+                          <span className="min-w-0 wrap-break-word font-medium text-gray-800 dark:text-gray-200">
                             {column.render
                               ? column.render(item, index)
                               : (item[column.key] ?? "-")}
@@ -429,7 +391,7 @@ export function DataTableAdvanced<T extends Record<string, any>>({
                   </div>
                 </div>
                 {actions && actions.length > 0 && (
-                  <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                  <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
                     {actions.map((action) => {
                       const ActionIcon = getActionIcon(action.value);
                       return (
@@ -461,6 +423,67 @@ export function DataTableAdvanced<T extends Record<string, any>>({
     </>
   );
 }
+
+export const getActionIcon = (actionValue: string) => {
+  switch (actionValue) {
+    case "detail":
+      return Eye;
+    case "edit":
+    case "update":
+      return Pencil;
+    case "qrcode":
+      return QrCode;
+    case "presensi":
+      return ClipboardCheck;
+    case "list":
+      return ClipboardList;
+    case "reply":
+      return Reply;
+    case "reset":
+      return KeyRound;
+    case "reset_device":
+      return RotateCcw;
+    case "banned":
+      return Ban;
+    case "unbanned":
+      return ShieldCheck;
+    case "delete":
+    case "hapus":
+      return Trash2;
+    default:
+      return MoreVertical;
+  }
+};
+
+export const getActionButtonClass = (actionValue: string) => {
+  const baseClass =
+    "inline-flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900";
+  switch (actionValue) {
+    case "delete":
+    case "hapus":
+      return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
+    case "banned":
+      return `${baseClass} border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus:ring-red-500 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/35`;
+    case "unbanned":
+      return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
+    case "edit":
+    case "update":
+      return `${baseClass} border-amber-200 bg-amber-50 text-amber-600 hover:border-amber-300 hover:bg-amber-100 focus:ring-amber-500 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/35`;
+    case "qrcode":
+      return `${baseClass} border-violet-200 bg-violet-50 text-violet-600 hover:border-violet-300 hover:bg-violet-100 focus:ring-violet-500 dark:border-violet-900/60 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/35`;
+    case "presensi":
+    case "list":
+      return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;
+    case "reset":
+      return `${baseClass} border-indigo-200 bg-indigo-50 text-indigo-600 hover:border-indigo-300 hover:bg-indigo-100 focus:ring-indigo-500 dark:border-indigo-900/60 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/35`;
+    case "reset_device":
+      return `${baseClass} border-sky-200 bg-sky-50 text-sky-600 hover:border-sky-300 hover:bg-sky-100 focus:ring-sky-500 dark:border-sky-900/60 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/35`;
+    case "reply":
+      return `${baseClass} border-cyan-200 bg-cyan-50 text-cyan-600 hover:border-cyan-300 hover:bg-cyan-100 focus:ring-cyan-500 dark:border-cyan-900/60 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-900/35`;
+    default:
+      return `${baseClass} border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700`;
+  }
+};
 
 // Status Badge Component (untuk kolom status seperti di gambar)
 export const StatusBadge: React.FC<{

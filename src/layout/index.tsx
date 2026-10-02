@@ -119,13 +119,11 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
         {hasSubmenu ? (
           <button
             onClick={() => toggleMenu(item.id || "")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
-              depth > 0 ? "pl-8" : ""
-            } ${
-              isExpanded
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${depth > 0 ? "pl-8" : ""
+              } ${isExpanded
                 ? `${THEME_COLORS.active.background} ${THEME_COLORS.active.text} shadow-lg font-semibold`
                 : `${THEME_COLORS.text.secondary} ${THEME_COLORS.hover.item}`
-            }`}
+              }`}
           >
             {typeof item.icon === "string" ? (
               item.icon.endsWith(".svg") || item.icon.endsWith(".png") ? (
@@ -161,13 +159,11 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
           <a
             href={item.link}
             onClick={handleCloseSidebar}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
-              depth > 0 ? "pl-8" : ""
-            } ${
-              isActive
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${depth > 0 ? "pl-8" : ""
+              } ${isActive
                 ? `${THEME_COLORS.active.background} ${THEME_COLORS.active.text} shadow-lg font-semibold`
                 : `${THEME_COLORS.text.secondary} ${THEME_COLORS.hover.item}`
-            }`}
+              }`}
           >
             {typeof item.icon === "string" ? (
               item.icon.endsWith(".svg") || item.icon.endsWith(".png") ? (
@@ -325,19 +321,17 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
         <>
           {/* Overlay */}
           <div
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-60 transition-all duration-300 ease-in-out ${
-              isOpening && !isClosing ? "opacity-100" : "opacity-0"
-            }`}
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-60 transition-all duration-300 ease-in-out ${isOpening && !isClosing ? "opacity-100" : "opacity-0"
+              }`}
             onClick={handleCloseSidebar}
           />
 
           {/* Modal Sidebar */}
           <div
-            className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${
-              isOpening && !isClosing
+            className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${isOpening && !isClosing
                 ? "translate-x-0 opacity-100"
                 : "-translate-x-full opacity-0"
-            }`}
+              }`}
           >
             {/* Header dengan close button */}
             <div className="px-4 shrink-0">
@@ -352,7 +346,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                   <span
                     className={`font-bold text-xl ${THEME_COLORS.text.primary}`}
                   >
-                    Digitaldatagenerus
+                    Digital Data Generus
                   </span>
                 </a>
                 <button
@@ -405,9 +399,8 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
       {/* HEADER */}
       {isBrowser && (
         <div
-          className={`fixed left-0 right-0 top-0 h-14 ${THEME_COLORS.background.card} shadow-md z-40 transition-colors duration-300 border-b ${THEME_COLORS.border.default} ${
-            fullScreen ? "" : ""
-          }`}
+          className={`fixed left-0 right-0 top-0 h-14 ${THEME_COLORS.background.card} shadow-md z-40 transition-colors duration-300 border-b ${THEME_COLORS.border.default} ${fullScreen ? "" : ""
+            }`}
         >
           <div className="h-full flex items-center justify-between px-4">
             {/* Left side - Menu button */}
@@ -505,17 +498,15 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
           {isSidebarModalOpen && (
             <>
               <div
-                className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-60 transition-all duration-300 ease-in-out ${
-                  isOpening && !isClosing ? "opacity-100" : "opacity-0"
-                }`}
+                className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-60 transition-all duration-300 ease-in-out ${isOpening && !isClosing ? "opacity-100" : "opacity-0"
+                  }`}
                 onClick={handleCloseSidebar}
               />
               <div
-                className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${
-                  isOpening && !isClosing
+                className={`fixed top-0 left-0 h-screen w-80 ${THEME_COLORS.background.primary} shadow-2xl flex flex-col py-6 z-70 transition-all duration-300 ease-in-out border-r ${THEME_COLORS.border.default} rounded-r-4xl ${isOpening && !isClosing
                     ? "translate-x-0 opacity-100"
                     : "-translate-x-full opacity-0"
-                }`}
+                  }`}
               >
                 <div className="px-4 shrink-0">
                   <div className="flex items-center justify-between mb-6">
@@ -524,7 +515,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                       <span
                         className={`font-bold text-xl ${THEME_COLORS.text.primary}`}
                       >
-                        Digitaldatagenerus
+                        Digital Data Generus
                       </span>
                     </div>
                     <button
@@ -577,9 +568,8 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
       {/* MAIN CONTENT */}
       {isBrowser && (
         <div
-          className={`min-h-dvh overflow-auto ${THEME_COLORS.background.primary} relative transition-all duration-300 ${
-            fullScreen ? "pt-0" : "pt-20 p-6"
-          }`}
+          className={`min-h-dvh overflow-auto ${THEME_COLORS.background.primary} relative transition-all duration-300 ${fullScreen ? "pt-0" : "pt-20 p-6"
+            }`}
         >
           {children}
         </div>

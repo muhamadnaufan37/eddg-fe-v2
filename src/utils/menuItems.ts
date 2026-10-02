@@ -3,12 +3,12 @@ export const menuItems = [
     id: "beranda",
     title: "Beranda",
     icon: "Home",
-    role: ["admin", "ptgs-sensus", "admin-data-center"],
+    role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
     link: "/",
   },
   {
     id: "auth",
-    title: "Manahemen",
+    title: "Manajemen",
     icon: "KeyRound",
     role: ["admin"],
     submenu: [
@@ -39,13 +39,13 @@ export const menuItems = [
     id: "digitaldata",
     title: "Digital Data",
     icon: "MonitorCog",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
     submenu: [
       {
         id: "digitaldata-sensus",
         title: "Sensus",
         icon: "Users",
-        role: ["admin", "ptgs-sensus", "admin-data-center"],
+        role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
         link: "/sensus",
       },
       {
@@ -59,37 +59,34 @@ export const menuItems = [
         id: "digitaldata-laporanbulanan",
         title: "Laporan Bulanan",
         icon: "Repeat2",
-        role: ["admin", "ptgs-sensus"],
+        role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
         submenu: [
           {
             id: "digitaldata-laporanbulanan-report",
             title: "Report",
             icon: "File",
-            role: ["admin", "ptgs-sensus"],
+            role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
             link: "/laporan-bulanan",
           },
-
           {
             id: "digitaldata-laporanbulanan-check",
             title: "Laporan Bulanan Check",
             icon: "CheckCheckIcon",
-            role: ["admin"],
+            role: ["admin", "admin-data-center"],
             link: "/laporan-bulanan/check",
           },
-
           {
             id: "digitaldata-laporanbulanan-monitoring-users",
             title: "Monitoring User",
             icon: "Users",
-            role: ["admin"],
+            role: ["admin", "admin-data-center"],
             link: "/laporan-bulanan/monitoring-users",
           },
-
           {
             id: "digitaldata-laporanbulanan-warnings",
             title: "Warnings",
             icon: "AlertTriangle",
-            role: ["admin"],
+            role: ["admin", "admin-data-center"],
             link: "/laporan-bulanan/warnings",
           },
         ],
@@ -100,13 +97,13 @@ export const menuItems = [
     id: "master-data",
     title: "Master Data",
     icon: "Container",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
     submenu: [
       {
         id: "masterdata-pindahsambung",
         title: "Pindah Sambung",
         icon: "Route",
-        role: ["admin", "ptgs-sensus"],
+        role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
         link: "/master-data/pindah-sambung",
       },
       {
@@ -151,14 +148,14 @@ export const menuItems = [
     id: "presensi",
     title: "Presensi",
     icon: "ScanQrCode",
-    role: ["admin", "ptgs-sensus"],
+    role: ["admin", "ptgs-sensus", "admin-data-center", "pengurus"],
     link: "/presensi",
   },
   {
     id: "pengaduan",
     title: "Pengaduan",
     icon: "MailWarning",
-    role: ["admin"],
+    role: ["admin", "admin-data-center"],
     link: "/pengaduan",
   },
 ];
