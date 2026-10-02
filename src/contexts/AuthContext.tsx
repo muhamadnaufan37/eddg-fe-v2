@@ -12,6 +12,7 @@ import {
   setLocalStorage,
 } from "../services/localStorageService";
 import {
+  AUTH_SESSION_UPDATED_EVENT,
   AUTH_UNAUTHORIZED_EVENT,
   axiosServices,
   getAccessToken,
@@ -203,36 +204,33 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        if (verifyToken(stored.expires_at)) {
-          const currentToken = getAccessToken();
+        const currentToken = getAccessToken();
+        if (currentToken && verifyToken(stored.expires_at)) {
+          dispatch({
+            type: ACCOUNT_INITIALISE,
+            payload: {
+              isLoggedIn: true,
+              user: stored.user,
+            },
+          });
+          return;
+        }
 
-          if (currentToken) {
+        try {
+          const refreshedToken = await refreshAccessToken();
+
+          if (refreshedToken) {
             dispatch({
               type: ACCOUNT_INITIALISE,
               payload: {
                 isLoggedIn: true,
-                user: stored.user,
+                user: getLocalStorage("userData")?.user || stored.user,
               },
             });
             return;
           }
-
-          try {
-            const refreshedToken = await refreshAccessToken();
-
-            if (refreshedToken) {
-              dispatch({
-                type: ACCOUNT_INITIALISE,
-                payload: {
-                  isLoggedIn: true,
-                  user: getLocalStorage("userData")?.user || stored.user,
-                },
-              });
-              return;
-            }
-          } catch {
-            // Ignore and continue to unauthorised cleanup below.
-          }
+        } catch {
+          // Continue to unauthorised cleanup when the refresh session is invalid.
         }
 
         setSession(null);
@@ -259,6 +257,16 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const handleSessionUpdated = (event: Event) => {
+      const updatedUser = (event as CustomEvent<{ user: User }>).detail?.user;
+      if (!updatedUser) return;
+
+      dispatch({
+        type: LOGIN,
+        payload: { user: updatedUser, isLoggedIn: true },
+      });
+    };
+
     const handleUnauthorized = async (e: Event) => {
       const stored = getLocalStorage("userData");
       if (!stored?.user) return;
@@ -285,9 +293,12 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
     };
 
+    window.addEventListener(AUTH_SESSION_UPDATED_EVENT, handleSessionUpdated);
     window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
-    return () =>
+    return () => {
+      window.removeEventListener(AUTH_SESSION_UPDATED_EVENT, handleSessionUpdated);
       window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    };
   }, []);
 
   return (

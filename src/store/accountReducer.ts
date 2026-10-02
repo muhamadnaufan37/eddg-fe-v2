@@ -11,6 +11,7 @@ export interface User {
   token_expire: string;
   username: string;
   status_nda?: number | string;
+  role_id?: string;
 }
 
 interface AccountState {

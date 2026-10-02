@@ -1,6 +1,5 @@
-import { getLocalStorage } from "@/services/localStorageService";
 import { menuItems } from "@/utils/menuItems";
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { isBrowser, isMobile } from "react-device-detect";
 import LogoutModal from "./Sidebar/LogoutModal";
 import {
@@ -37,6 +36,8 @@ import {
 import { useTheme } from "@/components/theme-provider";
 import { THEME_COLORS } from "@/config/theme";
 import { VersionDisplay } from "@/components/features/VersionDisplay";
+import useAuth from "@/hooks/useAuth";
+import { getRoleName } from "@/constants/roles";
 
 type TLayoutProps = {
   children: React.ReactNode;
@@ -53,7 +54,6 @@ type MenuItem = {
 };
 
 const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
-  const [itemsMenu, setItemsMenu] = useState<MenuItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidebarModalOpen, setIsSidebarModalOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -62,6 +62,12 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
     [key: string]: boolean;
   }>({});
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
+  const role = getRoleName(user?.role_id);
+  const itemsMenu = useMemo(
+    () => menuItems.filter((item: MenuItem) => item.role.includes(role)),
+    [role],
+  );
 
   const getIconComponent = (iconName: string | React.ReactNode) => {
     if (typeof iconName !== "string") return iconName;
@@ -217,39 +223,6 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
     }, 300);
   };
 
-  const userData = getLocalStorage("userData");
-
-  const whatRole = () => {
-    switch (userData?.user?.role_id) {
-      case "219bc0dd-ec72-4618-b22d-5d5ff612dcaf":
-        return "admin";
-      case "aba1b06f-846a-414b-b223-b002a50c5722":
-        return "ptgs-sensus";
-      case "b7721c02-96f7-4238-bc7e-1bcf2e0ebd56":
-        return "bendahara";
-      case "e2896d58-4831-458c-9fb7-c4f988c0550c":
-        return "admin-kbm";
-      case "7352e0d6-f5d0-45f2-8eb4-4880cc72bad6":
-        return "admin-data-center";
-      case "e405d388-541b-487b-87d4-cb0b294cfc11":
-        return "pengurus";
-      case "b511748b-ef40-4999-b4e9-b8ab575ec958":
-        return "ptgs-absen";
-      default:
-        return "all";
-    }
-  };
-
-  const role = whatRole();
-
-  const generateItemsMenu = () => {
-    const filteredItems = menuItems.filter((item: MenuItem) => {
-      return item.role.includes(role);
-    });
-
-    setItemsMenu(filteredItems);
-  };
-
   // const BottomNavigation = () => {
   //   return (
   //     <div
@@ -309,10 +282,6 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
   //     </div>
   //   );
   // };
-
-  useEffect(() => {
-    generateItemsMenu();
-  }, [role, isBrowser, isMobile]);
 
   return (
     <>

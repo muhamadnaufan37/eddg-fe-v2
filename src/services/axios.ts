@@ -4,6 +4,7 @@ import { getLocalStorage, setLocalStorage } from "./localStorageService";
 // Use proxy in development to avoid CORS, direct API URL in production
 const baseURL = import.meta.env.VITE_PUBLIC_REACT_APP_BASE_URL_API;
 export const AUTH_UNAUTHORIZED_EVENT = "auth:unauthorized";
+export const AUTH_SESSION_UPDATED_EVENT = "auth:session-updated";
 
 let inMemoryAccessToken: string | null = null;
 let isRefreshing = false;
@@ -62,6 +63,12 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     ...(user ? { user } : {}),
     ...(expiresAt ? { expires_at: expiresAt } : {}),
   });
+
+  if (user && typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(AUTH_SESSION_UPDATED_EVENT, { detail: { user } }),
+    );
+  }
 
   return token;
 };
