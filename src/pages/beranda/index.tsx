@@ -130,7 +130,7 @@ const BerandaPage = () => {
   };
 
   const pageSambungDaerah = () => {
-    window.location.href = "/tempat-sambung/daerah";
+    window.location.href = "/master-data/tempat-sambung/daerah";
   };
 
   const pageLogs = () => {

@@ -1,8 +1,9 @@
-import React, { useEffect, type ReactNode } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import React, { type ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 
 import useAuth from "@/hooks/useAuth";
 import RolesGuard from "./RolesGuard";
+import Loader from "@/components/loader";
 
 const AuthGuard = ({
   children,
@@ -11,15 +12,15 @@ const AuthGuard = ({
   children: ReactNode;
   role?: string | string[];
 }) => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isInitialised } = useAuth();
 
-  const navigate = useNavigate();
+  if (!isInitialised) {
+    return <Loader />;
+  }
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/login");
-    }
-  }, [isLoggedIn, navigate]);
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (role && !RolesGuard({ role })) {
     return <Navigate to="/404" replace />;
