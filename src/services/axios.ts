@@ -50,7 +50,11 @@ export const refreshAccessToken = async (): Promise<string | null> => {
   setAccessToken(token);
 
   const stored = getLocalStorage("userData") || {};
-  const user = response?.data?.data?.user ?? stored.user ?? null;
+  const refreshedUser = response?.data?.data?.user;
+  const user =
+    refreshedUser && stored.user
+      ? { ...stored.user, ...refreshedUser }
+      : refreshedUser ?? stored.user ?? null;
   const expiresAt = response?.data?.data?.expires_at ?? stored.expires_at ?? null;
 
   setLocalStorage("userData", {
