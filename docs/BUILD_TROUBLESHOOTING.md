@@ -2,6 +2,22 @@
 
 ## Common Build Issues & Solutions
 
+### `ERR_MODULE_NOT_FOUND` While Loading `vite.config.ts`
+
+If the build reports that it cannot find `vite-plugin-compression`, or another
+package imported by the Vite config, reinstall the dependencies from the lockfile
+including development dependencies. Build tools and Vite plugins are listed as
+development dependencies and are required when building on the server.
+
+```bash
+npm ci --include=dev
+npm run build
+```
+
+If the host is configured to omit development dependencies by default, keep
+`--include=dev` on the install command. Do not install only production
+dependencies before running the build.
+
 ### Intermittent Build Failures
 
 If you experience random build failures that succeed after multiple attempts, try these solutions:
