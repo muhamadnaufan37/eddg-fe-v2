@@ -414,16 +414,16 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
                 {/* NAME + ROLE */}
                 <div className="flex flex-col leading-tight min-w-0">
                   <span
-                    title={userData?.user?.nama_lengkap || ""}
+                    title={user?.name || ""}
                     className={`font-semibold text-sm ${THEME_COLORS.text.primary} transition-colors duration-300 truncate`}
                   >
-                    {userData?.user?.nama_lengkap || ""}
+                    {user?.name || ""}
                   </span>
                   <span
-                    title={userData?.user?.nm_role || ""}
+                    title={user?.role || ""}
                     className={`text-sm ${THEME_COLORS.text.muted} -mt-1 transition-colors duration-300 truncate`}
                   >
-                    {userData?.user?.nm_role}
+                    {user?.role}
                   </span>
                 </div>
               </div>
