@@ -55,6 +55,8 @@ export interface Filter {
 export interface Statistik {
   total_kegiatan: number;
   total_hadir: number;
+  total_izin: number;
+  total_sakit: number;
   total_terlambat: number;
   total_tidak_hadir: number;
   persentase_kehadiran: string;
@@ -80,7 +82,7 @@ export interface Presensi {
   id?: number;
   status_presensi: string;
   waktu_presensi?: string;
-  keterangan: string;
+  keterangan: string | { catatan?: string } | null;
   hadir: boolean;
 }
 
@@ -110,6 +112,9 @@ const formatDateId = (dateStr?: string | null) => {
     return dateStr;
   }
 };
+
+const getKeteranganText = (keterangan: Presensi["keterangan"]) =>
+  typeof keterangan === "string" ? keterangan : (keterangan?.catatan ?? "");
 
 /* ---------------------------
   Component
@@ -225,7 +230,7 @@ const PresensiDashboard: React.FC = () => {
       (log) =>
         log.kegiatan.nama_kegiatan?.toLowerCase().includes(q) ||
         log.kegiatan.tmpt_kegiatan?.toLowerCase().includes(q) ||
-        log.presensi.keterangan?.toLowerCase().includes(q),
+        getKeteranganText(log.presensi.keterangan).toLowerCase().includes(q),
     );
   }, [data?.logs, query]);
 
@@ -474,7 +479,7 @@ const PresensiDashboard: React.FC = () => {
               Total Kegiatan
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {stats.total_kegiatan}
+              {stats.total_kegiatan || 0}
             </div>
           </div>
 
@@ -484,10 +489,10 @@ const PresensiDashboard: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {stats.total_hadir}
+                {stats.total_hadir || 0}
               </div>
               <div className="text-xs text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
-                {stats.persentase_kehadiran}
+                {stats.persentase_kehadiran || "0%"}
               </div>
             </div>
           </div>
@@ -497,7 +502,25 @@ const PresensiDashboard: React.FC = () => {
               Terlambat
             </div>
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {stats.total_terlambat}
+              {stats.total_terlambat || 0}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+              Izin
+            </div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.total_izin || 0}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+              Sakit
+            </div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {stats.total_sakit || 0}
             </div>
           </div>
 
@@ -506,7 +529,7 @@ const PresensiDashboard: React.FC = () => {
               Tidak Hadir
             </div>
             <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-              {stats.total_tidak_hadir}
+              {stats.total_tidak_hadir || 0}
             </div>
           </div>
         </motion.div>
@@ -667,7 +690,7 @@ const PresensiDashboard: React.FC = () => {
                         : "—"}
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">
-                      {log.presensi.keterangan || "—"}
+                      {getKeteranganText(log.presensi.keterangan) || "—"}
                     </td>
                   </tr>
                 ))}
