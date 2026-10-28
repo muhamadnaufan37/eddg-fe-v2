@@ -19,7 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Copy,
   Eye,
+  ExternalLink,
   MapPin,
   Pencil,
   Plus,
@@ -30,7 +32,13 @@ import {
 } from "lucide-react";
 import type { PresensiKegiatanItem } from "@/services/presensiKegiatanService";
 
-export type PresensiEventAction = "presensi" | "detail" | "edit" | "delete";
+export type PresensiEventAction =
+  | "presensi"
+  | "public-presensi"
+  | "copy-presensi-link"
+  | "detail"
+  | "edit"
+  | "delete";
 
 interface CalendarEventsViewProps {
   events: PresensiKegiatanItem[];
@@ -422,6 +430,24 @@ export default function CalendarEventsView({
                           className="grid h-8 w-8 place-items-center rounded border border-emerald-800 text-emerald-900 transition hover:bg-emerald-50 dark:border-lime-400 dark:text-lime-300 dark:hover:bg-lime-950"
                         >
                           <Users className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onAction(event, "public-presensi")}
+                          title="Buka link absen peserta"
+                          aria-label={`Buka link absen peserta: ${event.nama_kegiatan}`}
+                          className="grid h-8 w-8 place-items-center rounded border border-sky-200 text-sky-700 transition hover:bg-sky-50 dark:border-sky-900 dark:text-sky-300 dark:hover:bg-sky-950"
+                        >
+                          <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onAction(event, "copy-presensi-link")}
+                          title="Salin link absen"
+                          aria-label={`Salin link absen: ${event.nama_kegiatan}`}
+                          className="grid h-8 w-8 place-items-center rounded border border-sky-200 text-sky-700 transition hover:bg-sky-50 dark:border-sky-900 dark:text-sky-300 dark:hover:bg-sky-950"
+                        >
+                          <Copy className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <button
                           type="button"

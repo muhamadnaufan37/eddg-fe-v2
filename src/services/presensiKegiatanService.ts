@@ -96,7 +96,7 @@ export interface UpsertPresensiKegiatanPayload {
   daerah_ids?: number[];
   desa_ids?: number[];
   kelompok_ids?: number[];
-  add_by_petugas: number;
+  add_by_petugas: string | number;
 }
 
 export const fetchPresensiKegiatanData = async (

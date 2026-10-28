@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Eye,
+  FileText,
   MoreVertical,
   KeyRound,
   Pencil,
@@ -437,6 +438,8 @@ export const getActionIcon = (actionValue: string) => {
       return ClipboardCheck;
     case "list":
       return ClipboardList;
+    case "portfolio":
+      return FileText;
     case "reply":
       return Reply;
     case "reset":
@@ -471,6 +474,8 @@ export const getActionButtonClass = (actionValue: string) => {
       return `${baseClass} border-amber-200 bg-amber-50 text-amber-600 hover:border-amber-300 hover:bg-amber-100 focus:ring-amber-500 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/35`;
     case "qrcode":
       return `${baseClass} border-violet-200 bg-violet-50 text-violet-600 hover:border-violet-300 hover:bg-violet-100 focus:ring-violet-500 dark:border-violet-900/60 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/35`;
+    case "portfolio":
+      return `${baseClass} border-sky-200 bg-sky-50 text-sky-600 hover:border-sky-300 hover:bg-sky-100 focus:ring-sky-500 dark:border-sky-900/60 dark:bg-sky-900/20 dark:text-sky-300`;
     case "presensi":
     case "list":
       return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/35`;

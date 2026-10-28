@@ -48,7 +48,7 @@ const ReportPdf = forwardRef(({ data }: Props, ref: Ref<any>) => {
   const rows = Array.isArray(data) ? data : [];
 
   return (
-    <div ref={ref}>
+    <div ref={ref} className="sensus-report-pdf">
       <div className="flex flex-col gap-3 p-5">
         <div className="print-title text-center text-2xl font-bold mb-3">
           REKAP DATA SENSUS

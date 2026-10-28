@@ -445,7 +445,7 @@ const PresensiKegiatanPage = () => {
       ...(form.tmpt_kelompok
         ? { tmpt_kelompok: Number(form.tmpt_kelompok) }
         : {}),
-      add_by_petugas: Number(defaultPetugasId),
+      add_by_petugas: defaultPetugasId,
     };
 
     setIsSubmitting(true);
@@ -477,6 +477,64 @@ const PresensiKegiatanPage = () => {
   const handleRowAction = (item: PresensiKegiatanItem, action: string) => {
     const kegiatanKey = String(item.kode_kegiatan || item.id || "");
     const idKegiatan = String(item.id || "");
+
+    if (action === "public-presensi" || action === "copy-presensi-link") {
+      const kodeKegiatan = String(item.kode_kegiatan || "").trim();
+      if (!kodeKegiatan) {
+        toast.error("Error", {
+          description: "Kode kegiatan tidak ditemukan",
+          duration: 3000,
+        });
+        return;
+      }
+
+      const attendanceUrl = new URL(
+        "https://datacenter.digitaldatagenerus.com/digital-data/presensi",
+      );
+      attendanceUrl.searchParams.set("no_kegiatan", kodeKegiatan);
+
+      if (action === "public-presensi") {
+        window.open(
+          attendanceUrl.toString(),
+          "_blank",
+          "noopener,noreferrer",
+        );
+        return;
+      }
+
+      void (async () => {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(attendanceUrl.toString());
+          } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = attendanceUrl.toString();
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            let copied = false;
+            try {
+              textArea.select();
+              copied = document.execCommand("copy");
+            } finally {
+              document.body.removeChild(textArea);
+            }
+            if (!copied) throw new Error("Clipboard copy command was rejected");
+          }
+
+          toast.success("Link absen disalin", {
+            description: attendanceUrl.toString(),
+            duration: 3000,
+          });
+        } catch {
+          toast.error("Gagal menyalin link absen", {
+            description: "Periksa izin clipboard browser lalu coba lagi",
+            duration: 3000,
+          });
+        }
+      })();
+      return;
+    }
 
     if (action === "presensi") {
       if (!kegiatanKey) {

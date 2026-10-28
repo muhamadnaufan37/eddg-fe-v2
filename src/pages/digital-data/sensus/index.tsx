@@ -6,6 +6,7 @@ import { axiosServices } from "@/services/axios";
 import Delete from "./modal/Delete";
 import GenerateQR from "./modal/GenerateQR";
 import ReportPdf from "./cetak/ReportPdf";
+import PortfolioPdf, { type PortfolioParticipant } from "./cetak/PortfolioPdf";
 import StatistikDashboard from "./statistik/StatistikDashboard";
 import { useNavigate } from "react-router-dom";
 import Pagination from "@/components/features/Pagination";
@@ -74,6 +75,7 @@ const SensusPage = () => {
   const { fetchOptions, loading } = useFetchOptions();
   const hasFetched = useRef(false);
   const printRefCetakDataPdf = useRef<HTMLDivElement | null>(null);
+  const printRefPortfolioPdf = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState(10);
   const [filterInput, setFilterInput] = useState("");
@@ -101,7 +103,10 @@ const SensusPage = () => {
   );
   const [generateQrCode, setGenerateQrCode] = useState(false);
   const [dataLaporanPrint, setDataLaporanPrint] = useState([]);
+  const [portfolioData, setPortfolioData] =
+    useState<PortfolioParticipant | null>(null);
   const [printFileName, setPrintFileName] = useState("REKAP_DATA_SENSUS");
+  const [portfolioFileName, setPortfolioFileName] = useState("PORTOFOLIO_PESERTA");
   const [balikanDataStatistik, setBalikanDataStatistik] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rangeUmurMin, setRangeUmurMin] = useState("");
@@ -139,6 +144,11 @@ const SensusPage = () => {
   const handlePrintPdf = useReactToPrint({
     contentRef: printRefCetakDataPdf,
     documentTitle: printFileName,
+  });
+
+  const handlePrintPortfolioPdf = useReactToPrint({
+    contentRef: printRefPortfolioPdf,
+    documentTitle: portfolioFileName,
   });
 
   const fetchData = async () => {
@@ -409,6 +419,15 @@ const SensusPage = () => {
             replace: true,
           });
           break;
+        case 8:
+          setPortfolioData(detailDataArray);
+          setPortfolioFileName(
+            `PORTOFOLIO_${String(detailDataArray.nama_lengkap || "PESERTA")
+              .replace(/[<>:"/\\|?*]/g, "_")
+              .trim()}_${String(detailDataArray.kode_cari_data || Kode)}`,
+          );
+          window.setTimeout(() => handlePrintPortfolioPdf(), 500);
+          break;
       }
     } catch (error: any) {
       handleApiError(error, {});
@@ -646,9 +665,11 @@ const SensusPage = () => {
   const rowActions = isViewOnly
     ? [
         { label: "Detail", value: "detail" },
+        { label: "Portofolio PDF", value: "portfolio" },
       ]
     : [
         { label: "Detail", value: "detail" },
+        { label: "Portofolio PDF", value: "portfolio" },
         { label: "Ubah", value: "edit" },
         { label: "QR Code", value: "qrcode" },
         { label: "Cek Presensi", value: "presensi" },
@@ -816,6 +837,9 @@ const SensusPage = () => {
     switch (action) {
       case "detail":
         DetailDataFetch(item.kode_cari_data, 2);
+        break;
+      case "portfolio":
+        DetailDataFetch(item.kode_cari_data, 8);
         break;
       case "edit":
         DetailDataFetch(item.kode_cari_data, 3);
@@ -1081,6 +1105,11 @@ const SensusPage = () => {
       {/* manggil ke component Print preview */}
       <div className="hidden">
         <ReportPdf ref={printRefCetakDataPdf} data={dataLaporanPrint} />
+      </div>
+      <div className="hidden">
+        {portfolioData && (
+          <PortfolioPdf ref={printRefPortfolioPdf} data={portfolioData} />
+        )}
       </div>
 
       <FilterModal
