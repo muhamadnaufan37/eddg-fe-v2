@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   File,
   Droplet,
+  HandCoins,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { THEME_COLORS } from "@/config/theme";
@@ -95,6 +96,7 @@ const Layout: React.FC<TLayoutProps> = ({ children, fullScreen = false }) => {
       AlertTriangle: <AlertTriangle size={20} />,
       File: <File size={20} />,
       Droplet: <Droplet size={20} />,
+      HandCoins: <HandCoins size={20} />,
     };
 
     return iconMap[iconName] || iconName;

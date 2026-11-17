@@ -152,6 +152,21 @@ export const menuItems = [
     link: "/presensi",
   },
   {
+    id: "ziswaf",
+    title: "ZISWAF Digital",
+    icon: "HandCoins",
+    role: [
+      "admin",
+      "ptgs-sensus",
+      "admin-data-center",
+      "pengurus",
+      "bendahara",
+      "admin-kbm",
+      "ptgs-absen",
+    ],
+    link: "/ziswaf",
+  },
+  {
     id: "pengaduan",
     title: "Pengaduan",
     icon: "MailWarning",
