@@ -1,14 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
+  CalendarDays,
+  ChartColumn,
+  CircleDollarSign,
+  Coins,
   HandCoins,
   Heart,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -42,6 +56,7 @@ import {
   createDonation,
   createWithdrawal,
   getAdminDonations,
+  getAdminRevenue,
   getDonation,
   getMyDonations,
   getWithdrawal,
@@ -50,10 +65,12 @@ import {
   type DonationType,
   type ZiswafDonation,
   type ZiswafPagination,
+  type ZiswafRevenueFilters,
+  type ZiswafRevenueReport,
   type ZiswafWithdrawal,
 } from "@/services/ziswafService";
 
-type View = "mine" | "admin" | "withdrawals";
+type View = "mine" | "revenue" | "admin" | "withdrawals";
 type PageResult<T> = { items: T[]; pagination: ZiswafPagination };
 
 const donationTypes: { value: DonationType; label: string }[] = [
@@ -260,8 +277,10 @@ export default function ZiswafPage() {
   }, [isAdmin, page, perPage, statusFilter, typeFilter, view]);
 
   useEffect(() => {
-    void loadList();
-  }, [loadList]);
+    if (view !== "revenue") {
+      void loadList();
+    }
+  }, [loadList, view]);
 
   const changeView = (nextView: View) => {
     setView(nextView);
@@ -389,6 +408,7 @@ export default function ZiswafPage() {
     { value: "mine", label: "Donasi Saya" },
     ...(isAdmin
       ? [
+          { value: "revenue" as const, label: "Pendapatan" },
           { value: "admin" as const, label: "Semua Donasi" },
           { value: "withdrawals" as const, label: "Penarikan" },
         ]
@@ -655,6 +675,8 @@ export default function ZiswafPage() {
         </section>
       )}
 
+      {view === "revenue" && isAdmin && <RevenueDashboard />}
+
       {view === "admin" && isAdmin && (
         <section className="space-y-4">
           <Card className="rounded-2xl border-border/70 shadow-sm">
@@ -814,6 +836,653 @@ export default function ZiswafPage() {
         </section>
       )}
     </main>
+  );
+}
+
+type RevenueFilterForm = {
+  start_date: string;
+  end_date: string;
+  donation_type: DonationType | "all";
+  is_test: "true" | "false" | "all";
+  group_by: "day" | "month";
+};
+
+function toLocalDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultRevenueFilters(): RevenueFilterForm {
+  const now = new Date();
+  const today = toLocalDateInput(now);
+  const startOfMonth = toLocalDateInput(
+    new Date(now.getFullYear(), now.getMonth(), 1),
+  );
+  return {
+    start_date: startOfMonth,
+    end_date: today,
+    donation_type: "all",
+    is_test: "false",
+    group_by: "day",
+  };
+}
+
+function RevenueDashboard() {
+  const [filters, setFilters] = useState<RevenueFilterForm>(
+    getDefaultRevenueFilters,
+  );
+  const [appliedFilters, setAppliedFilters] = useState<RevenueFilterForm>(
+    getDefaultRevenueFilters,
+  );
+  const [report, setReport] = useState<ZiswafRevenueReport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadRevenue = useCallback(async (form: RevenueFilterForm) => {
+    setLoading(true);
+    setError("");
+    const query: ZiswafRevenueFilters = {
+      ...(form.start_date ? { start_date: form.start_date } : {}),
+      ...(form.end_date ? { end_date: form.end_date } : {}),
+      ...(form.donation_type !== "all"
+        ? { donation_type: form.donation_type }
+        : {}),
+      ...(form.is_test !== "all"
+        ? { is_test: form.is_test === "true" }
+        : {}),
+      group_by: form.group_by,
+    };
+
+    try {
+      setReport(await getAdminRevenue(query));
+    } catch (requestError) {
+      const message = errorMessage(
+        requestError,
+        "Gagal memuat laporan pendapatan.",
+      );
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRevenue(appliedFilters);
+  }, [appliedFilters, loadRevenue]);
+
+  const handleApplyFilters = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (
+      filters.start_date &&
+      filters.end_date &&
+      filters.start_date > filters.end_date
+    ) {
+      toast.error("Tanggal akhir harus sama dengan atau setelah tanggal awal.");
+      return;
+    }
+    setAppliedFilters({ ...filters });
+  };
+
+  const updateFilter = <K extends keyof RevenueFilterForm>(
+    key: K,
+    value: RevenueFilterForm[K],
+  ) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+  };
+
+  return (
+    <div className="space-y-5">
+      <Card className="rounded-3xl border-border/70 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              <CalendarDays className="size-5" />
+            </span>
+            <div>
+              <CardTitle className="text-lg">Laporan pendapatan</CardTitle>
+              <CardDescription className="mt-1 leading-5">
+                Ringkasan donasi sukses, penarikan, dan saldo tersedia sesuai
+                periode.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={handleApplyFilters}
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="revenue-start-date">Tanggal awal</Label>
+              <Input
+                id="revenue-start-date"
+                type="date"
+                value={filters.start_date}
+                max={filters.end_date || undefined}
+                onChange={(event) =>
+                  updateFilter("start_date", event.target.value)
+                }
+                className="h-10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="revenue-end-date">Tanggal akhir</Label>
+              <Input
+                id="revenue-end-date"
+                type="date"
+                value={filters.end_date}
+                min={filters.start_date || undefined}
+                onChange={(event) =>
+                  updateFilter("end_date", event.target.value)
+                }
+                className="h-10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Jenis donasi</Label>
+              <Select
+                value={filters.donation_type}
+                onValueChange={(value) =>
+                  updateFilter(
+                    "donation_type",
+                    value as RevenueFilterForm["donation_type"],
+                  )
+                }
+              >
+                <SelectTrigger className="h-10 w-full rounded-xl bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua jenis</SelectItem>
+                  {donationTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Lingkungan transaksi</Label>
+              <Select
+                value={filters.is_test}
+                onValueChange={(value) =>
+                  updateFilter(
+                    "is_test",
+                    value as RevenueFilterForm["is_test"],
+                  )
+                }
+              >
+                <SelectTrigger className="h-10 w-full rounded-xl bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">Produksi saja</SelectItem>
+                  <SelectItem value="true">Sandbox saja</SelectItem>
+                  <SelectItem value="all">Semua transaksi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tren waktu</Label>
+              <Select
+                value={filters.group_by}
+                onValueChange={(value) =>
+                  updateFilter(
+                    "group_by",
+                    value as RevenueFilterForm["group_by"],
+                  )
+                }
+              >
+                <SelectTrigger className="h-10 w-full rounded-xl bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Harian</SelectItem>
+                  <SelectItem value="month">Bulanan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-10 w-full rounded-xl bg-emerald-700 font-semibold text-white hover:bg-emerald-800"
+              >
+                {loading ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <ChartColumn className="size-4" />
+                )}
+                Terapkan filter
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {error && (
+        <Card className="rounded-2xl border-destructive/30 bg-destructive/5 shadow-none">
+          <CardContent className="flex flex-col gap-3 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-destructive">{error}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void loadRevenue(appliedFilters)}
+            >
+              <RefreshCw className="size-4" /> Coba lagi
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {loading && !report ? (
+        <Card className="rounded-2xl border-border/70 shadow-sm">
+          <CardContent className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <LoaderCircle className="size-5 animate-spin" />
+            Memuat laporan pendapatan...
+          </CardContent>
+        </Card>
+      ) : report ? (
+        <div className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <RevenueMetric
+              label="Total transaksi sukses"
+              value={report.summary.total_transactions.toLocaleString("id-ID")}
+              icon={ChartColumn}
+              detail="Donasi yang berhasil dibayar"
+            />
+            <RevenueMetric
+              label="Nominal donasi"
+              value={formatRupiah(report.summary.total_amount)}
+              icon={Coins}
+              detail="Sebelum kode unik QRIS"
+            />
+            <RevenueMetric
+              label="Total dibayar donatur"
+              value={formatRupiah(report.summary.total_paid_amount)}
+              icon={CircleDollarSign}
+              detail="Termasuk kode unik"
+            />
+            <RevenueMetric
+              label="Pendapatan bersih"
+              value={formatRupiah(report.summary.total_credit_amount)}
+              icon={TrendingUp}
+              detail="Masuk ke saldo merchant"
+              accent
+            />
+          </div>
+
+          <Card className="overflow-hidden rounded-3xl border-emerald-900/20 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 text-white shadow-lg shadow-emerald-950/10">
+            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-6">
+              <div>
+                <p className="text-sm font-medium text-emerald-100">
+                  Saldo tersedia untuk ditarik
+                </p>
+                <p className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+                  {formatRupiah(report.balance.available_balance)}
+                </p>
+                <p className="mt-2 max-w-2xl text-xs leading-5 text-emerald-100/80 sm:text-sm">
+                  Saldo keseluruhan dihitung dari pendapatan bersih dikurangi
+                  penarikan selesai dan penarikan yang masih diproses; tidak
+                  dibatasi oleh periode laporan.
+                </p>
+              </div>
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10">
+                <Wallet className="size-7 text-emerald-100" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+            <Card className="rounded-3xl border-border/70 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Tren pendapatan</CardTitle>
+                <CardDescription>
+                  Donasi dasar dan pendapatan bersih per{" "}
+                  {report.filters.group_by === "month" ? "bulan" : "hari"}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-2">
+                {report.timeline.length === 0 ? (
+                  <RevenueEmptyState message="Belum ada data pada periode ini." />
+                ) : (
+                  <div className="h-64 w-full sm:h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={report.timeline}
+                        margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="ziswafRevenueFill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="#059669"
+                              stopOpacity={0.22}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#059669"
+                              stopOpacity={0.01}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          className="stroke-border"
+                        />
+                        <XAxis
+                          dataKey="period"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 11 }}
+                          tickMargin={10}
+                          minTickGap={20}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 11 }}
+                          tickFormatter={(value: number) =>
+                            new Intl.NumberFormat("id-ID", {
+                              notation: "compact",
+                              maximumFractionDigits: 1,
+                            }).format(value)
+                          }
+                        />
+                        <Tooltip
+                          formatter={(value) => formatRupiah(Number(value))}
+                          contentStyle={{
+                            borderRadius: 12,
+                            border: "1px solid var(--border)",
+                            background: "var(--card)",
+                            color: "var(--card-foreground)",
+                            fontSize: 12,
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="total_amount"
+                          name="Nominal donasi"
+                          stroke="#059669"
+                          strokeWidth={2}
+                          fill="url(#ziswafRevenueFill)"
+                          activeDot={{ r: 4 }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="total_credit_amount"
+                          name="Pendapatan bersih"
+                          stroke="#0f766e"
+                          strokeWidth={2}
+                          fill="transparent"
+                          activeDot={{ r: 4 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-2">
+                    <i className="size-2 rounded-full bg-emerald-600" />
+                    Nominal donasi
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <i className="size-2 rounded-full bg-teal-700" />
+                    Pendapatan bersih
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-border/70 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Ringkasan penarikan</CardTitle>
+                <CardDescription>
+                  Transaksi pada periode laporan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <RevenueAmountRow
+                  label="Penarikan selesai"
+                  value={report.withdrawals.total_withdrawn}
+                />
+                <RevenueAmountRow
+                  label="Biaya penarikan"
+                  value={report.withdrawals.total_withdrawal_fee}
+                />
+                <RevenueAmountRow
+                  label="Dana diterima"
+                  value={report.withdrawals.total_net_withdrawn}
+                />
+                <RevenueAmountRow
+                  label="Penarikan diproses"
+                  value={report.withdrawals.total_pending_withdrawal}
+                  highlight
+                />
+                <div className="border-t border-border pt-3">
+                  <RevenueAmountRow
+                    label="Saldo setelah transaksi"
+                    value={report.balance.available_balance}
+                    strong
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Rincian per jenis donasi</CardTitle>
+              <CardDescription>
+                Ringkasan nominal dan jumlah transaksi untuk setiap kategori.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-0 sm:px-6">
+              <div className="grid gap-3 sm:grid-cols-2 xl:hidden">
+                {report.by_type.map((item) => (
+                  <Card
+                    key={item.donation_type}
+                    className="rounded-2xl border-border/70 shadow-none"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold capitalize">
+                          {item.donation_type}
+                        </p>
+                        <Badge variant="secondary">
+                          {item.total_transactions.toLocaleString("id-ID")}{" "}
+                          transaksi
+                        </Badge>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Nominal donasi
+                          </p>
+                          <p className="mt-1 font-semibold">
+                            {formatRupiah(item.total_amount)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Pendapatan bersih
+                          </p>
+                          <p className="mt-1 font-semibold">
+                            {formatRupiah(item.total_credit_amount)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden xl:block">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="h-11 text-xs uppercase tracking-wide text-muted-foreground">
+                        Jenis donasi
+                      </TableHead>
+                      <TableHead className="h-11 text-xs uppercase tracking-wide text-muted-foreground">
+                        Transaksi sukses
+                      </TableHead>
+                      <TableHead className="h-11 text-xs uppercase tracking-wide text-muted-foreground">
+                        Nominal donasi
+                      </TableHead>
+                      <TableHead className="h-11 text-xs uppercase tracking-wide text-muted-foreground">
+                        Total dibayar
+                      </TableHead>
+                      <TableHead className="h-11 text-xs uppercase tracking-wide text-muted-foreground">
+                        Biaya layanan
+                      </TableHead>
+                      <TableHead className="h-11 text-xs uppercase tracking-wide text-muted-foreground">
+                        Pendapatan bersih
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report.by_type.map((item) => (
+                      <TableRow key={item.donation_type}>
+                        <TableCell className="font-medium capitalize">
+                          {item.donation_type}
+                        </TableCell>
+                        <TableCell>
+                          {item.total_transactions.toLocaleString("id-ID")}
+                        </TableCell>
+                        <TableCell>{formatRupiah(item.total_amount)}</TableCell>
+                        <TableCell>
+                          {formatRupiah(item.total_paid_amount)}
+                        </TableCell>
+                        <TableCell>
+                          {formatRupiah(item.total_admin_fee)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {formatRupiah(item.total_credit_amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/70 bg-muted/30 shadow-none">
+            <CardContent className="grid gap-3 p-4 text-sm sm:grid-cols-2">
+              <RevenueAmountRow
+                label="Kode unik yang dibayar donatur"
+                value={report.summary.total_unique_amount}
+              />
+              <RevenueAmountRow
+                label="Biaya layanan dipotong dari merchant"
+                value={report.summary.total_admin_fee}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RevenueMetric({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent?: boolean;
+}) {
+  return (
+    <Card
+      className={cn(
+        "rounded-2xl border-border/70 shadow-sm",
+        accent &&
+          "border-emerald-200/80 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20",
+      )}
+    >
+      <CardContent className="flex min-h-32 items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="mt-2 break-words text-xl font-bold tracking-tight sm:text-2xl">
+            {value}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+        </div>
+        <span
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground",
+            accent &&
+              "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200",
+          )}
+        >
+          <Icon className="size-5" />
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RevenueAmountRow({
+  label,
+  value,
+  highlight = false,
+  strong = false,
+}: {
+  label: string;
+  value: number;
+  highlight?: boolean;
+  strong?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <span
+        className={cn(
+          "text-muted-foreground",
+          highlight && "text-amber-700 dark:text-amber-300",
+          strong && "font-semibold text-foreground",
+        )}
+      >
+        {label}
+      </span>
+      <span
+        className={cn(
+          "shrink-0 text-right",
+          strong ? "font-bold" : "font-medium",
+        )}
+      >
+        {formatRupiah(value)}
+      </span>
+    </div>
+  );
+}
+
+function RevenueEmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-border px-4 text-center">
+      <ChartColumn className="size-8 text-muted-foreground/60" />
+      <p className="mt-3 text-sm font-medium">{message}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Coba sesuaikan periode atau filter transaksi.
+      </p>
+    </div>
   );
 }
 

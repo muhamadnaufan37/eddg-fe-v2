@@ -163,6 +163,119 @@ Status donasi: `processing`, `pending`, `success`, `expired`, `failed`.
 Hanya `role_id` 1 (Superadmin) dan 3 (Bendahara/KU) yang diizinkan. Filter
 opsional: `status`, `donation_type`, `per_page`.
 
+## Laporan pendapatan ZISWAF (admin)
+
+`GET /api/v1/ziswaf/admin/revenue`
+
+Header: `Authorization: Bearer <token>` (JWT login Superadmin `role_id` 1 atau Bendahara/KU `role_id` 3).
+
+Menampilkan ringkasan pendapatan dari donasi berstatus `success`, rincian per
+jenis donasi (`zakat`, `infaq`, `sedekah`, `wakaf`), tren waktu (`timeline`),
+ringkasan penarikan pada periode yang dipilih, serta saldo yang tersedia untuk
+ditarik.
+
+Query parameter opsional:
+
+- `start_date`: tanggal awal (`YYYY-MM-DD`), memfilter berdasarkan `paid_at` (fallback `created_at`) untuk donasi dan `processed_at` (fallback `created_at`) untuk penarikan.
+- `end_date`: tanggal akhir (`YYYY-MM-DD`), minimal sama dengan `start_date`.
+- `donation_type`: `zakat`, `infaq`, `sedekah`, atau `wakaf`.
+- `is_test`: `true`/`false` atau `1`/`0`. Disarankan mengirim `is_test=false` di produksi agar transaksi sandbox tidak ikut terhitung.
+- `group_by`: `day` (default) atau `month` untuk pengelompokan `timeline`.
+
+Contoh respons:
+
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "filters": {
+      "start_date": "2026-11-01",
+      "end_date": "2026-11-17",
+      "donation_type": null,
+      "is_test": false,
+      "group_by": "day"
+    },
+    "summary": {
+      "total_transactions": 2,
+      "total_amount": 150000,
+      "total_paid_amount": 150323,
+      "total_unique_amount": 323,
+      "total_admin_fee": 3000,
+      "total_credit_amount": 147000
+    },
+    "by_type": [
+      {
+        "donation_type": "zakat",
+        "total_transactions": 1,
+        "total_amount": 100000,
+        "total_paid_amount": 100123,
+        "total_admin_fee": 2000,
+        "total_credit_amount": 98000
+      },
+      {
+        "donation_type": "infaq",
+        "total_transactions": 1,
+        "total_amount": 50000,
+        "total_paid_amount": 50200,
+        "total_admin_fee": 1000,
+        "total_credit_amount": 49000
+      },
+      {
+        "donation_type": "sedekah",
+        "total_transactions": 0,
+        "total_amount": 0,
+        "total_paid_amount": 0,
+        "total_admin_fee": 0,
+        "total_credit_amount": 0
+      },
+      {
+        "donation_type": "wakaf",
+        "total_transactions": 0,
+        "total_amount": 0,
+        "total_paid_amount": 0,
+        "total_admin_fee": 0,
+        "total_credit_amount": 0
+      }
+    ],
+    "timeline": [
+      {
+        "period": "2026-11-10",
+        "total_transactions": 1,
+        "total_amount": 100000,
+        "total_credit_amount": 98000
+      },
+      {
+        "period": "2026-11-15",
+        "total_transactions": 1,
+        "total_amount": 50000,
+        "total_credit_amount": 49000
+      }
+    ],
+    "withdrawals": {
+      "total_withdrawn": 40000,
+      "total_withdrawal_fee": 2500,
+      "total_net_withdrawn": 37500,
+      "total_pending_withdrawal": 10000
+    },
+    "balance": {
+      "total_credit_amount": 147000,
+      "total_withdrawn": 40000,
+      "total_pending_withdrawal": 10000,
+      "available_balance": 97000
+    }
+  }
+}
+```
+
+Keterangan field:
+
+- `summary.total_amount`: total nominal dasar donasi (`amount`).
+- `summary.total_paid_amount`: total yang dibayar donatur (`total_amount`, termasuk `amount_uniq`).
+- `summary.total_admin_fee`: total biaya layanan gateway yang dipotong dari merchant.
+- `summary.total_credit_amount`: total pendapatan bersih yang masuk ke saldo merchant.
+- `balance.available_balance`: saldo keseluruhan yang tersedia untuk penarikan (`total_credit_amount - total_withdrawn - total_pending_withdrawal`, minimal `0`).
+
 ## Webhook BuatQris
 
 `POST /api/v1/ziswaf/webhook` — endpoint publik untuk gateway, bukan untuk

@@ -47,6 +47,58 @@ export interface ZiswafPagination {
   total: number;
 }
 
+export interface ZiswafRevenueFilters {
+  start_date?: string;
+  end_date?: string;
+  donation_type?: DonationType;
+  is_test?: boolean;
+  group_by?: "day" | "month";
+}
+
+export interface ZiswafRevenueReport {
+  filters: {
+    start_date: string | null;
+    end_date: string | null;
+    donation_type: DonationType | null;
+    is_test: boolean | null;
+    group_by: "day" | "month";
+  };
+  summary: {
+    total_transactions: number;
+    total_amount: number;
+    total_paid_amount: number;
+    total_unique_amount: number;
+    total_admin_fee: number;
+    total_credit_amount: number;
+  };
+  by_type: Array<{
+    donation_type: DonationType;
+    total_transactions: number;
+    total_amount: number;
+    total_paid_amount: number;
+    total_admin_fee: number;
+    total_credit_amount: number;
+  }>;
+  timeline: Array<{
+    period: string;
+    total_transactions: number;
+    total_amount: number;
+    total_credit_amount: number;
+  }>;
+  withdrawals: {
+    total_withdrawn: number;
+    total_withdrawal_fee: number;
+    total_net_withdrawn: number;
+    total_pending_withdrawal: number;
+  };
+  balance: {
+    total_credit_amount: number;
+    total_withdrawn: number;
+    total_pending_withdrawal: number;
+    available_balance: number;
+  };
+}
+
 interface PaginatedResult<T> {
   items: T[];
   pagination: ZiswafPagination;
@@ -96,6 +148,14 @@ export async function getAdminDonations(
   const response = await axiosServices().get<ApiEnvelope<PaginatedResult<ZiswafDonation>>>(
     "/api/v1/ziswaf/admin/donations",
     { params: { page, per_page: perPage, ...filters } },
+  );
+  return response.data.data;
+}
+
+export async function getAdminRevenue(filters: ZiswafRevenueFilters = {}) {
+  const response = await axiosServices().get<ApiEnvelope<ZiswafRevenueReport>>(
+    "/api/v1/ziswaf/admin/revenue",
+    { params: filters },
   );
   return response.data.data;
 }
