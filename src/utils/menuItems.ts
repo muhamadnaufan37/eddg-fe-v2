@@ -167,6 +167,13 @@ export const menuItems = [
     link: "/ziswaf",
   },
   {
+    id: "barokahiin-admin",
+    title: "Barokahiin",
+    icon: "Store",
+    role: ["admin", "bendahara"],
+    link: "/barokahiin-admin",
+  },
+  {
     id: "pengaduan",
     title: "Pengaduan",
     icon: "MailWarning",

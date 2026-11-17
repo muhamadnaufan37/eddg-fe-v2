@@ -170,7 +170,7 @@ function Pager({
           onValueChange={(value) => onChange(1, Number(value))}
         >
           <SelectTrigger
-            className="h-9 w-[4.5rem] bg-background"
+            className="h-9 w-18 bg-background"
             aria-label="Jumlah transaksi per halaman"
           >
             <SelectValue />
@@ -417,10 +417,10 @@ export default function ZiswafPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-3 py-4 text-foreground sm:px-5 sm:py-6 lg:px-8">
-      <header className="relative isolate overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 px-5 py-6 text-white shadow-lg shadow-emerald-950/10 sm:px-8 sm:py-8">
+      <header className="relative isolate overflow-hidden rounded-[1.75rem] bg-linear-to-br from-emerald-950 via-emerald-900 to-teal-800 px-5 py-6 text-white shadow-lg shadow-emerald-950/10 sm:px-8 sm:py-8">
         <div
           aria-hidden="true"
-          className="absolute -right-12 -top-20 h-64 w-64 rounded-full border-[28px] border-white/[0.06]"
+          className="absolute -right-12 -top-20 h-64 w-64 rounded-full border-28 border-white/6"
         />
         <div
           aria-hidden="true"
@@ -1117,7 +1117,7 @@ function RevenueDashboard() {
             />
           </div>
 
-          <Card className="overflow-hidden rounded-3xl border-emerald-900/20 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 text-white shadow-lg shadow-emerald-950/10">
+          <Card className="overflow-hidden rounded-3xl border-emerald-900/20 bg-linear-to-br from-emerald-950 via-emerald-900 to-teal-800 text-white shadow-lg shadow-emerald-950/10">
             <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-6">
               <div>
                 <p className="text-sm font-medium text-emerald-100">
@@ -1421,7 +1421,7 @@ function RevenueMetric({
       <CardContent className="flex min-h-32 items-start justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="mt-2 break-words text-xl font-bold tracking-tight sm:text-2xl">
+          <p className="mt-2 wrap-break-word text-xl font-bold tracking-tight sm:text-2xl">
             {value}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
@@ -1563,7 +1563,7 @@ function DonationList({
               ))}
             </div>
             <div className="hidden md:block">
-              <Table className="min-w-[760px]">
+              <Table className="min-w-190">
                 <TableHeader className="bg-muted/50">
                   <TableRow className="hover:bg-transparent">
                     {showDonor && (
@@ -1781,7 +1781,7 @@ function WithdrawalList({
               ))}
             </div>
             <div className="hidden md:block">
-              <Table className="min-w-[600px]">
+              <Table className="min-w-150">
                 <TableHeader className="bg-muted/50">
                   <TableRow className="hover:bg-transparent">
                     {["Nominal", "Biaya", "Diterima", "Status", "Dibuat"].map(
