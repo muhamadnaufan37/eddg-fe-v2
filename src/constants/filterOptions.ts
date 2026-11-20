@@ -4,7 +4,7 @@
 
 export const STATUS_FILTER_SAMBUNG = [
   { label: "Pindah Sambung", value: 2 },
-  { label: "Sambung", value: 1 },
+  { label: "Sambung / Aktif", value: 1 },
   { label: "Tidak Sambung", value: 0 },
 ];
 

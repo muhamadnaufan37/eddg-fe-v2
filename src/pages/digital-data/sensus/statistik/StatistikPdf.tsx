@@ -1,4 +1,5 @@
 import { forwardRef, type Ref } from "react";
+import { STATUS_SAMBUNG_MAP } from "@/constants";
 import type { StatistikDashboardData } from "./StatistikDashboard";
 import "./statistik-pdf.css";
 
@@ -83,7 +84,8 @@ const StatistikPdf = forwardRef(
             title="Status Sambung"
             columns={["Status Sambung", "Total"]}
             rows={data.charts.status_sambung.map((item) => [
-              item.status_sambung,
+              STATUS_SAMBUNG_MAP[item.status_sambung]?.text ??
+                item.status_sambung,
               item.total,
             ])}
           />

@@ -4,6 +4,7 @@ import { useReactToPrint } from "react-to-print";
 import { AnimatePresence, motion } from "framer-motion";
 import { FileDown, MapPin, Users, X } from "lucide-react";
 import StatistikPdf from "./StatistikPdf";
+import { STATUS_SAMBUNG_MAP } from "@/constants";
 import {
   Bar,
   BarChart,
@@ -269,7 +270,9 @@ const StatistikDashboardModal: React.FC<StatistikModalProps> = ({
                 <ChartCard
                   title="Status Sambung"
                   items={charts.status_sambung.map((item) => ({
-                    label: String(item.status_sambung),
+                    label:
+                      STATUS_SAMBUNG_MAP[item.status_sambung]?.text ??
+                      String(item.status_sambung),
                     total: item.total,
                   }))}
                 />

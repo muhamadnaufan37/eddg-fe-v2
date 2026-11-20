@@ -9,7 +9,7 @@ interface Props {
 export const STATUS_SAMBUNG_MAP: Record<number, { text: string; color: any }> =
   {
     2: { text: "Pindah Sambung", color: "yellow" },
-    1: { text: "Sambung", color: "green" },
+    1: { text: "Sambung / Aktif", color: "green" },
     0: { text: "Tidak Sambung", color: "red" },
   };
 
