@@ -7,7 +7,9 @@ import Delete from "./modal/Delete";
 import GenerateQR from "./modal/GenerateQR";
 import ReportPdf from "./cetak/ReportPdf";
 import PortfolioPdf, { type PortfolioParticipant } from "./cetak/PortfolioPdf";
-import StatistikDashboard from "./statistik/StatistikDashboard";
+import StatistikDashboard, {
+  type StatistikDashboardData,
+} from "./statistik/StatistikDashboard";
 import { useNavigate } from "react-router-dom";
 import Pagination from "@/components/features/Pagination";
 import ParticipantSkeleton from "./components/ParticipantSkeleton";
@@ -107,7 +109,8 @@ const SensusPage = () => {
     useState<PortfolioParticipant | null>(null);
   const [printFileName, setPrintFileName] = useState("REKAP_DATA_SENSUS");
   const [portfolioFileName, setPortfolioFileName] = useState("PORTOFOLIO_PESERTA");
-  const [balikanDataStatistik, setBalikanDataStatistik] = useState([]);
+  const [balikanDataStatistik, setBalikanDataStatistik] =
+    useState<StatistikDashboardData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rangeUmurMin, setRangeUmurMin] = useState("");
   const [rangeUmurMax, setRangeUmurMax] = useState("");

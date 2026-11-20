@@ -57,6 +57,7 @@ import {
   type BarokahiinCategory,
   type BarokahiinDonor,
   type BarokahiinItem,
+  type BarokahiinMedia,
 } from "@/services/barokahiinAdminService";
 import {
   EmptyState,
@@ -562,11 +563,16 @@ function ItemForm({
           {item.kode_barang}
         </p>
       )}
+      <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-sm text-sky-950 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
+        Lengkapi bagian bertanda <span className="font-semibold">*</span> dan
+        checklist kurasi sebelum mengubah status ke <strong>siap terbit</strong>.
+        Barang tetap bisa disimpan sebagai draf meskipun belum lengkap.
+      </div>
         <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
           <Field label="Nama internal" required>
             <Input required value={namaInternal} onChange={(e) => setNamaInternal(e.target.value)} />
           </Field>
-          <Field label="Judul publik">
+          <Field label="Judul publik" required hint="Ditampilkan kepada calon pembeli.">
             <Input value={judulPublik} onChange={(e) => setJudulPublik(e.target.value)} />
           </Field>
           <Field label="Kategori">
@@ -600,7 +606,18 @@ function ItemForm({
             </Select>
           </Field>
           <Field label="Kondisi">
-            <Select value={kondisi} onValueChange={setKondisi}>
+            <Select
+              value={kondisi}
+              onValueChange={(value) => {
+                if (
+                  value === "sangat_baik" ||
+                  value === "baik" ||
+                  value === "cukup"
+                ) {
+                  setKondisi(value);
+                }
+              }}
+            >
               <SelectTrigger className="rounded-xl">
                 <SelectValue />
               </SelectTrigger>
@@ -627,7 +644,7 @@ function ItemForm({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Harga (Rupiah)">
+          <Field label="Harga jual (Rupiah)" required hint="Masukkan harga lebih dari Rp0.">
             <Input type="number" min={0} step={1} value={harga} onChange={(e) => setHarga(e.target.value)} />
           </Field>
           <Field label="Jumlah stok">
@@ -639,7 +656,7 @@ function ItemForm({
           <Field label="Lokasi penyimpanan">
             <Input value={lokasi} onChange={(e) => setLokasi(e.target.value)} />
           </Field>
-          <Field label="Deskripsi publik">
+          <Field label="Keterangan publik" required hint="Jelaskan kondisi dan informasi barang untuk calon pembeli.">
             <textarea
               value={deskripsi}
               onChange={(event) => setDeskripsi(event.target.value)}
@@ -647,14 +664,20 @@ function ItemForm({
               className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:col-span-2"
             />
           </Field>
-          <Field label="Kekurangan barang">
+          <Field label="Kekurangan barang" required hint='Tuliskan kekurangan dengan jujur. Jika tidak ada, isi "Tidak ada".'>
             <Input value={kekurangan} onChange={(e) => setKekurangan(e.target.value)} />
           </Field>
           <Field label="Catatan internal">
             <Input value={catatan} onChange={(e) => setCatatan(e.target.value)} />
           </Field>
           <fieldset className="space-y-2 rounded-xl border border-border/70 p-3 sm:col-span-2">
-            <legend className="px-1 text-sm font-medium">Checklist kurasi</legend>
+            <legend className="px-1 text-sm font-medium">
+              Checklist kurasi <span className="text-destructive">*</span>
+            </legend>
+            <p className="text-xs text-muted-foreground">
+              Centang semua setelah barang diperiksa. Semua poin wajib sebelum
+              status siap terbit.
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {(
                 [
@@ -701,10 +724,12 @@ function ItemForm({
 function Field({
   label,
   required = false,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -714,6 +739,7 @@ function Field({
         {required && <span className="ml-1 text-destructive">*</span>}
       </Label>
       {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -734,10 +760,20 @@ function ItemDetail({
   const [mediaAlt, setMediaAlt] = useState("");
   const [mediaOrder, setMediaOrder] = useState("0");
   const [isCover, setIsCover] = useState(false);
+  const readinessErrors = getPublicationReadinessErrors(item);
+  const isPreparingForPublication = nextStatus === "siap_terbit";
 
   const transition = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!nextStatus) return;
+    if (isPreparingForPublication && readinessErrors.length > 0) return;
+    if (
+      (nextStatus === "ditolak" || nextStatus === "ditarik") &&
+      !reason.trim()
+    ) {
+      toast.error("Tuliskan alasan untuk menolak atau menarik barang.");
+      return;
+    }
     setSaving(true);
     try {
       await transitionItem(item.uuid, nextStatus, reason.trim() || undefined);
@@ -747,12 +783,14 @@ function ItemDetail({
       onRefresh();
     } catch (requestError) {
       toast.error(getErrorMessage(requestError, "Gagal mengubah status barang."));
+      await onRefresh();
     } finally {
       setSaving(false);
     }
   };
 
   const publish = async () => {
+    if (readinessErrors.length > 0) return;
     setSaving(true);
     try {
       await publishItem(item.uuid);
@@ -760,6 +798,7 @@ function ItemDetail({
       onRefresh();
     } catch (requestError) {
       toast.error(getErrorMessage(requestError, "Barang belum dapat diterbitkan."));
+      await onRefresh();
     } finally {
       setSaving(false);
     }
@@ -868,14 +907,29 @@ function ItemDetail({
               <Info label="Donatur" value={item.donor?.nama ?? "—"} />
               <Info label="Dibuat" value={formatDate(item.created_at)} />
             </dl>
-            {item.publish_readiness_errors?.length ? (
+            {readinessErrors.length ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-                <p className="font-semibold">Belum memenuhi syarat terbit</p>
+                <p className="font-semibold">Syarat sebelum siap terbit</p>
+                <p className="mt-1">
+                  {item.status === "siap_terbit"
+                    ? "Lengkapi daftar ini dan simpan perubahan sebelum menerbitkan barang."
+                    : "Lengkapi daftar ini dan simpan perubahan sebelum mengubah status ke siap terbit."}
+                </p>
                 <ul className="mt-2 list-inside list-disc space-y-1">
-                  {item.publish_readiness_errors.map((message, index) => (
+                  {readinessErrors.map((message, index) => (
                     <li key={`${index}-${message}`}>{message}</li>
                   ))}
                 </ul>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onEdit}
+                  className="mt-3 rounded-lg"
+                >
+                  <Pencil className="size-4" />
+                  Lengkapi data barang
+                </Button>
               </div>
             ) : null}
           </div>
@@ -883,7 +937,7 @@ function ItemDetail({
             {item.status === "siap_terbit" && (
               <Button
                 type="button"
-                disabled={saving || Boolean(item.publish_readiness_errors?.length)}
+                disabled={saving || readinessErrors.length > 0}
                 onClick={() => void publish()}
                 className="w-full rounded-xl bg-emerald-700 text-white hover:bg-emerald-800"
               >
@@ -904,14 +958,24 @@ function ItemDetail({
               </Button>
             )}
             <form onSubmit={transition} className="space-y-3 rounded-2xl border border-border/70 p-4">
-              <p className="text-sm font-semibold">Transisi status</p>
+              <div>
+                <p className="text-sm font-semibold">Ubah status barang</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.status === "siap_terbit"
+                    ? "Status siap terbit. Gunakan tombol Terbitkan ke storefront setelah semua syarat terpenuhi."
+                    : "Untuk menerbitkan barang, pilih siap terbit terlebih dahulu. Setelah itu gunakan tombol Terbitkan ke storefront."}
+                </p>
+              </div>
               <Select value={nextStatus} onValueChange={setNextStatus}>
                 <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Pilih status berikutnya" />
                 </SelectTrigger>
                 <SelectContent>
                   {itemStatuses
-                    .filter((status) => status !== item.status)
+                    .filter(
+                      (status) =>
+                        status !== item.status && status !== "terbit",
+                    )
                     .map((status) => (
                       <SelectItem key={status} value={status}>
                         {status.replaceAll("_", " ")}
@@ -919,15 +983,31 @@ function ItemDetail({
                     ))}
                 </SelectContent>
               </Select>
-              <Input
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="Alasan (wajib bila ditolak/ditarik)"
-                className="rounded-xl"
-              />
+              {nextStatus === "ditolak" || nextStatus === "ditarik" ? (
+                <Field label="Alasan" required>
+                  <Input
+                    required
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                    placeholder="Jelaskan alasan perubahan status"
+                    className="rounded-xl"
+                  />
+                </Field>
+              ) : null}
+              {isPreparingForPublication && readinessErrors.length > 0 && (
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Lengkapi syarat terbit di atas sebelum menyimpan status ini.
+                </p>
+              )}
               <Button
                 type="submit"
-                disabled={saving || !nextStatus}
+                disabled={
+                  saving ||
+                  !nextStatus ||
+                  (isPreparingForPublication && readinessErrors.length > 0) ||
+                  ((nextStatus === "ditolak" || nextStatus === "ditarik") &&
+                    !reason.trim())
+                }
                 variant="outline"
                 className="w-full rounded-xl"
               >
@@ -1040,6 +1120,39 @@ function ItemDetail({
         ) : null}
     </div>
   );
+}
+
+function getPublicationReadinessErrors(item: BarokahiinItem) {
+  const errors: string[] = [];
+
+  if (!item.judul_publik?.trim()) {
+    errors.push("Judul publik wajib diisi.");
+  }
+  if (!item.keterangan_publik?.trim()) {
+    errors.push("Keterangan publik wajib diisi.");
+  }
+  if (!item.kekurangan?.trim()) {
+    errors.push(
+      "Kolom kekurangan wajib diisi (kejujuran kondisi barang).",
+    );
+  }
+  if (!item.harga_rupiah || item.harga_rupiah <= 0) {
+    errors.push("Harga jual harus lebih dari 0.");
+  }
+
+  const checklistRequirements = [
+    ["kebersihan", "Checklist kurasi (kebersihan) belum dicentang."],
+    ["fungsi", "Checklist kurasi (fungsi) belum dicentang."],
+    ["kelengkapan", "Checklist kurasi (kelengkapan) belum dicentang."],
+    ["foto_memadai", "Checklist kurasi (foto_memadai) belum dicentang."],
+  ] as const;
+  for (const [key, message] of checklistRequirements) {
+    if (!item.checklist_kurasi?.[key]) {
+      errors.push(message);
+    }
+  }
+
+  return [...new Set([...errors, ...(item.publish_readiness_errors ?? [])])];
 }
 
 function ItemMediaCard({

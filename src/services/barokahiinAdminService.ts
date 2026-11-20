@@ -319,8 +319,8 @@ export const getItems = (params: {
 } = {}) => getData<AdminList<BarokahiinItem>>("/items", params);
 
 export const createItem = (payload: Partial<BarokahiinItem> & {
-  donor_uuid?: string;
-  kategori_uuid?: string;
+  donor_uuid?: string | null;
+  kategori_uuid?: string | null;
 }) => postData<BarokahiinItem>("/items", payload);
 
 export const getItem = (uuid: string) =>
