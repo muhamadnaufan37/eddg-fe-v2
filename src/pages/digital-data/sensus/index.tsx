@@ -704,17 +704,17 @@ const SensusPage = () => {
       <article
         key={item.kode_cari_data}
         className={`relative flex flex-col rounded-xl border p-4 shadow-sm transition-all duration-300 ${isAtlet
-            ? "bg-gradient-to-br from-green-50/60 via-white to-red-50/60 dark:from-green-900/10 dark:via-gray-900 dark:to-red-900/10 border-green-200/80 dark:border-green-800/50 shadow-[0_0_15px_-3px_rgba(34,197,94,0.15)] dark:shadow-[0_0_15px_-3px_rgba(34,197,94,0.05)] ring-1 ring-green-500/20 dark:ring-green-500/10"
+            ? "bg-linear-to-br from-green-50/60 via-white to-red-50/60 dark:from-green-900/10 dark:via-gray-900 dark:to-red-900/10 border-green-200/80 dark:border-green-800/50 shadow-[0_0_15px_-3px_rgba(34,197,94,0.15)] dark:shadow-[0_0_15px_-3px_rgba(34,197,94,0.05)] ring-1 ring-green-500/20 dark:ring-green-500/10"
             : "bg-white dark:bg-gray-900 border-gray-100 hover:border-gray-200 hover:shadow-md dark:border-gray-800"
           } ${isSelected
-            ? "!border-blue-500 ring-2 ring-blue-500 dark:!border-blue-400 dark:ring-blue-400"
+            ? "border-blue-500! ring-2 ring-blue-500 dark:border-blue-400! dark:ring-blue-400"
             : ""
           }`}
       >
         {/* Glow effect for Atlet */}
         {isAtlet && (
           <>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-red-500 rounded-t-xl" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-green-500 to-red-500 rounded-t-xl" />
             <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 shadow-sm border-2 border-white dark:border-gray-900"></span>
@@ -821,7 +821,7 @@ const SensusPage = () => {
                     key={action.value}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleRowAction(item, action.value); }}
-                    className={`${getActionButtonClass(action.value)} !h-auto !w-auto !rounded-lg flex items-center justify-center gap-1.5 px-2.5 py-1.5 hover:shadow-sm`}
+                    className={`${getActionButtonClass(action.value)} h-auto! w-auto! rounded-lg! flex items-center justify-center gap-1.5 px-2.5 py-1.5 hover:shadow-sm`}
                     title={action.label}
                   >
                     <ActionIcon className="h-4 w-4" />
