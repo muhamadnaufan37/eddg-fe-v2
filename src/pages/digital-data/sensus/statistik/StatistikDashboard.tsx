@@ -1,6 +1,9 @@
 import React from "react";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPin, Users, X } from "lucide-react";
+import { FileDown, MapPin, Users, X } from "lucide-react";
+import StatistikPdf from "./StatistikPdf";
 import {
   Bar,
   BarChart,
@@ -171,15 +174,22 @@ const StatistikDashboardModal: React.FC<StatistikModalProps> = ({
   onClose,
   data,
 }) => {
+  const printRef = useRef<HTMLDivElement | null>(null);
+  const handlePrintPdf = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "STATISTIK_DATA_PESERTA",
+  });
+
   if (!data) return null;
 
   const { charts, demografi_jenis_data: demografi } = data;
   const jenisDataColumns = ["Caberawit", "Praremaja", "Remaja", "Mumi"];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-100 flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-100 flex items-end justify-center p-0 sm:items-center sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -204,14 +214,24 @@ const StatistikDashboardModal: React.FC<StatistikModalProps> = ({
                   Statistik Data Peserta
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Tutup statistik"
-                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-200 dark:text-gray-400 dark:hover:bg-gray-700"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePrintPdf()}
+                  className="flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                >
+                  <FileDown size={16} />
+                  Ekspor PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Tutup statistik"
+                  className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </header>
 
             <div className="space-y-6 overflow-y-auto p-5 sm:space-y-8 sm:p-8">
@@ -346,9 +366,16 @@ const StatistikDashboardModal: React.FC<StatistikModalProps> = ({
               </section>
             </div>
           </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+          </div>
+        )}
+      </AnimatePresence>
+      <div
+        className="fixed -left-2500 top-0 w-275"
+        aria-hidden="true"
+      >
+        <StatistikPdf ref={printRef} data={data} />
+      </div>
+    </>
   );
 };
 

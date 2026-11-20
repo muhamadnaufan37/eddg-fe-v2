@@ -1,0 +1,85 @@
+.statistik-pdf {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8mm;
+  color: #172033;
+  background: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.statistik-pdf h1 {
+  margin: 0 0 5mm;
+  color: #123b68;
+  font-size: 18pt;
+  text-align: center;
+}
+
+.statistik-pdf-heading {
+  margin: 7mm 0 3mm;
+  color: #123b68;
+  font-size: 13pt;
+}
+
+.statistik-pdf-section {
+  margin: 0 0 4mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.statistik-pdf-section h2 {
+  margin: 0 0 2mm;
+  color: #123b68;
+  font-size: 10pt;
+}
+
+.statistik-pdf table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+}
+
+.statistik-pdf thead {
+  display: table-header-group;
+}
+
+.statistik-pdf tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.statistik-pdf th,
+.statistik-pdf td {
+  padding: 1.5mm;
+  border: 1px solid #94a3b8;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.statistik-pdf th {
+  color: #123b68;
+  background: #eff6ff;
+  font-weight: 700;
+}
+
+.statistik-pdf-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2mm 5mm;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
+@media print {
+  .statistik-pdf {
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .statistik-pdf-chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
