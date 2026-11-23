@@ -9,6 +9,7 @@ export const ROLES = {
   PENGURUS: "e405d388-541b-487b-87d4-cb0b294cfc11",
   BENDAHARA: "b7721c02-96f7-4238-bc7e-1bcf2e0ebd56",
   PETUGAS_ABSEN: "b511748b-ef40-4999-b4e9-b8ab575ec958",
+  KOORDINATOR_BAROKAHIIN: "c5497791-44ed-42f7-941c-ffa78a1e0729",
 } as const;
 
 export type RoleId = (typeof ROLES)[keyof typeof ROLES];
@@ -21,6 +22,7 @@ const ROLE_NAMES_BY_ID: Record<RoleId, string> = {
   [ROLES.PENGURUS]: "pengurus",
   [ROLES.BENDAHARA]: "bendahara",
   [ROLES.PETUGAS_ABSEN]: "ptgs-absen",
+  [ROLES.KOORDINATOR_BAROKAHIIN]: "koordinator-barokahiin",
 };
 
 export const getRoleName = (roleId: unknown): string => {

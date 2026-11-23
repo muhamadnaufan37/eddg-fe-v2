@@ -1,0 +1,233 @@
+/* Barokahiin Console Design Tokens - Light & Dark Mode aligned with src/config/theme.ts */
+.barokahiin-console {
+  --kertas: #f4f6fb;
+  --putih: #ffffff;
+  --surface-subtle: #eef1f8;
+  --tinta: #171b3d;
+  --muted-brk: #566083;
+  --indigo: #1f2c7a;
+  --indigo-btn: #1f2c7a;
+  --indigo-btn-hover: #141c52;
+  --indigo-tua: #141c52;
+  --indigo-muda: #e6e9f8;
+  --kunyit: #f5b31a;
+  --kunyit-muda: #fff1cc;
+  --daun: #0f7a5c;
+  --daun-tua: #0a5a44;
+  --daun-muda: #ddf3ea;
+  --bahaya: #bf3328;
+  --bahaya-muda: #fbe3e0;
+  --info: #1d5fa8;
+  --peringatan-teks: #8a5a00;
+  --garis: #d9deee;
+  --garis-kuat: #7a83a6;
+
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-full: 9999px;
+  --e-float: 0 12px 28px -8px rgba(23, 27, 61, 0.16);
+
+  --d-fast: 120ms;
+  --d-base: 200ms;
+  --d-slow: 320ms;
+  --ease-brk: cubic-bezier(0.2, 0, 0, 1);
+
+  font-family:
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  background-color: var(--kertas);
+  color: var(--tinta);
+  line-height: 1.55;
+  overflow-x: clip;
+}
+
+/* Dark Mode aligned directly with eddg-fe-v2 src/config/theme.ts (#212121, #2a2a2a, #1a1a1a, #457b9d) */
+.dark .barokahiin-console {
+  --kertas: #212121;
+  --putih: #2a2a2a;
+  --surface-subtle: #1a1a1a;
+  --tinta: #ffffff;
+  --muted-brk: #9ca3af;
+  --indigo: #7fb3d5;
+  --indigo-btn: #457b9d;
+  --indigo-btn-hover: #5a91b3;
+  --indigo-tua: #1a1a1a;
+  --indigo-muda: #1f3342;
+  --kunyit: #f5b31a;
+  --kunyit-muda: #332914;
+  --daun: #10b981;
+  --daun-tua: #6ee7b7;
+  --daun-muda: #14332a;
+  --bahaya: #f87171;
+  --bahaya-muda: #3b1c1c;
+  --info: #60a5fa;
+  --peringatan-teks: #fcd34d;
+  --garis: #374151;
+  --garis-kuat: #4b5563;
+  --e-float: 0 14px 32px -8px rgba(0, 0, 0, 0.55);
+}
+
+.barokahiin-console h1,
+.barokahiin-console h2,
+.barokahiin-console h3,
+.barokahiin-console .brk-display {
+  font-family:
+    "Bricolage Grotesque",
+    "Plus Jakarta Sans",
+    system-ui,
+    sans-serif;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.barokahiin-console .brk-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.barokahiin-console .brk-input,
+.barokahiin-console .brk-textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid var(--garis-kuat);
+  border-radius: var(--r-sm);
+  background-color: var(--putih);
+  color: var(--tinta);
+  padding: 10px 12px;
+  font-size: 15px;
+  line-height: 1.4;
+  transition: border-color var(--d-fast) var(--ease-brk);
+}
+
+.barokahiin-console .brk-input::placeholder,
+.barokahiin-console .brk-textarea::placeholder {
+  color: var(--muted-brk);
+  opacity: 0.85;
+}
+
+.barokahiin-console .brk-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.barokahiin-console .brk-input:focus-visible,
+.barokahiin-console .brk-textarea:focus-visible,
+.barokahiin-console button:focus-visible,
+.barokahiin-console a:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}
+
+.barokahiin-console .brk-card {
+  background-color: var(--putih);
+  border: 1px solid var(--garis);
+  border-radius: var(--r-md);
+  color: var(--tinta);
+}
+
+.barokahiin-console .brk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--d-fast) var(--ease-brk),
+    border-color var(--d-fast) var(--ease-brk),
+    opacity var(--d-fast) var(--ease-brk);
+}
+
+.barokahiin-console .brk-btn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.barokahiin-console .brk-btn-primary {
+  background-color: var(--indigo-btn);
+  color: #ffffff;
+  border: 1.5px solid var(--indigo-btn);
+}
+
+@media (hover: hover) {
+  .barokahiin-console .brk-btn-primary:hover:not(:disabled) {
+    background-color: var(--indigo-btn-hover);
+    border-color: var(--indigo-btn-hover);
+  }
+}
+
+.barokahiin-console .brk-btn-secondary {
+  background-color: var(--putih);
+  color: var(--indigo);
+  border: 1.5px solid var(--indigo);
+}
+
+@media (hover: hover) {
+  .barokahiin-console .brk-btn-secondary:hover:not(:disabled) {
+    background-color: var(--indigo-muda);
+  }
+}
+
+.barokahiin-console .brk-btn-ghost {
+  background-color: transparent;
+  color: var(--tinta);
+  border: 1.5px solid transparent;
+}
+
+@media (hover: hover) {
+  .barokahiin-console .brk-btn-ghost:hover:not(:disabled) {
+    background-color: var(--indigo-muda);
+    color: var(--indigo);
+  }
+}
+
+.barokahiin-console .brk-btn-danger {
+  background-color: var(--bahaya);
+  color: #ffffff;
+  border: 1.5px solid var(--bahaya);
+}
+
+.barokahiin-console .brk-btn-daun {
+  background-color: var(--daun);
+  color: #ffffff;
+  border: 1.5px solid var(--daun);
+}
+
+.barokahiin-console .brk-btn-kunyit {
+  background-color: var(--kunyit);
+  color: #171b3d;
+  border: 1.5px solid var(--kunyit);
+}
+
+.barokahiin-console .brk-receipt {
+  background-color: var(--putih);
+  border: 1px solid var(--garis);
+  border-radius: var(--r-md);
+  max-width: 380px;
+}
+
+.barokahiin-console .brk-float {
+  box-shadow: var(--e-float);
+}
+
+.barokahiin-console .brk-safe-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barokahiin-console *,
+  .barokahiin-console *::before,
+  .barokahiin-console *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

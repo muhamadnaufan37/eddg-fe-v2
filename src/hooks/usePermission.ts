@@ -8,6 +8,7 @@ const ROLE_IDS = {
   BENDAHARA: "b7721c02-96f7-4238-bc7e-1bcf2e0ebd56",
   ADMIN_KBM: "e2896d58-4831-458c-9fb7-c4f988c0550c",
   PTGS_ABSEN: "b511748b-ef40-4999-b4e9-b8ab575ec958",
+  KOORDINATOR_BAROKAHIIN: "c5497791-44ed-42f7-941c-ffa78a1e0729",
 } as const;
 
 /**
@@ -30,6 +31,7 @@ export const usePermission = () => {
   const isBendahara = roleId === ROLE_IDS.BENDAHARA;
   const isAdminKbm = roleId === ROLE_IDS.ADMIN_KBM;
   const isPtgsAbsen = roleId === ROLE_IDS.PTGS_ABSEN;
+  const isKoordinatorBarokahiin = roleId === ROLE_IDS.KOORDINATOR_BAROKAHIIN;
 
   /** User can only view, cannot create / edit / delete */
   const isViewOnly = isPengurus;
@@ -46,6 +48,7 @@ export const usePermission = () => {
     isBendahara,
     isAdminKbm,
     isPtgsAbsen,
+    isKoordinatorBarokahiin,
     isViewOnly,
     canEdit,
     ROLE_IDS,

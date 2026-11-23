@@ -80,6 +80,16 @@ export default defineConfig(({ mode }) => {
       fs: {
         strict: false,
       },
+      proxy: apiUrl
+        ? {
+            "/api": {
+              target: apiUrl,
+              changeOrigin: true,
+              secure: false,
+              cookieDomainRewrite: "",
+            },
+          }
+        : undefined,
     },
   };
 });

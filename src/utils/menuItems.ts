@@ -157,12 +157,7 @@ export const menuItems = [
     icon: "HandCoins",
     role: [
       "admin",
-      "ptgs-sensus",
-      "admin-data-center",
-      "pengurus",
       "bendahara",
-      "admin-kbm",
-      "ptgs-absen",
     ],
     link: "/ziswaf",
   },
@@ -170,7 +165,7 @@ export const menuItems = [
     id: "barokahiin-admin",
     title: "Barokahiin",
     icon: "Store",
-    role: ["admin", "bendahara"],
+    role: ["admin", "koordinator-barokahiin"],
     link: "/barokahiin-admin",
   },
   {

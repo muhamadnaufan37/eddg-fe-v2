@@ -1,8 +1,13 @@
-﻿import axios, { type AxiosRequestConfig } from "axios";
+import axios, {
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { getLocalStorage, setLocalStorage } from "./localStorageService";
 
 // Use proxy in development to avoid CORS, direct API URL in production
-const baseURL = import.meta.env.VITE_PUBLIC_REACT_APP_BASE_URL_API;
+const baseURL = import.meta.env.DEV
+  ? ""
+  : import.meta.env.VITE_PUBLIC_REACT_APP_BASE_URL_API;
 export const AUTH_UNAUTHORIZED_EVENT = "auth:unauthorized";
 export const AUTH_SESSION_UPDATED_EVENT = "auth:session-updated";
 
@@ -81,17 +86,14 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getAccessToken();
-  const requestHeaders = (config.headers ?? {}) as Record<string, string>;
 
   if (token) {
-    requestHeaders.Authorization = `Bearer ${token}`;
+    config.headers.set("Authorization", `Bearer ${token}`);
   } else {
-    delete requestHeaders.Authorization;
+    config.headers.delete("Authorization");
   }
-
-  config.headers = requestHeaders;
 
   return config;
 });
