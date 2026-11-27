@@ -135,7 +135,7 @@ flowchart TD
 
 ### 3.1 Dasbor, Koordinator, Toko, & Verifikasi Alamat (`V1–V8`)
 - `GET /admin/dashboard`
-- `GET /admin/coordinators` → `POST /admin/coordinators/{uuid}/verify`, `POST /admin/coordinators/{uuid}/sanctions`
+- `GET /admin/coordinators` → `POST /admin/coordinators/{uuid}/verify` (mendukung `regency_codes[]` / `wilayah_codes[]` seperti `["32.73", "32.77"]` — otomatis disinkronkan dari `wilayah.id`; `region_ids[]` tetap kompatibel), `POST /admin/coordinators/{uuid}/sanctions`
 - `GET /admin/stores` → `POST /admin/stores/{uuid}/moderate`
 - Verifikasi Alamat Toko:
   - `POST /admin/store-addresses/{addressUuid}/checks` (`kode`: `V1..V8`, `lulus`: `true|false`, `catatan?`)
