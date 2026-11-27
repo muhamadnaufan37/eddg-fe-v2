@@ -1,168 +1,251 @@
-# Panduan Integrasi Frontend 2: Konsol `digitaldatagenerus` (Koordinator & Admin)
+# Panduan Integrasi Frontend 1: Storefront Barokahiin (Publik & Pembeli)
 
-Dokumen ini khusus untuk tim **Frontend Konsol `digitaldatagenerus`** yang mengonsumsi:
-- **API Konsol Koordinator** (terikat wilayah & kepemilikan): `/api/v1/barokahiin/console/*`
-- **API Admin** (Super Admin / Reviewer / Keuangan, `role_id` `1` & `3`): `/api/v1/barokahiin/admin/*`
+Dokumen ini adalah panduan **end-to-end** khusus untuk tim **Frontend 1 (Storefront Barokahiin)** yang mengonsumsi:
+- **API Publik (tanpa login)**: `/api/v1/public/wilayah/*` & `/api/v1/barokahiin/public/*`
+- **API Pembeli (wajib Bearer token)**: `/api/v1/barokahiin/buyer/*`
 
-Postman Collection siap impor: [barokahiin-v0.5.postman_collection.json](./postman/barokahiin-v0.5.postman_collection.json) (gunakan folder **3. Console** dan **4. Admin**).
+Dokumen pendamping:
+- Postman Collection (96 request): [barokahiin-v0.5.postman_collection.json](./postman/barokahiin-v0.5.postman_collection.json) *(folder **1. Public** & **2. Buyer**)*
+- Panduan khusus Wilayah & Alamat: [BAROKAHIIN_WILAYAH_FLOW.md](./BAROKAHIIN_WILAYAH_FLOW.md)
+- Panduan khusus Payment Gateway Midtrans: [BAROKAHIIN_PAYMENT_MIDTRANS.md](./BAROKAHIIN_PAYMENT_MIDTRANS.md)
 
 ---
 
-## 1. Autentikasi & Konvensi
+## 1. Konfigurasi HTTP Client & Konvensi
 
-- **Base URL**: `https://apimain.digitaldatagenerus.com/api/v1` (atau `http://127.0.0.1:8000/api/v1` di lokal)
-- **Login**: gunakan endpoint JWT login `POST /api/v1/login` yang sudah ada, lalu kirim `Authorization: Bearer <token>` pada setiap request konsol/admin yang memerlukan autentikasi. Endpoint referensi wilayah publik di bawah tidak memerlukan token.
-- **Header `Idempotency-Key`**: wajib/disarankan pada `POST /console/payouts`, `POST /admin/ledger/adjustments`, dan `POST /admin/pool/allocate`.
-- **Cakupan Wilayah (Koordinator)**: server menyaring semua data donatur, barang, pesanan, dan program berdasarkan wilayah penugasan koordinator. Akses ke objek luar wilayah mengembalikan **`404 NOT_FOUND` / `OUT_OF_SCOPE`** (bukan `403`).
-- **Optimistic Concurrency (Edit Barang)**: kirim field `version` pada `PATCH /console/items/{uuid}`. Bila ada konflik edit bersamaan, server membalas **`409 VERSION_CONFLICT`** — tampilkan notifikasi dan muat ulang data terbaru.
-
-### 1.1 Referensi API Wilayah untuk Form Koordinator
-
-Gunakan endpoint publik berikut untuk mengisi dropdown wilayah atau filter wilayah di konsol. Endpoint ini **tidak memerlukan `Authorization: Bearer` maupun refresh token**. URL kanonisnya memakai prefix `/api/v1/public/wilayah`; prefix lama `/api/v1/data_center/wilayah` juga tersedia, tetapi frontend sebaiknya memakai URL kanonis.
-
-| Method | Endpoint | Kegunaan |
-|---|---|---|
-| `GET` | `/public/wilayah/filters` | Data administratif dan organisasi dalam satu respons; mendukung filter bertingkat. |
-| `GET` | `/public/wilayah/provinces` | Daftar provinsi. |
-| `GET` | `/public/wilayah/regencies/{provinceCode}` | Kabupaten/kota berdasarkan kode provinsi. |
-| `GET` | `/public/wilayah/districts/{regencyCode}` | Kecamatan berdasarkan kode kabupaten/kota. |
-| `GET` | `/public/wilayah/villages/{districtCode}` | Kelurahan/desa administratif berdasarkan kode kecamatan. |
-| `GET` | `/public/wilayah/tree` | Hierarki organisasi `daerah → desa → kelompok`. |
-| `GET` | `/public/wilayah/detail?type={type}&id={id}` | Detail `daerah`, `desa`, atau `kelompok` berdasarkan ID. |
-
-Semua URL di tabel relatif terhadap base URL API, misalnya `https://apimain.digitaldatagenerus.com/api/v1`.
-
-#### Dropdown wilayah administratif
-
-Untuk dropdown bertingkat, panggil endpoint berikut ketika pilihan sebelumnya berubah:
-
-1. `GET /public/wilayah/provinces`
-2. `GET /public/wilayah/regencies/{provinceCode}`
-3. `GET /public/wilayah/districts/{regencyCode}`
-4. `GET /public/wilayah/villages/{districtCode}`
-
-Atau gunakan endpoint gabungan `GET /public/wilayah/filters` dengan query parameter opsional:
-
-| Parameter | Fungsi |
-|---|---|
-| `province_code` | Memilih provinsi dan memuat kabupaten/kota yang cocok. |
-| `regency_code` | Memuat kecamatan yang cocok. |
-| `district_code` | Memuat kelurahan/desa administratif yang cocok. |
-| `village_code` | Memfilter kelompok organisasi yang memiliki kode kelurahan/desa tersebut. |
-| `daerah_id` | Memilih daerah organisasi untuk membatasi daftar desa. |
-| `desa_id` | Memilih desa organisasi untuk membatasi daftar kelompok. |
-
-Contoh: `GET /public/wilayah/filters?province_code={provinceCode}&regency_code={regencyCode}&daerah_id={daerahId}`. Respons mengelompokkan daftar kode administratif dan wilayah organisasi:
-
-```json
-{
-  "success": true,
-  "data": {
-    "administratif": {
-      "provinces": [],
-      "regencies": [],
-      "districts": [],
-      "villages": []
-    },
-    "organisasi": {
-      "daerah": [],
-      "desa": [],
-      "kelompok": []
+- **Base URL**: `https://apimain.digitaldatagenerus.com/api/v1` *(lokal: `http://127.0.0.1:8000/api/v1`)*
+- **Format Nominal**: seluruh harga/nominal adalah **integer Rupiah** (`price_idr`, `subtotal_idr`, `ongkir_idr`, `packing_fee_idr`, `voucher_discount_idr`, `rounding_donation_idr`, `total_idr`).
+- **Header `Idempotency-Key`**: wajib kirim UUID unik (`crypto.randomUUID()`) pada request `POST` kritis (`auth/register`, `auth/otp/request`, `checkout/confirm`, `orders/{uuid}/pay`) agar klik ganda tidak membuat pesanan/pembayaran duplikat.
+- **Format Respons Sukses**: `{ "success": true, "message": "...", "data": {} }`
+- **Format Error Terstruktur**:
+  ```json
+  {
+    "success": false,
+    "message": "Profil belum lengkap untuk membuat pesanan.",
+    "error": {
+      "code": "PROFILE_INCOMPLETE",
+      "message": "Profil belum lengkap untuk membuat pesanan.",
+      "fields": { "missing": ["EMAIL_UNVERIFIED", "ADDRESS_MISSING"] },
+      "request_id": "uuid"
     }
   }
+  ```
+
+```js
+import axios from "axios";
+
+export const storefrontApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: { Accept: "application/json", "Content-Type": "application/json" },
+});
+
+export const authHeader = (token) => ({ Authorization: `Bearer ${token}` });
+export const idempotentHeader = (token, key = crypto.randomUUID()) => ({
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  "Idempotency-Key": key,
+});
+```
+
+---
+
+## 2. Alur Besar Storefront (End-to-End Flowchart)
+
+```mermaid
+flowchart TD
+    A["1. Jelajah Katalog & Filter Wilayah<br/>GET /barokahiin/public/items"] --> B["2. Detail Barang & Estimasi Ongkir<br/>GET /public/items/{slug} & /shipping-estimate"]
+    B --> C{"Sudah Login?"}
+    C -- Belum --> D["3. Login / Register Pembeli<br/>Password / OTP SMS-Email / Scan QR"]
+    C -- Sudah --> E["4. Pilih Metode Serah<br/>serah = kirim ATAU ambil"]
+    D --> E
+    E --> F["5. Cek Gate Siap Beli<br/>GET /buyer/me/profile/completeness?serah=..."]
+    F -- "ready = false" --> G["Lengkapi Data sesuai missing[]<br/>(Verify Email / Profil / Alamat village_code)"]
+    G --> F
+    F -- "ready = true" --> H["6. Validasi Checkout + Voucher<br/>POST /buyer/checkout/validate"]
+    H --> I["7. Layar Periksa Pesananmu<br/>Checkbox wajib: data_confirmed = true"]
+    I --> J["8. Konfirmasi Pesanan (Hold 30m)<br/>POST /buyer/checkout/confirm"]
+    J --> K["9. Bayar via Midtrans Snap<br/>POST /buyer/orders/{uuid}/pay -> snap.pay()"]
+    K --> L["10. Polling Status (Auto-Sync Midtrans)<br/>GET /buyer/orders/{kode} -> status = dibayar"]
+    L --> M{"serah?"}
+    M -- "kirim" --> N["Tunggu Resi (dikirim) -> Konfirmasi Terima<br/>POST /orders/{uuid}/confirm-received"]
+    M -- "ambil" --> O["Lihat Alamat Titik Ambil<br/>GET /orders/{kode}/pickup -> Ambil di Toko"]
+    N --> P["Selesai: Kuitansi Kebaikan & Ulasan"]
+    O --> P
+```
+
+---
+
+## 3. Endpoint Publik (Tanpa Login)
+
+| Halaman | Endpoint | Catatan Penting |
+|---|---|---|
+| **Filter Wilayah** | `GET /public/wilayah/provinces`, `/regencies/{provinceCode}`, `/districts/{regencyCode}`, `/villages/{districtCode}`, `/filters` | Data resmi `wilayah.id` (cache 7 hari). Gunakan `/filters` untuk memuat administratif + `daerah`/`desa`/`kelompok` sekaligus. |
+| **Katalog Barang** | `GET /barokahiin/public/items` | Filter: `q`, `category`, `province_code`, `regency_code`, `district_code`, `village_code`, `daerah_id`, `desa_id`, `kelompok_id`, `price_min`, `price_max`, `grade` (`A`/`B`/`C`), `serah` (`ambil`/`kirim`), `charity` (`true`/`false`), `sort` (`peringkat`\|`terbaru`\|`termurah`\|`termahal`), `limit` (1–100). |
+| **Detail Barang** | `GET /barokahiin/public/items/{slug}` | Menyertakan `pickup_only`, `media[]`, `toko` (`area_publik`, alamat lengkap **tidak** muncul), dan `segel_kurasi`. |
+| **Estimasi Ongkir** | `GET /barokahiin/public/items/{slug}/shipping-estimate?village_code=32.77.02.1001` | Menerima `village_code` / `district_code` / `regency_code` / `wilayah_code`. Jika `pickup_only === true`, ongkir `0` dan metode `kirim` harus di-disable di UI. |
+| **Voucher Publik** | `GET /barokahiin/public/vouchers` | Daftar voucher aktif yang bisa dipakai di halaman checkout. |
+| **Toko, Program, Dampak, Halaman** | `GET /barokahiin/public/stores`, `/stores/{slug}`, `/stores/{slug}/items`, `/programs`, `/programs/{slug}`, `/impact`, `/pages/{key}`, `/settings` | Konten publik storefront. |
+
+---
+
+## 4. Autentikasi Pembeli & Masa Berlaku Sesi (7 Hari)
+
+Semua endpoint login/registrasi mengembalikan `{ token, expires_in_seconds: 604800, is_new_user, user, profile_completeness }`.
+
+1. **Registrasi Akun Baru**: `POST /barokahiin/public/auth/register` (`Idempotency-Key`)
+   ```json
+   { "nama_lengkap": "Siti Rahma", "email": "siti@example.com", "phone": "081234567890", "password": "password123" }
+   ```
+2. **Login Password (Email atau No. HP)**: `POST /barokahiin/public/auth/login`
+   ```json
+   { "identifier": "siti@example.com", "password": "password123" }
+   ```
+3. **Login OTP (SMS atau Email)** *(tidak pernah meminta input nama ulang saat re-login)*:
+   - Minta OTP: `POST /barokahiin/public/auth/otp/request` (`Idempotency-Key`) → kirim `{ "phone": "081200008888" }` **atau** `{ "email": "pembeli.sample@barokahiin.local" }`.
+   - Verifikasi OTP: `POST /barokahiin/public/auth/otp/verify` → kirim `{ "phone": "...", "code": "123456" }` **atau** `{ "email": "...", "code": "123456" }`.
+4. **Login Scan QR Code** *(untuk user yang sudah login di perangkat lain)*:
+   - Web/Desktop buat QR: `POST /barokahiin/public/auth/qr/create` → tampilkan QR dari `data.qr_payload` (berlaku 3 menit).
+   - Web/Desktop polling 2–3 dtk: `GET /barokahiin/public/auth/qr/{qr_token}/status`.
+   - Mobile (sudah login) setujui: `POST /barokahiin/buyer/auth/qr/approve` dengan `{ "qr_token": "<qr_token atau qr_payload>" }`.
+5. **Perpanjang Sesi Tanpa Login Ulang**:
+   - Token berlaku **7 hari (`604800` detik)**. Panggil `POST /barokahiin/buyer/auth/refresh` (Bearer token) sebelum expired untuk memperbarui token secara senyap.
+
+---
+
+## 5. Alur Lengkap Alamat Pembeli & Gate "Siap Beli"
+
+### 5.1 Cara Mengisi Alamat Pembeli (Wajib untuk `serah = "kirim"`)
+Frontend **tidak perlu** mencari `region_id`. Ikuti urutan dropdown berikut:
+
+1. `GET /api/v1/public/wilayah/provinces` → pilih `province_code` (contoh `"32"`)
+2. `GET /api/v1/public/wilayah/regencies/32` → pilih `regency_code` (contoh `"32.73"`)
+3. `GET /api/v1/public/wilayah/districts/32.73` → pilih `district_code` (contoh `"32.73.25"`)
+4. `GET /api/v1/public/wilayah/villages/32.73.25` → pilih **`village_code`** (contoh `"32.73.25.1002"`) — **wajib sampai level kelurahan/desa!**
+5. Simpan alamat ke `POST /api/v1/barokahiin/buyer/me/addresses`:
+   ```json
+   {
+     "penerima": "Siti Rahma",
+     "phone_penerima": "081234567890",
+     "province_code": "32",
+     "regency_code": "32.73",
+     "district_code": "32.73.25",
+     "village_code": "32.73.25.1002",
+     "kode_pos": "40614",
+     "jalan_nomor": "Jl. Cipadung Raya No. 45",
+     "rt_rw": "RT 03 / RW 04",
+     "patokan": "Depan Indomaret Cipadung",
+     "jenis_tempat": "rumah",
+     "is_default": true
+   }
+   ```
+   - **Validasi keras (`422 ADDRESS_INVALID`)**: semua field wajib di atas harus diisi, `kode_pos` 5 digit angka, `patokan` ≥ 5 karakter, `village_code` wajib tingkat kelurahan/desa.
+   - **Peringatan lunak (`data.warnings[]`)**: mis. `ADDRESS_LOOKS_INCOMPLETE` atau `ADDRESS_SUSPICIOUS_TEXT` — alamat tetap tersimpan, tampilkan konfirmasi ke user agar diperiksa kembali.
+   - **Auto-sync**: menyimpan alamat otomatis mengisi `region_id` & `nama_lengkap` di profil bila masih kosong dan langsung mengembalikan `data.profile_completeness` terbaru.
+   - **Kelola alamat lain**: `GET /buyer/me/addresses` (maks 5 alamat), `PATCH /buyer/me/addresses/{uuid}` (edit / set default), `DELETE /buyer/me/addresses/{uuid}`.
+
+### 5.2 Gate "Siap Beli" (`GET /barokahiin/buyer/me/profile/completeness?serah=kirim|ambil`)
+Panggil saat masuk halaman checkout (dan ulangi jika user mengubah toggle `serah` antara `kirim` dan `ambil`):
+
+| Kode pada `missing[]` | Kapan Muncul | Aksi yang Harus Ditampilkan Frontend |
+|---|---|---|
+| `PHONE_UNVERIFIED` | HP belum terverifikasi OTP | Arahkan ke verifikasi OTP SMS (`auth/otp/request` → `auth/otp/verify`). |
+| `EMAIL_UNVERIFIED` | Email belum diverifikasi | Tampilkan tombol verifikasi email → `POST /barokahiin/buyer/me/email/verify` *(persisten lintas login, cukup 1x selamanya)*. |
+| `NAME_MISSING` | Nama < 3 huruf / hanya angka | Form input nama → `PATCH /barokahiin/buyer/me/profile` (`{ nama_lengkap }`). |
+| `TERMS_NOT_ACCEPTED` | Belum setuju S&K | Checkbox S&K → `PATCH /barokahiin/buyer/me/profile` (`{ accept_terms: true, terms_version: "0.5" }`). |
+| `ADDRESS_MISSING` / `ADDRESS_INVALID` | Khusus **`serah = "kirim"`** | Buka form/pilih alamat (`POST /buyer/me/addresses` atau `PATCH /buyer/me/addresses/{uuid}`). |
+| `REGION_MISSING` | Khusus **`serah = "ambil"`** jika belum punya alamat maupun wilayah profil | Pilih kelurahan (`village_code`) → `PATCH /barokahiin/buyer/me/profile` (`{ village_code }`). |
+
+---
+
+## 6. Perbedaan Alur `serah = "kirim"` vs `serah = "ambil"` saat Checkout
+
+> **Aturan Keranjang**: 1 pesanan hanya boleh berisi barang dari **1 toko yang sama** (maks 10 barang di keranjang). Jika ada barang dengan `pickup_only: true`, metode `serah = "kirim"` akan ditolak — paksa toggle ke `serah = "ambil"`.
+
+### Langkah 1 — Preview Voucher (Opsional)
+`POST /api/v1/barokahiin/buyer/vouchers/preview`
+```json
+{
+  "voucher_code": "BAROKAH25",
+  "item_uuids": ["<uuid-barang>"],
+  "serah": "kirim",
+  "address_uuid": "<uuid-alamat-pembeli>"
 }
 ```
 
-`tree` berguna jika frontend membutuhkan hierarki organisasi sekaligus atau ingin menyimpannya sebagai cache. Endpoint referensi ini mengembalikan data aktif secara umum; **bukan** daftar penugasan khusus koordinator dan bukan pengganti pemeriksaan cakupan akses. Pengiriman atau perubahan data tetap harus mengikuti endpoint konsol yang melakukan validasi wilayah di server.
+### Langkah 2 — Validasi Checkout (Hitung Ongkir & Total, Belum Menahan Barang)
+`POST /api/v1/barokahiin/buyer/checkout/validate`
+
+- **Jika `serah = "kirim"`**:
+  ```json
+  {
+    "item_uuids": ["<uuid-barang>"],
+    "serah": "kirim",
+    "address_uuid": "<uuid-alamat-dari-GET-me-addresses>",
+    "voucher_code": "BAROKAH25",
+    "rounding_donation_idr": 2000
+  }
+  ```
+  - Jika `address_uuid` tidak dikirim, backend otomatis memakai alamat `is_default: true`.
+  - Backend menghitung `ongkir_idr`, `packing_fee_idr`, dan `zona` (`dalam_kota` / `jawa_barat` / `luar_jawa_barat`) berdasarkan berat aktual vs volumetrik barang dan wilayah alamat pembeli.
+- **Jika `serah = "ambil"`**:
+  ```json
+  {
+    "item_uuids": ["<uuid-barang>"],
+    "serah": "ambil",
+    "voucher_code": "BAROKAH25",
+    "rounding_donation_idr": 0
+  }
+  ```
+  - Tidak perlu `address_uuid`. `ongkir_idr = 0` dan `packing_fee_idr = 0`.
+
+Periksa respons `data`:
+- Pastikan `ready === true` (`missing: []`, `cart_issues: []`, `voucher_error: null`).
+- Tampilkan layar **"Periksa Pesananmu"** berisi rincian `data.quote` (`subtotal_idr`, `ongkir_idr`, `packing_fee_idr`, `voucher_discount_idr`, `rounding_donation_idr`, `total_idr`) serta checkbox wajib **"Data sudah benar"**.
+
+### Langkah 3 — Konfirmasi Checkout (Mulai Hold 30 Menit)
+`POST /api/v1/barokahiin/buyer/checkout/confirm` *(wajib header `Idempotency-Key`)*
+```json
+{
+  "item_uuids": ["<uuid-barang>"],
+  "serah": "kirim",
+  "address_uuid": "<uuid-alamat>",
+  "voucher_code": "BAROKAH25",
+  "rounding_donation_idr": 2000,
+  "data_confirmed": true
+}
+```
+- Sukses (`201`): simpan `data.uuid` (`order_uuid`), `data.kode_pesanan` (`order_kode`), dan tampilkan countdown menuju `data.hold_expires_at`.
+
+### Langkah 4 — Pembayaran Midtrans Snap & Auto-Sync
+1. Buat transaksi: `POST /api/v1/barokahiin/buyer/orders/{order_uuid}/pay` (`Idempotency-Key`, body `{ "metode": "snap" }`).
+2. Jalankan `window.snap.pay(data.snap_token)` (atau buka `data.redirect_url`).
+3. Polling `GET /api/v1/barokahiin/buyer/orders/{order_kode}` setiap 3 detik *(backend otomatis mengecek status langsung ke Midtrans Core API bila webhook belum masuk)*, atau sediakan tombol **"Cek Status Pembayaran"** → `POST /api/v1/barokahiin/buyer/orders/{order_uuid}/sync-payment`.
+4. Detail lengkap implementasi `snap.js` lihat [BAROKAHIIN_PAYMENT_MIDTRANS.md](./BAROKAHIIN_PAYMENT_MIDTRANS.md).
 
 ---
 
-## 2. Alur & Endpoint Koordinator (`/api/v1/barokahiin/console`)
+## 7. State Machine Status Pesanan & Aksi UI Pembeli
 
-### 2.1 Dasbor, Toko, & Alamat Terverifikasi
-- `GET /console/dashboard` — Ringkasan `coordinator` (`status`, `level`), `store` (`status`, `store_score`), `items_by_status`, `orders_to_fulfill`, dan `wallet` (`pending_idr`, `available_idr`, `payout_hold_idr`, `charity_share_pct`).
-- `GET /console/store`, `PATCH /console/store` — Kelola profil toko (`nama`, `deskripsi`, `kebijakan_tambahan`, `jam_operasional`).
-- `POST /console/store/address/submit` — Ajukan alamat toko lengkap untuk verifikasi `V1–V8` oleh Admin (`jalan_nomor`, `rt_rw`, `region_id`, `kode_pos`, `patokan`, `lat`, `lng`, `jenis_tempat`, `status_penguasaan`, `foto_media_ids`, `bukti_ref`, `kontak_toko`).
-  - *Catatan*: Ubah alamat akan ditolak (`409 ACTIVE_ORDERS_EXIST`) selama masih ada pesanan aktif (`dibayar`, `disiapkan`, `siap_diambil`, `dikirim`).
-- `POST /console/store/pause` (`{ "days": 1..30 }`) & `POST /console/store/resume` — Jeda/aktifkan toko (pesanan yang sudah dibayar tetap wajib diselesaikan).
-- `GET /console/store/score` — Hitung & tampilkan Skor Toko beserta komponennya (`sla`, `komplain`, `rating`, `audit`, `kelengkapan`).
-
-### 2.2 Donatur & Persetujuan
-- `GET /console/donors`, `GET /console/donors/{uuid}`
-- `POST /console/donors` (`region_id`, `nama`, `kontak`, `anonim`, `catatan`) — periksa `data.duplicate_warning` bila kontak sudah pernah terdaftar.
-- `POST /console/donors/{uuid}/consents` (`jenis`: `"jual"` | `"publikasi_media"`, `bukti_ref`) — **wajib keduanya aktif** sebelum barang bisa diajukan review.
-- `POST /console/donors/{uuid}/anonymize` — Anonimkan data pribadi donatur atas permintaan.
-
-### 2.3 Barang, Media, & Checklist SOP Dinamis
-1. **Buat Draf Barang**: `POST /console/items` (`donor_uuid`, `category_id`, `jalur`: `jual|charity|salurkan`, `charity_program_id?`, `grade`: `A|B|C`, `judul`, `keterangan`, `kekurangan`, `weight_g`, `dim_l_cm`, `dim_w_cm`, `dim_h_cm`, `ref_new_price_idr`, `price_idr`, `lokasi_penyimpanan`, `serial_imei?`).
-   - Kategori makanan/terlarang (`MK`) otomatis ditolak `422 FORBIDDEN_CATEGORY`.
-2. **Unggah Media**: `POST /console/media/uploads` (`multipart/form-data`)
-   - Field: `owner_type` (`item|store|store_address|program|fulfillment`), `owner_uuid`, `tipe` (`foto|video`), `file`, `alt?`, `urutan?`, `check_id?`, `durasi_dtk?`, `is_cover?`.
-   - Metadata EXIF/GPS foto otomatis dihapus server (`exif_dihapus: true`). Foto minimum 4 (maks 10), video maks 2 (≤ 60 detik, ≤ 100 MB).
-3. **Checklist SOP**:
-   - `GET /console/items/{uuid}/sop` — Render daftar checklist dinamis (`U01–U13` + kategori) dan tampilkan `data.gate_errors[]` sebagai daftar syarat yang belum terpenuhi.
-   - `PUT /console/items/{uuid}/sop/{checkCode}` (`{ "nilai": true, "media_id": null, "teks_keterbukaan": null }`).
-4. **Ajukan Review / Tarik / Terbitkan Ulang**:
-   - `POST /console/items/{uuid}/submit` — Mengajukan barang `draft`/`perlu_revisi` → `menunggu_review` (server menegakkan seluruh syarat SOP, toko aktif, alamat terverifikasi, batas level, dan batas 20% Barang Charity).
-   - `POST /console/items/{uuid}/withdraw`, `POST /console/items/{uuid}/republish`.
-   - `POST /console/items/{uuid}/price-suggestions/{suggestionUuid}/accept` — Terapkan saran turun harga umur stok.
-
-### 2.4 Pemenuhan Pesanan & Komplain
-- `GET /console/orders`
-- `POST /console/orders/{uuid}/prepare` (`dibayar` → `disiapkan`)
-- **Ambil di tempat**:
-  - `POST /console/orders/{uuid}/ready-for-pickup` (`disiapkan` → `siap_diambil`, mengembalikan `pickup_code`)
-  - `POST /console/orders/{uuid}/verify-pickup` (`{ "kode_ambil": "..." }` → `diterima`)
-- **Kirim kurir**:
-  - Unggah foto kemasan via `POST /console/media/uploads` (`owner_type=fulfillment`)
-  - `POST /console/orders/{uuid}/ship` (`kurir`, `resi`, `bukti_kemas_media_id`) → otomatis mengkredit penggantian ongkir + biaya kemas ke dompet `AVAILABLE`.
-- **Tanggapi Komplain**: `POST /console/disputes/{uuid}/messages` (`{ "pesan": "..." }`).
-
-### 2.5 Dompet, Penarikan, & Program Charity
-- `GET /console/wallet` (`pending_idr`, `available_idr`, `payout_hold_idr`, `charity_share_pct`)
-- `GET /console/wallet/entries` — Riwayat entri ledger dompet koordinator.
-- `PATCH /console/wallet/charity-share` (`{ "charity_share_pct": 0..100, "charity_program_id": 1 }`)
-- `POST /console/payouts` (`Idempotency-Key`, `{ "jumlah_idr": 100000 }`) — Saldo langsung ditahan ke `PAYOUT_HOLD`.
-- `POST /console/programs`, `POST /console/programs/{uuid}/disbursements`, `POST /console/programs/{uuid}/reports`.
+| Status Pesanan | Arti | Tombol / Aksi Pembeli yang Aktif di UI |
+|---|---|---|
+| `menunggu_bayar` | Menunggu pembayaran (hold 30 menit) | **Bayar Sekarang** (`snap_token`), **Cek Status Bayar** (`POST /orders/{uuid}/sync-payment`), **Batalkan** (`POST /orders/{uuid}/cancel`). |
+| `dibayar` | Lunas & terverifikasi | **Lihat Kuitansi Kebaikan** (`GET /orders/{kode}/impact-receipt`).<br/>• Jika `serah = kirim`: boleh **Ubah Alamat sesama zona ongkir** (`PATCH /orders/{uuid}/address` dengan `{ address_uuid }`).<br/>• Jika `serah = ambil`: tampilkan **Alamat Lengkap Titik Ambil** (`GET /orders/{kode}/pickup`). |
+| `disiapkan` | Sedang dikemas / disiapkan koordinator | Tampilkan progres; alamat tidak bisa diubah lagi (`409`). |
+| `dikirim` *(khusus `kirim`)* | Sudah diserahkan ke kurir | Tampilkan `fulfillment.kurir` & `fulfillment.resi` dari `GET /orders/{kode}`. Aktifkan tombol **Pesanan Diterima** (`POST /orders/{uuid}/confirm-received`). |
+| `siap_diambil` *(khusus `ambil`)* | Siap diambil di titik ambil | Tampilkan alamat lengkap (`GET /orders/{kode}/pickup`) & instruksi datang ke titik ambil (batas waktu `fulfillment.ambil_deadline`). |
+| `diterima` | Barang sudah diterima pembeli | Aktifkan **Beri Ulasan** (`POST /orders/{uuid}/reviews` dengan `rating: 1..5`, `komentar?`) dan **Ajukan Komplain** (`POST /orders/{uuid}/disputes` dalam 3 hari). |
+| `selesai` | Transaksi final | Tampilkan riwayat & Kuitansi Kebaikan. |
+| `kedaluwarsa` / `dibatalkan` | Hold habis atau dibatalkan | Tampilkan status batal/expired & tombol kembali ke katalog. |
 
 ---
 
-## 3. Alur & Endpoint Admin (`/api/v1/barokahiin/admin`)
-
-### 3.1 Dasbor, Koordinator, & Moderasi Toko + Alamat V1–V8
-- `GET /admin/dashboard` — Ringkasan `items_by_status`, `review_queue_count`, `pending_address_verifications`, `open_disputes`, `pending_payouts`, dan status `ledger` (`balanced`).
-- `GET /admin/coordinators`
-- `POST /admin/coordinators/{uuid}/verify` (`status`, `level`, `region_ids[]`, `alasan?`)
-- `POST /admin/coordinators/{uuid}/sanctions` (`tingkat`: `ringan|sedang|berat`, `jenis`, `alasan`, `selesai?`) — sanksi `berat` otomatis menangguhkan koordinator & toko.
-- `GET /admin/stores` → `POST /admin/stores/{uuid}/moderate` (`status`: `aktif|dibatasi|ditangguhkan|ditutup`, `note?`)
-- **Verifikasi Alamat Toko (`V1–V8`)**:
-  - `POST /admin/store-addresses/{addressUuid}/checks` (`kode`: `V1..V8`, `lulus`: `true|false`, `catatan?`)
-  - `POST /admin/store-addresses/{addressUuid}/verify` — Hanya berhasil bila `V1–V7` (dan `V8` untuk Level 1) lulus; menukar alamat aktif secara atomik.
-  - `POST /admin/store-addresses/{addressUuid}/reject` (`status`: `perlu_perbaikan|ditolak`, `alasan`).
-
-### 3.2 Antrean Review Barang & Audit Sampling
-- `GET /admin/review/queue` — Daftar barang `menunggu_review` beserta `media` dan `checkResults`.
-- `POST /admin/items/{uuid}/review` (`keputusan`: `setuju|revisi|tolak`, `price_idr?`, `special_price_approval?`, `catatan_per_butir?`, `alasan?`).
-- `POST /admin/items/{uuid}/audit` (`hasil`: `lulus|gagal`, `catatan?`) — bila `gagal`, barang otomatis ditarik dari storefront.
-
-### 3.3 Komplain, Penarikan, Ledger, Charity, & Konfigurasi
-- `POST /admin/disputes/{uuid}/decide` (`putusan`: `tolak|refund_sebagian|refund_penuh`, `nominal_refund_idr?`, `kelalaian_koordinator?`, `biaya_retur_idr?`, `catatan?`).
-- `GET /admin/payouts` → `POST /admin/payouts/{uuid}/transfer` (`bukti_ref`) atau `POST /admin/payouts/{uuid}/reject` (`alasan`).
-- `GET /admin/ledger/reconciliation` — Memastikan `balanced === true` & `total_entries_sum === 0`.
-- `POST /admin/ledger/adjustments` (`Idempotency-Key`, `debit_account`, `credit_account`, `amount_idr`, `alasan`).
-- `POST /admin/programs/{uuid}/approve`, `POST /admin/pool/allocate` (`Idempotency-Key`), `POST /admin/disbursements/{uuid}/approve`.
-- `POST /admin/split-schemes` (total 5 persen wajib = 100%) & `POST /admin/split-schemes/{uuid}/announce` (minimal 30 hari sebelum `mulai_berlaku`).
-- `GET /admin/config`, `PATCH /admin/config`, `PUT /admin/pages`, `PATCH /admin/settings`, `GET /admin/audit-logs`.
-
----
-
-## 4. Penanganan Kode Error di Konsol
+## 8. Penanganan Kode Error Penting
 
 | HTTP | `error.code` | Tindakan UI |
 |---|---|---|
-| `403` | Forbidden | Periksa peran akun (Koordinator vs Admin). |
-| `404` | `NOT_FOUND` / `OUT_OF_SCOPE` | Data tidak ada atau di luar wilayah penugasan koordinator. |
-| `409` | `VERSION_CONFLICT` | Tampilkan peringatan edit bersamaan dan muat ulang data barang. |
-| `409` | `ACTIVE_ORDERS_EXIST` | Tahan perubahan alamat toko sampai seluruh pesanan aktif selesai. |
-| `409` | `OVERDUE_REPORT` | Pencairan program ditahan sampai laporan program sebelumnya disetujui. |
-| `422` | `ITEM_NOT_SUBMITTABLE` / `ADDRESS_CHECKS_INCOMPLETE` / `FORBIDDEN_CATEGORY` | Tampilkan daftar kekurangan dari `error.message` pada form. |
+| `422` | `PROFILE_INCOMPLETE` | Baca `error.fields.missing[]` dan buka layar **Lengkapi Data**. |
+| `422` | `ADDRESS_INVALID` / `WILAYAH_INVALID` | Sorot field error di form alamat (`error.fields`). |
+| `422` | `VOUCHER_INVALID` | Tampilkan alasan voucher tidak berlaku dan hapus voucher dari ringkasan. |
+| `409` | `ITEM_UNAVAILABLE` | Barang sudah ditahan/terjual — refresh keranjang & hapus barang tersebut. |
+| `409` | `ORDER_UNDER_REVIEW` | Tampilkan pesan bahwa pesanan terkait akun koordinator pengelola barang. |
+| `409` | `ADDRESS_CHANGE_NOT_ALLOWED` | Alamat baru berbeda zona ongkir atau pesanan sudah mulai disiapkan. |
+| `403` | `PICKUP_NOT_AVAILABLE` | Alamat titik ambil hanya terbuka setelah pesanan `ambil` berstatus `dibayar`. |
