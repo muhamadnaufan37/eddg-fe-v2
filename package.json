@@ -1,7 +1,7 @@
 {
   "name": "digitaldatagenerus",
   "private": true,
-  "version": "2.10.69",
+  "version": "2.12.2",
   "type": "module",
   "scripts": {
     "dev": "vite",

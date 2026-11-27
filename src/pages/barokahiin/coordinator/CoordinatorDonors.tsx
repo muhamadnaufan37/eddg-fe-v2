@@ -11,12 +11,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  EMPTY_WILAYAH,
   addConsoleDonorConsent,
   anonymizeConsoleDonor,
   createConsoleDonor,
   getConsoleDonors,
   parseBarokahiinError,
   type ConsoleDonor,
+  type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConfirmDialog,
@@ -28,7 +30,7 @@ import {
   InfoBanner,
   LoadingSkeleton,
   Pager,
-  RegionSelect,
+  WilayahCascader,
 } from "../components/ui/ConsoleUi";
 import {
   formatDateId,
@@ -45,7 +47,7 @@ export default function CoordinatorDonors() {
   // Create form
   const [nama, setNama] = useState("");
   const [kontak, setKontak] = useState("");
-  const [regionId, setRegionId] = useState("1");
+  const [wilayah, setWilayah] = useState<WilayahValue>(EMPTY_WILAYAH);
   const [anonim, setAnonim] = useState(true);
   const [catatan, setCatatan] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
@@ -68,7 +70,10 @@ export default function CoordinatorDonors() {
   const createMut = useMutation({
     mutationFn: () =>
       createConsoleDonor({
-        region_id: Number(regionId) || regionId,
+        province_code: wilayah.province_code || undefined,
+        regency_code: wilayah.regency_code || undefined,
+        district_code: wilayah.district_code || undefined,
+        village_code: wilayah.village_code,
         nama: nama.trim(),
         kontak: normalizePhoneId(kontak.trim()),
         anonim,
@@ -150,6 +155,12 @@ export default function CoordinatorDonors() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!nama.trim() || !kontak.trim()) return;
+              if (!wilayah.village_code) {
+                toast.error(
+                  "Pilih wilayah donatur sampai tingkat Kelurahan / Desa.",
+                );
+                return;
+              }
               createMut.mutate();
             }}
           >
@@ -180,12 +191,14 @@ export default function CoordinatorDonors() {
               />
             </FieldWrapper>
 
-            <FieldWrapper id="donor-region" label="Wilayah Kabupaten/Kota" required>
-              <RegionSelect
-                id="donor-region"
-                value={regionId}
-                onChange={setRegionId}
-                required
+            <FieldWrapper
+              label="Wilayah donatur (sampai Kelurahan / Desa)"
+              required
+            >
+              <WilayahCascader
+                value={wilayah}
+                onChange={setWilayah}
+                maxLevel="village"
               />
             </FieldWrapper>
 

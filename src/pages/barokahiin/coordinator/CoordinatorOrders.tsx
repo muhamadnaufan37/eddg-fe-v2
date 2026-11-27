@@ -80,8 +80,13 @@ export default function CoordinatorOrders() {
 
   const readyPickupMut = useMutation({
     mutationFn: (uuid: string) => readyForPickupConsoleOrder(uuid),
-    onSuccess: () => {
-      toast.success("Pesanan siap diambil pembeli di titik toko");
+    onSuccess: (updated) => {
+      const code = updated?.pickup_code ?? updated?.fulfillment?.pickup_code;
+      toast.success(
+        code
+          ? `Pesanan siap diambil. Kode ambil: ${code}`
+          : "Pesanan siap diambil pembeli di titik toko",
+      );
       void queryClient.invalidateQueries({
         queryKey: ["barokahiin", "console"],
       });
@@ -211,6 +216,11 @@ export default function CoordinatorOrders() {
           ) : (
             <div className="space-y-3">
               {orders.map((order) => {
+                const serahMode = order.serah ?? order.metode_serah ?? "kirim";
+                const kurirName = order.fulfillment?.kurir ?? order.kurir;
+                const resiNumber = order.fulfillment?.resi ?? order.resi;
+                const pickupCode =
+                  order.fulfillment?.pickup_code ?? order.pickup_code;
                 const hours =
                   order.sla_remaining_hours ??
                   computeHoursRemaining(order.sla_deadline);
@@ -238,7 +248,7 @@ export default function CoordinatorOrders() {
                         >
                           Serah:{" "}
                           <strong>
-                            {order.metode_serah === "ambil"
+                            {serahMode === "ambil"
                               ? "Ambil di titik toko"
                               : "Kirim kurir"}
                           </strong>
@@ -254,9 +264,17 @@ export default function CoordinatorOrders() {
                             Tujuan: {order.shipping_address_summary}
                           </p>
                         )}
-                        {order.kurir && order.resi && (
+                        {kurirName && resiNumber && (
                           <p className="brk-num mt-1 text-xs font-semibold">
-                            Kurir: {order.kurir}, Resi: {order.resi}
+                            Kurir: {kurirName}, Resi: {resiNumber}
+                          </p>
+                        )}
+                        {pickupCode && order.status === "siap_diambil" && (
+                          <p
+                            className="brk-num mt-1 text-xs font-bold"
+                            style={{ color: "var(--indigo)" }}
+                          >
+                            Kode ambil: {pickupCode}
                           </p>
                         )}
                       </div>
@@ -316,7 +334,7 @@ export default function CoordinatorOrders() {
                       )}
 
                       {order.status === "disiapkan" &&
-                        order.metode_serah === "ambil" && (
+                        serahMode === "ambil" && (
                           <button
                             type="button"
                             className="brk-btn brk-btn-daun"
@@ -343,7 +361,7 @@ export default function CoordinatorOrders() {
                       )}
 
                       {order.status === "disiapkan" &&
-                        order.metode_serah === "kirim" && (
+                        serahMode === "kirim" && (
                           <button
                             type="button"
                             className="brk-btn brk-btn-primary"
@@ -488,7 +506,7 @@ export default function CoordinatorOrders() {
       <ConfirmDialog
         open={Boolean(pickupOrder)}
         title="Verifikasi kode ambil"
-        description={`Masukkan kode ambil 6 digit yang ditunjukkan pembeli untuk pesanan ${pickupOrder?.kode_pesanan || ""}.`}
+        description={`Masukkan kode ambil 6 karakter yang ditunjukkan pembeli untuk pesanan ${pickupOrder?.kode_pesanan || ""}.`}
         confirmLabel="Verifikasi dan serahkan"
         tone="daun"
         loading={verifyPickupMut.isPending}
@@ -501,15 +519,15 @@ export default function CoordinatorOrders() {
           verifyPickupMut.mutate();
         }}
       >
-        <FieldWrapper id="pickup-code" label="Kode ambil (6 digit)" required>
+        <FieldWrapper id="pickup-code" label="Kode ambil (6 karakter)" required>
           <input
             id="pickup-code"
-            className="brk-input brk-num text-center text-xl font-bold tracking-widest"
-            inputMode="numeric"
+            className="brk-input brk-num text-center text-xl font-bold uppercase tracking-widest"
+            inputMode="text"
             maxLength={10}
             value={pickupCodeInput}
-            onChange={(e) => setPickupCodeInput(e.target.value)}
-            placeholder="123456"
+            onChange={(e) => setPickupCodeInput(e.target.value.toUpperCase())}
+            placeholder="AB12CD"
           />
         </FieldWrapper>
       </ConfirmDialog>

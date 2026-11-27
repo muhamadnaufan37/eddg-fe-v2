@@ -76,6 +76,16 @@ export async function putApiData<T>(
   return response.data.data;
 }
 
+export async function deleteApiData<T = unknown>(
+  base: string,
+  path: string,
+): Promise<T> {
+  const response = await axiosServices().delete<ApiEnvelope<T>>(
+    `${base}${path}`,
+  );
+  return response.data.data;
+}
+
 export async function uploadApiForm<T>(
   base: string,
   path: string,
@@ -114,6 +124,12 @@ const CODE_HINTS: Record<string, string> = {
     "Barang belum memenuhi seluruh syarat SOP, verifikasi alamat toko, atau batas level.",
   ADDRESS_CHECKS_INCOMPLETE:
     "Seluruh butir verifikasi alamat (V1 sampai V7, serta V8 untuk Level 1) harus lulus sebelum verifikasi disetujui.",
+  WILAYAH_INVALID:
+    "Kode wilayah yang dipilih tidak valid. Pilih ulang dari dropdown wilayah resmi.",
+  WILAYAH_REQUIRED:
+    "Wilayah wajib dipilih sesuai tingkat yang diminta (minimal kelurahan/desa untuk alamat).",
+  INVALID_TRANSITION:
+    "Urutan perubahan status pesanan tidak valid. Pastikan alur status diikuti (dibayar -> disiapkan -> dikirim / siap_diambil).",
 };
 
 export function parseBarokahiinError(

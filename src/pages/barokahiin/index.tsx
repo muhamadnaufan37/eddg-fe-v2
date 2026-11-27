@@ -13,6 +13,7 @@ import {
   Settings2,
   ShieldCheck,
   Store,
+  Ticket,
   Users,
   Wallet,
   Wifi,
@@ -39,6 +40,7 @@ import AdminCoordinatorsStores from "./admin/AdminCoordinatorsStores";
 import AdminFinanceDisputes from "./admin/AdminFinanceDisputes";
 import AdminCharity from "./admin/AdminCharity";
 import AdminConfigAndAudit from "./admin/AdminConfigAndAudit";
+import AdminVouchers from "./admin/AdminVouchers";
 
 type WorkspaceMode = "coordinator" | "admin";
 
@@ -144,6 +146,14 @@ const ADMIN_NAV: NavItem<AdminTab>[] = [
     icon: Store,
   },
   {
+    id: "vouchers",
+    label: "Voucher Promo",
+    shortLabel: "Voucher",
+    group: "Keuangan dan Charity",
+    subtitle: "Buat dan kelola voucher potongan tetap, persentase, atau gratis ongkir.",
+    icon: Ticket,
+  },
+  {
     id: "finance",
     label: "Keuangan dan Komplain",
     shortLabel: "Keuangan",
@@ -172,11 +182,10 @@ const ADMIN_NAV: NavItem<AdminTab>[] = [
 export default function BarokahiinConsolePage() {
   const { user } = useAuth();
   const roleName = getRoleName(user?.role_id);
-  const canAccessAdmin = roleName === "admin";
+  // Strict role separation per BAROKAHIIN_FRONTEND_CONSOLE.md:
+  // Admin -> /admin/* only (never calls /console/*), Koordinator -> /console/* only
+  const mode: WorkspaceMode = roleName === "admin" ? "admin" : "coordinator";
 
-  const [mode, setMode] = useState<WorkspaceMode>(
-    canAccessAdmin ? "admin" : "coordinator",
-  );
   const [coordTab, setCoordTab] = useState<CoordinatorTab>("dashboard");
   const [adminTab, setAdminTab] = useState<AdminTab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -403,59 +412,6 @@ export default function BarokahiinConsolePage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {canAccessAdmin && (
-                  <div
-                    role="tablist"
-                    aria-label="Pilih mode konsol"
-                    className="inline-flex rounded-lg border p-1"
-                    style={{
-                      backgroundColor: "var(--kertas)",
-                      borderColor: "var(--garis)",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={mode === "admin"}
-                      onClick={() => {
-                        setMode("admin");
-                        setMobileMoreOpen(false);
-                      }}
-                      className="min-h-10 rounded-md px-3 text-sm font-semibold transition-colors"
-                      style={{
-                        backgroundColor:
-                          mode === "admin" ? "var(--indigo-btn)" : "transparent",
-                        color:
-                          mode === "admin" ? "#ffffff" : "var(--tinta)",
-                      }}
-                    >
-                      Admin
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={mode === "coordinator"}
-                      onClick={() => {
-                        setMode("coordinator");
-                        setMobileMoreOpen(false);
-                      }}
-                      className="min-h-10 rounded-md px-3 text-sm font-semibold transition-colors"
-                      style={{
-                        backgroundColor:
-                          mode === "coordinator"
-                            ? "var(--indigo-btn)"
-                            : "transparent",
-                        color:
-                          mode === "coordinator"
-                            ? "#ffffff"
-                            : "var(--tinta)",
-                      }}
-                    >
-                      Koordinator
-                    </button>
-                  </div>
-                )}
-
                 {mode === "coordinator" && (
                   <button
                     type="button"
@@ -524,6 +480,7 @@ export default function BarokahiinConsolePage() {
                 )}
                 {adminTab === "review" && <AdminReviewQueue />}
                 {adminTab === "coordinators" && <AdminCoordinatorsStores />}
+                {adminTab === "vouchers" && <AdminVouchers />}
                 {adminTab === "finance" && <AdminFinanceDisputes />}
                 {adminTab === "charity" && <AdminCharity />}
                 {adminTab === "config" && <AdminConfigAndAudit />}

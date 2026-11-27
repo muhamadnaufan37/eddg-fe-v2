@@ -21,6 +21,7 @@ export type AdminTab =
   | "dashboard"
   | "review"
   | "coordinators"
+  | "vouchers"
   | "finance"
   | "charity"
   | "config";

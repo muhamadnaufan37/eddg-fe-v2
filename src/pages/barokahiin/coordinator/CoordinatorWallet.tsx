@@ -255,42 +255,64 @@ export default function CoordinatorWallet() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, idx) => (
-                  <tr
-                    key={entry.uuid || entry.id || idx}
-                    className="border-b"
-                    style={{ borderColor: "var(--garis)" }}
-                  >
-                    <td className="brk-num whitespace-nowrap py-3 pr-4 text-xs" style={{ color: "var(--muted-brk)" }}>
-                      {formatDateId(entry.created_at)}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <p className="font-semibold capitalize">
-                        {entry.jenis.replaceAll("_", " ")}
-                      </p>
-                      {(entry.keterangan || entry.order_code) && (
-                        <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
-                          {entry.order_code ? `Pesanan ${entry.order_code}` : ""}{" "}
-                          {entry.keterangan || ""}
-                        </p>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4 text-xs font-semibold">
-                      {entry.bucket || "-"}
-                    </td>
-                    <td
-                      className="brk-num whitespace-nowrap py-3 text-right font-bold"
-                      style={{
-                        color:
-                          entry.amount_idr >= 0
-                            ? "var(--daun)"
-                            : "var(--bahaya)",
-                      }}
+                {entries.map((entry, idx) => {
+                  const raw = entry as unknown as Record<string, unknown>;
+                  const entryLabel = String(
+                    entry.jenis ??
+                      raw.entry_type ??
+                      raw.type ??
+                      raw.ref_type ??
+                      raw.account_code ??
+                      "Mutasi",
+                  ).replaceAll("_", " ");
+                  const entryBucket = String(
+                    entry.bucket ?? raw.account_bucket ?? raw.status ?? "-",
+                  );
+                  const entryAmount = Number(
+                    entry.amount_idr ?? raw.nominal_idr ?? raw.amount ?? 0,
+                  );
+
+                  return (
+                    <tr
+                      key={entry.uuid || entry.id || idx}
+                      className="border-b"
+                      style={{ borderColor: "var(--garis)" }}
                     >
-                      {formatRupiah(entry.amount_idr)}
-                    </td>
-                  </tr>
-                ))}
+                      <td
+                        className="brk-num whitespace-nowrap py-3 pr-4 text-xs"
+                        style={{ color: "var(--muted-brk)" }}
+                      >
+                        {formatDateId(entry.created_at)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <p className="font-semibold capitalize">{entryLabel}</p>
+                        {(entry.keterangan || entry.order_code) && (
+                          <p
+                            className="text-xs"
+                            style={{ color: "var(--muted-brk)" }}
+                          >
+                            {entry.order_code
+                              ? `Pesanan ${entry.order_code}`
+                              : ""}{" "}
+                            {entry.keterangan || ""}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 text-xs font-semibold">
+                        {entryBucket}
+                      </td>
+                      <td
+                        className="brk-num whitespace-nowrap py-3 text-right font-bold"
+                        style={{
+                          color:
+                            entryAmount >= 0 ? "var(--daun)" : "var(--bahaya)",
+                        }}
+                      >
+                        {formatRupiah(entryAmount)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

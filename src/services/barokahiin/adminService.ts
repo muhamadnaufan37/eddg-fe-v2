@@ -1,6 +1,7 @@
 import {
   ADMIN_BASE,
   createIdempotencyKey,
+  deleteApiData,
   getApiData,
   patchApiData,
   postApiData,
@@ -10,6 +11,7 @@ import type {
   AddressCheckCode,
   AdminAuditLog,
   AdminDashboardData,
+  AdminVoucher,
   CharityDisbursement,
   CharityProgram,
   ConsoleDispute,
@@ -23,6 +25,7 @@ import type {
   SplitScheme,
   StaticPageRecord,
   StoreAddress,
+  VoucherType,
 } from "./types";
 
 // --- 3.1 Dashboard, Coordinators, Stores & Address V1-V8 ---
@@ -44,7 +47,9 @@ export const verifyAdminCoordinator = (
   payload: {
     status: string;
     level: 1 | 2 | 3;
-    region_ids: Array<number | string>;
+    regency_codes?: string[];
+    wilayah_codes?: string[];
+    region_ids?: Array<number | string>;
     alasan?: string;
   },
 ) =>
@@ -164,7 +169,50 @@ export const submitAdminItemAudit = (
     payload,
   );
 
-// --- 3.3 Disputes, Payouts, Ledger, Charity, & Config ---
+// --- 3.3 Vouchers, Disputes, Payouts, Ledger, Charity, & Config ---
+
+export interface AdminVoucherPayload {
+  code: string;
+  nama: string;
+  deskripsi?: string | null;
+  tipe: VoucherType;
+  nilai: number;
+  max_discount_idr?: number | null;
+  min_subtotal_idr: number;
+  quota_total?: number | null;
+  per_user_limit: number;
+  store_id?: number | string | null;
+  category_id?: number | string | null;
+  is_public: boolean;
+  is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+}
+
+export const getAdminVouchers = (
+  params: { q?: string; is_active?: string; page?: number; per_page?: number } = {},
+) =>
+  getApiData<PaginatedList<AdminVoucher> | AdminVoucher[]>(
+    ADMIN_BASE,
+    "/vouchers",
+    params,
+  );
+
+export const createAdminVoucher = (payload: AdminVoucherPayload) =>
+  postApiData<AdminVoucher>(ADMIN_BASE, "/vouchers", payload);
+
+export const updateAdminVoucher = (
+  uuid: string,
+  payload: Partial<AdminVoucherPayload>,
+) =>
+  patchApiData<AdminVoucher>(
+    ADMIN_BASE,
+    `/vouchers/${encodeURIComponent(uuid)}`,
+    payload,
+  );
+
+export const deleteAdminVoucher = (uuid: string) =>
+  deleteApiData<unknown>(ADMIN_BASE, `/vouchers/${encodeURIComponent(uuid)}`);
 
 export const decideAdminDispute = (
   uuid: string,
@@ -229,7 +277,11 @@ export const approveAdminProgram = (uuid: string) =>
 
 export const allocateAdminPool = (
   payload: {
-    region_id: number | string;
+    province_code?: string;
+    regency_code: string;
+    district_code?: string;
+    village_code?: string;
+    wilayah_code?: string;
     program_uuid: string;
     amount_idr: number;
     catatan?: string;

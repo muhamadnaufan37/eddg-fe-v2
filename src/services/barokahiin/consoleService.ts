@@ -47,14 +47,18 @@ export const updateConsoleStore = (payload: {
 export const submitStoreAddress = (payload: {
   jalan_nomor: string;
   rt_rw: string;
-  region_id: number | string;
+  province_code?: string;
+  regency_code?: string;
+  district_code?: string;
+  village_code: string;
+  wilayah_code?: string;
   kode_pos: string;
   patokan: string;
   lat: number;
   lng: number;
   jenis_tempat: "rumah" | "ruko" | "gudang";
   status_penguasaan: "milik" | "sewa" | "pinjam";
-  foto_media_ids: Array<number | string>;
+  foto_media_ids?: Array<number | string>;
   bukti_ref: string;
   kontak_toko: string;
 }) =>
@@ -87,7 +91,11 @@ export const getConsoleDonor = (uuid: string) =>
   );
 
 export const createConsoleDonor = (payload: {
-  region_id: number | string;
+  province_code?: string;
+  regency_code?: string;
+  district_code?: string;
+  village_code: string;
+  wilayah_code?: string;
   nama: string;
   kontak: string;
   anonim: boolean;
@@ -137,6 +145,14 @@ export interface CreateConsoleItemPayload {
   category_id: number | string;
   jalur: ItemJalur;
   charity_program_id?: number | string | null;
+  province_code?: string;
+  regency_code?: string;
+  district_code?: string;
+  village_code?: string;
+  wilayah_code?: string;
+  daerah_id?: number | string | null;
+  desa_id?: number | string | null;
+  kelompok_id?: number | string | null;
   grade: ItemGrade;
   judul: string;
   keterangan: string;
@@ -340,8 +356,13 @@ export const requestConsolePayout = (
 export const createConsoleProgram = (payload: {
   judul: string;
   tujuan: string;
-  penerima_manfaat: string;
-  region_id?: number | string;
+  penerima_manfaat?: string;
+  penerima_manfaat_desc: string;
+  province_code?: string;
+  regency_code: string;
+  district_code?: string;
+  village_code?: string;
+  wilayah_code?: string;
   periode_mulai: string;
   periode_selesai: string;
   target_idr: number;

@@ -386,16 +386,25 @@ export interface ConsoleOrder {
   uuid: string;
   kode_pesanan: string;
   status: OrderStatus;
-  metode_serah: "ambil" | "kirim";
+  serah?: "ambil" | "kirim";
+  metode_serah?: "ambil" | "kirim";
   sla_deadline?: string | null;
   sla_remaining_hours?: number | null;
   buyer_name_masked?: string | null;
   buyer_phone_masked?: string | null;
   shipping_address_summary?: string | null;
+  alamat_snapshot_enc?: string | null;
   pickup_code?: string | null;
   kurir?: string | null;
   resi?: string | null;
   bukti_kemas_url?: string | null;
+  fulfillment?: {
+    kurir?: string | null;
+    resi?: string | null;
+    pickup_code?: string | null;
+    ambil_deadline?: string | null;
+    bukti_kemas_url?: string | null;
+  } | null;
   subtotal_idr: number;
   shipping_idr: number;
   packaging_idr: number;
@@ -561,6 +570,29 @@ export interface StaticPageRecord {
   isi: string;
   diterbitkan?: boolean;
   updated_at?: string;
+}
+
+export type VoucherType = "fixed" | "percent" | "free_shipping";
+
+export interface AdminVoucher {
+  uuid: string;
+  code: string;
+  nama: string;
+  deskripsi?: string | null;
+  tipe: VoucherType;
+  nilai: number;
+  max_discount_idr?: number | null;
+  min_subtotal_idr: number;
+  quota_total?: number | null;
+  quota_used?: number | null;
+  per_user_limit: number;
+  store_id?: number | string | null;
+  category_id?: number | string | null;
+  is_public: boolean;
+  is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  created_at?: string;
 }
 
 export interface AdminAuditLog {

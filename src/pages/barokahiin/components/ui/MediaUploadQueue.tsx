@@ -58,6 +58,7 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 export function MediaUploadQueue({
   ownerType,
   ownerUuid,
+  fallbackOwner,
   acceptVideo = false,
   checkId,
   guideLabel,
@@ -66,6 +67,7 @@ export function MediaUploadQueue({
 }: {
   ownerType: MediaOwnerType;
   ownerUuid: string;
+  fallbackOwner?: { ownerType: MediaOwnerType; ownerUuid: string } | null;
   acceptVideo?: boolean;
   checkId?: string | number;
   guideLabel?: string;
@@ -103,23 +105,44 @@ export function MediaUploadQueue({
         ),
       );
 
-      const uploaded = await uploadConsoleMedia(
-        {
-          owner_type: ownerType,
-          owner_uuid: ownerUuid,
-          tipe: entry.tipe,
-          file: processedFile,
-          alt: guideLabel || processedFile.name,
-          check_id: checkId,
-        },
-        (percent) => {
-          setQueue((prev) =>
-            prev.map((q) =>
-              q.localId === entry.localId ? { ...q, progress: percent } : q,
-            ),
+      const doUpload = (targetType: MediaOwnerType, targetUuid: string) =>
+        uploadConsoleMedia(
+          {
+            owner_type: targetType,
+            owner_uuid: targetUuid,
+            tipe: entry.tipe,
+            file: processedFile,
+            alt: guideLabel || processedFile.name,
+            check_id: checkId,
+          },
+          (percent) => {
+            setQueue((prev) =>
+              prev.map((q) =>
+                q.localId === entry.localId ? { ...q, progress: percent } : q,
+              ),
+            );
+          },
+        );
+
+      let uploaded: BarokahiinMedia;
+      try {
+        uploaded = await doUpload(ownerType, ownerUuid);
+      } catch (primaryErr) {
+        const parsedPrimary = parseBarokahiinError(primaryErr);
+        if (
+          parsedPrimary.status === 404 &&
+          fallbackOwner?.ownerUuid &&
+          (fallbackOwner.ownerType !== ownerType ||
+            fallbackOwner.ownerUuid !== ownerUuid)
+        ) {
+          uploaded = await doUpload(
+            fallbackOwner.ownerType,
+            fallbackOwner.ownerUuid,
           );
-        },
-      );
+        } else {
+          throw primaryErr;
+        }
+      }
 
       setQueue((prev) =>
         prev.map((q) =>

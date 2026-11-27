@@ -8,18 +8,21 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  EMPTY_WILAYAH,
   createConsoleProgram,
   parseBarokahiinError,
   requestProgramDisbursement,
   submitProgramReport,
   type BarokahiinMedia,
   type CharityProgram,
+  type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConsolePanel,
   ErrorBanner,
   FieldWrapper,
   StatusBadge,
+  WilayahCascader,
 } from "../components/ui/ConsoleUi";
 import { MediaUploadQueue } from "../components/ui/MediaUploadQueue";
 import { formatRupiah } from "../components/ui/utils";
@@ -32,6 +35,7 @@ export default function CoordinatorCharity() {
   const [judul, setJudul] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [penerima, setPenerima] = useState("");
+  const [wilayah, setWilayah] = useState<WilayahValue>(EMPTY_WILAYAH);
   const [periodeMulai, setPeriodeMulai] = useState("");
   const [periodeSelesai, setPeriodeSelesai] = useState("");
   const [targetIdr, setTargetIdr] = useState("2000000");
@@ -56,6 +60,11 @@ export default function CoordinatorCharity() {
         judul: judul.trim(),
         tujuan: tujuan.trim(),
         penerima_manfaat: penerima.trim(),
+        penerima_manfaat_desc: penerima.trim(),
+        province_code: wilayah.province_code || undefined,
+        regency_code: wilayah.regency_code,
+        district_code: wilayah.district_code || undefined,
+        village_code: wilayah.village_code || undefined,
         periode_mulai: periodeMulai,
         periode_selesai: periodeSelesai,
         target_idr: Number(targetIdr) || 0,
@@ -129,6 +138,10 @@ export default function CoordinatorCharity() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
+              if (!wilayah.regency_code) {
+                toast.error("Pilih wilayah program minimal sampai Kabupaten / Kota.");
+                return;
+              }
               createMut.mutate();
             }}
           >
@@ -166,6 +179,17 @@ export default function CoordinatorCharity() {
                 onChange={(e) => setPenerima(e.target.value)}
                 placeholder="Contoh: 25 siswa SD/SMP keluarga prasejahtera di Kec. Lembang"
                 required
+              />
+            </FieldWrapper>
+
+            <FieldWrapper
+              label="Wilayah program (minimal Kabupaten / Kota)"
+              required
+            >
+              <WilayahCascader
+                value={wilayah}
+                onChange={setWilayah}
+                maxLevel="district"
               />
             </FieldWrapper>
 

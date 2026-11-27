@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
+  EMPTY_WILAYAH,
   getConsoleStore,
   getConsoleStoreScore,
   parseBarokahiinError,
@@ -25,6 +26,7 @@ import {
   submitStoreAddress,
   updateConsoleStore,
   type BarokahiinMedia,
+  type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConfirmDialog,
@@ -35,8 +37,8 @@ import {
   InfoBanner,
   LevelBadge,
   LoadingSkeleton,
-  RegionSelect,
   StatusBadge,
+  WilayahCascader,
 } from "../components/ui/ConsoleUi";
 import { MediaUploadQueue } from "../components/ui/MediaUploadQueue";
 import {
@@ -176,7 +178,12 @@ export default function CoordinatorStore() {
     queryFn: getConsoleStoreScore,
   });
 
-  const store = storeQuery.data;
+  const rawStoreData = storeQuery.data as
+    | (typeof storeQuery.data & {
+        store?: typeof storeQuery.data;
+      })
+    | undefined;
+  const store = rawStoreData?.store ?? rawStoreData;
 
   // Profile form state
   const [nama, setNama] = useState("");
@@ -191,7 +198,7 @@ export default function CoordinatorStore() {
   const [locatingGps, setLocatingGps] = useState(false);
   const [jalanNomor, setJalanNomor] = useState("");
   const [rtRw, setRtRw] = useState("");
-  const [regionId, setRegionId] = useState("1");
+  const [wilayah, setWilayah] = useState<WilayahValue>(EMPTY_WILAYAH);
   const [kodePos, setKodePos] = useState("");
   const [patokan, setPatokan] = useState("");
   const [lat, setLat] = useState("-6.9175");
@@ -225,7 +232,13 @@ export default function CoordinatorStore() {
     if (addr) {
       setJalanNomor(addr.jalan_nomor ?? "");
       setRtRw(addr.rt_rw ?? "");
-      setRegionId(String(addr.region_id ?? "1"));
+      const addrAny = addr as unknown as Record<string, unknown>;
+      setWilayah({
+        province_code: String(addrAny.province_code ?? ""),
+        regency_code: String(addrAny.regency_code ?? ""),
+        district_code: String(addrAny.district_code ?? ""),
+        village_code: String(addrAny.village_code ?? ""),
+      });
       setKodePos(addr.kode_pos ?? "");
       setPatokan(addr.patokan ?? "");
       if (addr.lat !== null && addr.lat !== undefined) setLat(String(addr.lat));
@@ -266,23 +279,28 @@ export default function CoordinatorStore() {
   });
 
   const submitAddressMut = useMutation({
-    mutationFn: () =>
-      submitStoreAddress({
+    mutationFn: () => {
+      const mediaIds = uploadedPhotos
+        .map((m) => m.id ?? m.uuid)
+        .filter(Boolean);
+      return submitStoreAddress({
         jalan_nomor: jalanNomor.trim(),
         rt_rw: rtRw.trim() || "Tidak ada",
-        region_id: Number(regionId) || regionId,
+        province_code: wilayah.province_code || undefined,
+        regency_code: wilayah.regency_code || undefined,
+        district_code: wilayah.district_code || undefined,
+        village_code: wilayah.village_code,
         kode_pos: kodePos.trim(),
         patokan: patokan.trim(),
         lat: Number(lat),
         lng: Number(lng),
         jenis_tempat: jenisTempat,
         status_penguasaan: statusPenguasaan,
-        foto_media_ids: uploadedPhotos
-          .map((m) => m.id ?? m.uuid)
-          .filter(Boolean),
+        ...(mediaIds.length > 0 ? { foto_media_ids: mediaIds } : {}),
         bukti_ref: buktiRef.trim(),
         kontak_toko: normalizePhoneId(kontakToko.trim()),
-      }),
+      });
+    },
     onSuccess: () => {
       setAddressError(null);
       setAddressModalOpen(false);
@@ -335,7 +353,19 @@ export default function CoordinatorStore() {
   }
   if (!store) return null;
 
-  const latestAddress = store.pending_address || store.active_address;
+  const latestAddress =
+    store.pending_address ||
+    store.active_address ||
+    rawStoreData?.pending_address ||
+    rawStoreData?.active_address ||
+    store.addresses?.[0] ||
+    rawStoreData?.addresses?.[0];
+  const resolvedStoreUuid =
+    store.uuid ||
+    rawStoreData?.uuid ||
+    (store as unknown as Record<string, unknown>)?.store_uuid?.toString() ||
+    "";
+  const resolvedAddressUuid = latestAddress?.uuid || "";
   const isAddressVerified =
     store.address_verified || store.active_address?.status === "terverifikasi";
   const checks = latestAddress?.checks ?? [];
@@ -392,6 +422,13 @@ export default function CoordinatorStore() {
 
   const handleSubmitAddress = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!wilayah.village_code) {
+      setAddressError(
+        "Wilayah alamat toko wajib dipilih sampai tingkat Kelurahan / Desa.",
+      );
+      setAddrStep(1);
+      return;
+    }
     if (!jalanNomor.trim() || !kodePos.trim() || !patokan.trim()) {
       setAddressError(
         "Nama jalan dan nomor, kode pos, serta patokan wajib diisi lengkap.",
@@ -1043,16 +1080,14 @@ export default function CoordinatorStore() {
                   </div>
 
                   <FieldWrapper
-                    id="addr-region"
-                    label="Wilayah administratif (dari API Wilayah)"
+                    label="Wilayah administratif (wajib sampai Kelurahan / Desa)"
                     required
-                    helper="Pilih Provinsi, Kabupaten/Kota, Kecamatan, dan Kelurahan/Desa."
+                    helper="Pastikan berada dalam wilayah penugasan koordinator."
                   >
-                    <RegionSelect
-                      id="addr-region"
-                      value={regionId}
-                      onChange={setRegionId}
-                      showCascadingAddress
+                    <WilayahCascader
+                      value={wilayah}
+                      onChange={setWilayah}
+                      maxLevel="village"
                     />
                   </FieldWrapper>
 
@@ -1280,8 +1315,13 @@ export default function CoordinatorStore() {
                       Foto tampak depan (min. 2 sudut) & ruang penyimpanan (V4)
                     </p>
                     <MediaUploadQueue
-                      ownerType="store_address"
-                      ownerUuid={latestAddress?.uuid || store.uuid}
+                      ownerType={resolvedAddressUuid ? "store_address" : "store"}
+                      ownerUuid={resolvedAddressUuid || resolvedStoreUuid}
+                      fallbackOwner={
+                        resolvedAddressUuid && resolvedStoreUuid
+                          ? { ownerType: "store", ownerUuid: resolvedStoreUuid }
+                          : null
+                      }
                       guideLabel="Ambil foto tampak depan dari 2 sudut berbeda dan ruang penyimpanan yang bersih."
                       buttonLabel="Ambil foto lokasi"
                       onUploaded={(media) =>

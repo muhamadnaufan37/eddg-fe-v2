@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, type ComponentType, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -38,13 +38,15 @@ import {
 } from "@/components/ui/select";
 import {
   getWilayahDistricts,
+  getWilayahFilters,
   getWilayahProvinces,
   getWilayahRegencies,
   getWilayahVillages,
   type ItemGrade,
   type PaginationMeta,
+  type WilayahValue,
 } from "@/services/barokahiin";
-import { GRADE_GUIDELINES, PILOT_REGIONS, formatRupiah } from "./utils";
+import { GRADE_GUIDELINES, formatRupiah } from "./utils";
 
 interface BadgeStyle {
   bg: string;
@@ -860,51 +862,40 @@ export function ConsoleSelect({
   );
 }
 
-export function RegionSelect({
-  id,
+export function WilayahCascader({
   value,
   onChange,
-  options,
-  showCascadingAddress = false,
+  maxLevel = "village",
 }: {
-  id?: string;
-  value: string;
-  onChange: (val: string) => void;
-  options?: Array<{ id: number | string; nama: string }>;
-  required?: boolean;
-  showCascadingAddress?: boolean;
+  value: WilayahValue;
+  onChange: (next: WilayahValue) => void;
+  maxLevel?: "regency" | "district" | "village";
 }) {
-  const [provinceCode, setProvinceCode] = useState("32"); // Default Jawa Barat (pilot)
-  const [regencyCode, setRegencyCode] = useState("");
-  const [districtCode, setDistrictCode] = useState("");
-  const [villageCode, setVillageCode] = useState("");
-
   const provincesQuery = useQuery({
     queryKey: ["barokahiin", "public-wilayah", "provinces"],
     queryFn: getWilayahProvinces,
     staleTime: 1000 * 60 * 30,
-    enabled: !options || options.length === 0,
   });
 
   const regenciesQuery = useQuery({
-    queryKey: ["barokahiin", "public-wilayah", "regencies", provinceCode],
-    queryFn: () => getWilayahRegencies(provinceCode),
+    queryKey: ["barokahiin", "public-wilayah", "regencies", value.province_code],
+    queryFn: () => getWilayahRegencies(value.province_code),
     staleTime: 1000 * 60 * 30,
-    enabled: Boolean(provinceCode) && (!options || options.length === 0),
+    enabled: Boolean(value.province_code),
   });
 
   const districtsQuery = useQuery({
-    queryKey: ["barokahiin", "public-wilayah", "districts", regencyCode],
-    queryFn: () => getWilayahDistricts(regencyCode),
+    queryKey: ["barokahiin", "public-wilayah", "districts", value.regency_code],
+    queryFn: () => getWilayahDistricts(value.regency_code),
     staleTime: 1000 * 60 * 30,
-    enabled: showCascadingAddress && Boolean(regencyCode),
+    enabled: maxLevel !== "regency" && Boolean(value.regency_code),
   });
 
   const villagesQuery = useQuery({
-    queryKey: ["barokahiin", "public-wilayah", "villages", districtCode],
-    queryFn: () => getWilayahVillages(districtCode),
+    queryKey: ["barokahiin", "public-wilayah", "villages", value.district_code],
+    queryFn: () => getWilayahVillages(value.district_code),
     staleTime: 1000 * 60 * 30,
-    enabled: showCascadingAddress && Boolean(districtCode),
+    enabled: maxLevel === "village" && Boolean(value.district_code),
   });
 
   const provinces = provincesQuery.data ?? [];
@@ -912,135 +903,218 @@ export function RegionSelect({
   const districts = districtsQuery.data ?? [];
   const villages = villagesQuery.data ?? [];
 
-  if (options && options.length > 0) {
-    return (
-      <ConsoleSelect
-        id={id}
-        value={value}
-        onChange={onChange}
-        placeholder="Pilih wilayah"
-        options={options.map((o) => ({ value: String(o.id), label: o.nama }))}
-      />
-    );
-  }
-
-  const regencyOptions: ConsoleSelectOption[] =
-    regencies.length > 0
-      ? regencies.map((r) => ({
-          value: String(r.id ?? r.code),
-          label: r.name,
-        }))
-      : PILOT_REGIONS.map((r) => ({
-          value: String(r.id),
-          label: `${r.nama} (${r.provinsi})`,
-        }));
-
-  if (
-    value &&
-    !regencyOptions.some((o) => o.value === String(value))
-  ) {
-    regencyOptions.push({ value: String(value), label: `Wilayah #${value}` });
-  }
-
   return (
-    <div className="space-y-2.5">
-      {provinces.length > 0 && (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div>
+        <span
+          className="mb-1 block text-xs font-medium"
+          style={{ color: "var(--muted-brk)" }}
+        >
+          Provinsi
+        </span>
+        <ConsoleSelect
+          value={value.province_code}
+          onChange={(province_code) =>
+            onChange({
+              province_code,
+              regency_code: "",
+              district_code: "",
+              village_code: "",
+            })
+          }
+          placeholder={
+            provincesQuery.isLoading ? "Memuat provinsi..." : "Pilih provinsi"
+          }
+          options={provinces.map((p) => ({ value: p.code, label: p.name }))}
+        />
+      </div>
+
+      <div>
+        <span
+          className="mb-1 block text-xs font-medium"
+          style={{ color: "var(--muted-brk)" }}
+        >
+          Kabupaten / Kota
+        </span>
+        <ConsoleSelect
+          value={value.regency_code}
+          disabled={!value.province_code || regenciesQuery.isLoading}
+          onChange={(regency_code) =>
+            onChange({
+              ...value,
+              regency_code,
+              district_code: "",
+              village_code: "",
+            })
+          }
+          placeholder={
+            !value.province_code
+              ? "Pilih provinsi dulu"
+              : regenciesQuery.isLoading
+                ? "Memuat kab/kota..."
+                : "Pilih kabupaten/kota"
+          }
+          options={regencies.map((r) => ({ value: r.code, label: r.name }))}
+        />
+      </div>
+
+      {maxLevel !== "regency" && (
         <div>
           <span
             className="mb-1 block text-xs font-medium"
             style={{ color: "var(--muted-brk)" }}
           >
-            Provinsi
+            Kecamatan
           </span>
           <ConsoleSelect
-            value={provinceCode}
-            onChange={(nextProv) => {
-              setProvinceCode(nextProv);
-              setRegencyCode("");
-              setDistrictCode("");
-              setVillageCode("");
-            }}
-            placeholder="Pilih provinsi"
-            options={provinces.map((p) => ({ value: p.code, label: p.name }))}
+            value={value.district_code}
+            disabled={!value.regency_code || districtsQuery.isLoading}
+            onChange={(district_code) =>
+              onChange({
+                ...value,
+                district_code,
+                village_code: "",
+              })
+            }
+            placeholder={
+              !value.regency_code
+                ? "Pilih kab/kota dulu"
+                : districtsQuery.isLoading
+                  ? "Memuat kecamatan..."
+                  : "Pilih kecamatan"
+            }
+            options={districts.map((d) => ({ value: d.code, label: d.name }))}
           />
         </div>
       )}
 
-      <div>
-        {provinces.length > 0 && (
+      {maxLevel === "village" && (
+        <div>
           <span
             className="mb-1 block text-xs font-medium"
             style={{ color: "var(--muted-brk)" }}
           >
-            Kabupaten / Kota
+            Kelurahan / Desa
           </span>
-        )}
+          <ConsoleSelect
+            value={value.village_code}
+            disabled={!value.district_code || villagesQuery.isLoading}
+            onChange={(village_code) =>
+              onChange({
+                ...value,
+                village_code,
+              })
+            }
+            placeholder={
+              !value.district_code
+                ? "Pilih kecamatan dulu"
+                : villagesQuery.isLoading
+                  ? "Memuat kelurahan..."
+                  : "Pilih kelurahan/desa"
+            }
+            options={villages.map((v) => ({ value: v.code, label: v.name }))}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export interface OrganisasiValue {
+  daerah_id: string;
+  desa_id: string;
+  kelompok_id: string;
+}
+
+export function OrganisasiSelect({
+  value,
+  onChange,
+}: {
+  value: OrganisasiValue;
+  onChange: (next: OrganisasiValue) => void;
+}) {
+  const filtersQuery = useQuery({
+    queryKey: [
+      "barokahiin",
+      "public-wilayah",
+      "filters",
+      value.daerah_id,
+      value.desa_id,
+    ],
+    queryFn: () =>
+      getWilayahFilters({
+        daerah_id: value.daerah_id || undefined,
+        desa_id: value.desa_id || undefined,
+      }),
+    staleTime: 1000 * 60 * 15,
+  });
+
+  const org = filtersQuery.data?.organisasi;
+  const daerahList = org?.daerah ?? [];
+  const desaList = org?.desa ?? [];
+  const kelompokList = org?.kelompok ?? [];
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div>
+        <span
+          className="mb-1 block text-xs font-medium"
+          style={{ color: "var(--muted-brk)" }}
+        >
+          Daerah (opsional)
+        </span>
         <ConsoleSelect
-          id={id}
-          value={value}
-          onChange={(nextVal) => {
-            onChange(nextVal);
-            const matched = regencies.find(
-              (r) => String(r.id ?? r.code) === nextVal || r.code === nextVal,
-            );
-            setRegencyCode(matched?.code ?? nextVal);
-            setDistrictCode("");
-            setVillageCode("");
-          }}
-          placeholder={
-            regenciesQuery.isLoading
-              ? "Memuat Kabupaten/Kota..."
-              : "Pilih Kabupaten/Kota"
+          value={value.daerah_id}
+          onChange={(daerah_id) =>
+            onChange({ daerah_id, desa_id: "", kelompok_id: "" })
           }
-          options={regencyOptions}
+          placeholder="Semua daerah"
+          options={[
+            { value: "", label: "Tidak dipilih" },
+            ...daerahList.map((d) => ({ value: String(d.id), label: d.name })),
+          ]}
         />
       </div>
 
-      {showCascadingAddress && districts.length > 0 && (
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          <div>
-            <span
-              className="mb-1 block text-xs font-medium"
-              style={{ color: "var(--muted-brk)" }}
-            >
-              Kecamatan
-            </span>
-            <ConsoleSelect
-              value={districtCode}
-              onChange={(nextDist) => {
-                setDistrictCode(nextDist);
-                setVillageCode("");
-              }}
-              placeholder="Pilih kecamatan"
-              options={districts.map((d) => ({ value: d.code, label: d.name }))}
-            />
-          </div>
+      <div>
+        <span
+          className="mb-1 block text-xs font-medium"
+          style={{ color: "var(--muted-brk)" }}
+        >
+          Desa (opsional)
+        </span>
+        <ConsoleSelect
+          value={value.desa_id}
+          disabled={!value.daerah_id}
+          onChange={(desa_id) =>
+            onChange({ ...value, desa_id, kelompok_id: "" })
+          }
+          placeholder={!value.daerah_id ? "Pilih daerah dulu" : "Pilih desa"}
+          options={[
+            { value: "", label: "Tidak dipilih" },
+            ...desaList.map((d) => ({ value: String(d.id), label: d.name })),
+          ]}
+        />
+      </div>
 
-          {villages.length > 0 && (
-            <div>
-              <span
-                className="mb-1 block text-xs font-medium"
-                style={{ color: "var(--muted-brk)" }}
-              >
-                Kelurahan / Desa
-              </span>
-              <ConsoleSelect
-                value={villageCode}
-                onChange={(nextVil) => {
-                  setVillageCode(nextVil);
-                  const matched = villages.find((v) => v.code === nextVil);
-                  if (matched?.id) onChange(String(matched.id));
-                }}
-                placeholder="Pilih kelurahan/desa"
-                options={villages.map((v) => ({
-                  value: v.code,
-                  label: v.name,
-                }))}
-              />
-            </div>
-          )}
-        </div>
-      )}
+      <div>
+        <span
+          className="mb-1 block text-xs font-medium"
+          style={{ color: "var(--muted-brk)" }}
+        >
+          Kelompok (opsional)
+        </span>
+        <ConsoleSelect
+          value={value.kelompok_id}
+          disabled={!value.desa_id}
+          onChange={(kelompok_id) => onChange({ ...value, kelompok_id })}
+          placeholder={!value.desa_id ? "Pilih desa dulu" : "Pilih kelompok"}
+          options={[
+            { value: "", label: "Tidak dipilih" },
+            ...kelompokList.map((k) => ({ value: String(k.id), label: k.name })),
+          ]}
+        />
+      </div>
     </div>
   );
 }

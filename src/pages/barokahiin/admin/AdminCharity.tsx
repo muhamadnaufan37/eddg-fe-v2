@@ -3,18 +3,20 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Coins, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import {
+  EMPTY_WILAYAH,
   allocateAdminPool,
   approveAdminDisbursement,
   approveAdminProgram,
   createIdempotencyKey,
   parseBarokahiinError,
+  type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConfirmDialog,
   ConsolePanel,
   FieldWrapper,
-  RegionSelect,
   RupiahInput,
+  WilayahCascader,
 } from "../components/ui/ConsoleUi";
 import { formatRupiah } from "../components/ui/utils";
 
@@ -25,7 +27,7 @@ export default function AdminCharity() {
   const [approveProgUuid, setApproveProgUuid] = useState("");
 
   // Pool allocation form (POST /admin/pool/allocate)
-  const [regionId, setRegionId] = useState("1");
+  const [wilayah, setWilayah] = useState<WilayahValue>(EMPTY_WILAYAH);
   const [programUuid, setProgramUuid] = useState("");
   const [amountIdr, setAmountIdr] = useState("500000");
   const [catatan, setCatatan] = useState("");
@@ -53,7 +55,8 @@ export default function AdminCharity() {
     mutationFn: () =>
       allocateAdminPool(
         {
-          region_id: Number(regionId) || regionId,
+          province_code: wilayah.province_code || undefined,
+          regency_code: wilayah.regency_code,
           program_uuid: programUuid.trim(),
           amount_idr: Number(amountIdr) || 0,
           catatan: catatan.trim() || undefined,
@@ -100,6 +103,10 @@ export default function AdminCharity() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
+              if (!wilayah.regency_code) {
+                toast.error("Pilih wilayah pool asal (Provinsi & Kabupaten/Kota).");
+                return;
+              }
               if (!programUuid.trim() || !amountIdr) {
                 toast.error("UUID program tujuan dan nominal wajib diisi.");
                 return;
@@ -108,12 +115,11 @@ export default function AdminCharity() {
               setAllocConfirmOpen(true);
             }}
           >
-            <FieldWrapper id="alloc-region" label="Wilayah asal pool" required>
-              <RegionSelect
-                id="alloc-region"
-                value={regionId}
-                onChange={setRegionId}
-                required
+            <FieldWrapper label="Wilayah asal pool (Kabupaten / Kota)" required>
+              <WilayahCascader
+                value={wilayah}
+                onChange={setWilayah}
+                maxLevel="regency"
               />
             </FieldWrapper>
 
@@ -245,7 +251,7 @@ export default function AdminCharity() {
       <ConfirmDialog
         open={allocConfirmOpen}
         title="Konfirmasi alokasi Dana Kegiatan"
-        description={`Alokasikan ${formatRupiah(Number(amountIdr))} dari pool wilayah #${regionId} ke program ${programUuid}.`}
+        description={`Alokasikan ${formatRupiah(Number(amountIdr))} dari pool wilayah ${wilayah.regency_code} ke program ${programUuid}.`}
         consequences="Transaksi ini menggunakan Idempotency-Key dan langsung tercatat di ledger."
         confirmLabel="Konfirmasi alokasi"
         tone="daun"

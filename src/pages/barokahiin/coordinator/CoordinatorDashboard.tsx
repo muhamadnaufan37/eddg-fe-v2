@@ -303,7 +303,7 @@ export default function CoordinatorDashboard({
                       >
                         Metode serah:{" "}
                         <strong>
-                          {order.metode_serah === "ambil"
+                          {(order.serah ?? order.metode_serah) === "ambil"
                             ? "Ambil di toko"
                             : "Kirim kurir"}
                         </strong>

@@ -7,12 +7,15 @@ import {
   ShieldCheck,
   Store,
   Users,
+  X,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   getAdminCoordinators,
   getAdminStores,
+  getWilayahProvinces,
+  getWilayahRegencies,
   moderateAdminStore,
   parseBarokahiinError,
   recordStoreAddressCheck,
@@ -37,7 +40,6 @@ import {
 } from "../components/ui/ConsoleUi";
 import {
   ADDRESS_CHECKS_SPEC,
-  PILOT_REGIONS,
   maskSensitive,
   unwrapList,
 } from "../components/ui/utils";
@@ -66,13 +68,14 @@ export default function AdminCoordinatorsStores() {
   >("aktif");
   const [modNote, setModNote] = useState("");
 
-  // Coordinator verify modal
+  // Coordinator verify modal (uses official regency_codes[] from /public/wilayah)
   const [verifyTarget, setVerifyTarget] = useState<CoordinatorSummary | null>(
     null,
   );
   const [verifyStatus, setVerifyStatus] = useState("aktif");
   const [verifyLevel, setVerifyLevel] = useState<1 | 2 | 3>(1);
-  const [verifyRegionIds, setVerifyRegionIds] = useState<number[]>([1]);
+  const [verifyProvCode, setVerifyProvCode] = useState("32");
+  const [verifyRegencyCodes, setVerifyRegencyCodes] = useState<string[]>([]);
   const [verifyAlasan, setVerifyAlasan] = useState("");
 
   // Coordinator sanction modal
@@ -95,6 +98,20 @@ export default function AdminCoordinatorsStores() {
     queryKey: ["barokahiin", "admin", "coordinators", coordSearch],
     queryFn: () => getAdminCoordinators({ q: coordSearch, per_page: 30 }),
     enabled: subTab === "coordinators",
+  });
+
+  const provincesQuery = useQuery({
+    queryKey: ["barokahiin", "public-wilayah", "provinces"],
+    queryFn: getWilayahProvinces,
+    staleTime: 1000 * 60 * 30,
+    enabled: Boolean(verifyTarget),
+  });
+
+  const regenciesQuery = useQuery({
+    queryKey: ["barokahiin", "public-wilayah", "regencies", verifyProvCode],
+    queryFn: () => getWilayahRegencies(verifyProvCode),
+    staleTime: 1000 * 60 * 30,
+    enabled: Boolean(verifyTarget && verifyProvCode),
   });
 
   const checkMut = useMutation({
@@ -178,7 +195,7 @@ export default function AdminCoordinatorsStores() {
       verifyAdminCoordinator(verifyTarget!.uuid, {
         status: verifyStatus,
         level: verifyLevel,
-        region_ids: verifyRegionIds,
+        regency_codes: verifyRegencyCodes,
         alasan: verifyAlasan.trim() || undefined,
       }),
     onSuccess: () => {
@@ -640,13 +657,14 @@ export default function AdminCoordinatorsStores() {
                         setVerifyTarget(c);
                         setVerifyStatus(c.status || "aktif");
                         setVerifyLevel(c.level || 1);
-                        const existingIds =
+                        const existingCodes =
                           c.regions
-                            ?.map((r) => Number(r.id))
-                            .filter((n) => Number.isFinite(n)) ?? [];
-                        setVerifyRegionIds(
-                          existingIds.length > 0 ? existingIds : [1],
-                        );
+                            ?.map((r) => {
+                              const rAny = r as unknown as Record<string, unknown>;
+                              return String(rAny.code ?? rAny.kode ?? "").trim();
+                            })
+                            .filter((code) => code.includes(".")) ?? [];
+                        setVerifyRegencyCodes(existingCodes);
                       }}
                     >
                       <ShieldCheck className="size-4" aria-hidden="true" />
@@ -756,12 +774,18 @@ export default function AdminCoordinatorsStores() {
       <ConfirmDialog
         open={Boolean(verifyTarget)}
         title={`Verifikasi koordinator: ${verifyTarget?.nama || ""}`}
-        description="Tetapkan status, level (1–3), dan daftar ID wilayah penugasan."
+        description="Tetapkan status, level (1–3), dan daftar Kabupaten/Kota penugasan (regency_codes[])."
         confirmLabel="Simpan verifikasi"
         tone="daun"
         loading={verifyCoordMut.isPending}
         onCancel={() => setVerifyTarget(null)}
-        onConfirm={() => verifyCoordMut.mutate()}
+        onConfirm={() => {
+          if (verifyRegencyCodes.length === 0) {
+            toast.error("Pilih minimal satu Kabupaten/Kota penugasan.");
+            return;
+          }
+          verifyCoordMut.mutate();
+        }}
       >
         <div className="space-y-3">
           <FieldWrapper id="vc-status" label="Status" required>
@@ -790,39 +814,77 @@ export default function AdminCoordinatorsStores() {
             />
           </FieldWrapper>
           <FieldWrapper
-            label="Wilayah penugasan (pilih satu atau lebih)"
+            label="Wilayah penugasan Kabupaten/Kota (regency_codes[])"
             required
+            helper="Pilih provinsi lalu tambahkan satu atau lebih Kabupaten/Kota. Backend menyinkronkan otomatis dari wilayah.id."
           >
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {PILOT_REGIONS.map((reg) => {
-                const checked = verifyRegionIds.includes(reg.id);
-                return (
-                  <label
-                    key={reg.id}
-                    className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-                    style={{
-                      borderColor: checked ? "var(--indigo)" : "var(--garis)",
-                      backgroundColor: checked
-                        ? "var(--indigo-muda)"
-                        : "var(--putih)",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        setVerifyRegionIds((prev) =>
-                          e.target.checked
-                            ? [...prev, reg.id]
-                            : prev.filter((id) => id !== reg.id),
-                        );
-                      }}
-                      className="size-4"
-                    />
-                    <span>{reg.nama}</span>
-                  </label>
-                );
-              })}
+            <div className="space-y-2.5">
+              <ConsoleSelect
+                value={verifyProvCode}
+                onChange={setVerifyProvCode}
+                placeholder="Pilih provinsi"
+                options={(provincesQuery.data ?? []).map((p) => ({
+                  value: p.code,
+                  label: p.name,
+                }))}
+              />
+
+              <ConsoleSelect
+                value=""
+                disabled={!verifyProvCode || regenciesQuery.isLoading}
+                onChange={(code) => {
+                  if (!code) return;
+                  setVerifyRegencyCodes((prev) =>
+                    prev.includes(code) ? prev : [...prev, code],
+                  );
+                }}
+                placeholder={
+                  regenciesQuery.isLoading
+                    ? "Memuat Kabupaten/Kota..."
+                    : "Tambah Kabupaten/Kota..."
+                }
+                options={(regenciesQuery.data ?? []).map((r) => ({
+                  value: r.code,
+                  label: `${r.code} — ${r.name}`,
+                }))}
+              />
+
+              {verifyRegencyCodes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {verifyRegencyCodes.map((code) => {
+                    const matched = (regenciesQuery.data ?? []).find(
+                      (r) => r.code === code,
+                    );
+                    return (
+                      <span
+                        key={code}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+                        style={{
+                          backgroundColor: "var(--indigo-muda)",
+                          color: "var(--indigo)",
+                          borderColor: "var(--indigo)",
+                        }}
+                      >
+                        <span className="brk-num">
+                          {matched ? `${code} (${matched.name})` : code}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Hapus ${code}`}
+                          onClick={() =>
+                            setVerifyRegencyCodes((prev) =>
+                              prev.filter((c) => c !== code),
+                            )
+                          }
+                          className="rounded-full p-0.5"
+                        >
+                          <X className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </FieldWrapper>
           <FieldWrapper id="vc-alasan" label="Catatan atau alasan">

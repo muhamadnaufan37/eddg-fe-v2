@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  EMPTY_WILAYAH,
   addConsoleDonorConsent,
   createConsoleDonor,
   createConsoleItem,
@@ -34,6 +35,7 @@ import {
   type ItemGrade,
   type ItemJalur,
   type SopCheckItem,
+  type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConfirmDialog,
@@ -45,10 +47,12 @@ import {
   GradeBadge,
   InfoBanner,
   LoadingSkeleton,
+  OrganisasiSelect,
   Pager,
-  RegionSelect,
   RupiahInput,
   StatusBadge,
+  WilayahCascader,
+  type OrganisasiValue,
 } from "../components/ui/ConsoleUi";
 import { MediaUploadQueue } from "../components/ui/MediaUploadQueue";
 import {
@@ -130,8 +134,16 @@ export default function CoordinatorItems({
   const [quickDonorOpen, setQuickDonorOpen] = useState(false);
   const [qdNama, setQdNama] = useState("");
   const [qdKontak, setQdKontak] = useState("");
-  const [qdRegion, setQdRegion] = useState("1");
+  const [qdWilayah, setQdWilayah] = useState<WilayahValue>(EMPTY_WILAYAH);
   const [quickConsentRef, setQuickConsentRef] = useState("");
+
+  // Optional item wilayah & organisasi override (BAROKAHIIN_WILAYAH_FLOW.md 4.E.2)
+  const [itemWilayah, setItemWilayah] = useState<WilayahValue>(EMPTY_WILAYAH);
+  const [itemOrg, setItemOrg] = useState<OrganisasiValue>({
+    daerah_id: "",
+    desa_id: "",
+    kelompok_id: "",
+  });
 
   // SOP per-item disclosure & filter state
   const [onlyPendingSop, setOnlyPendingSop] = useState(false);
@@ -234,6 +246,13 @@ export default function CoordinatorItems({
           form.jalur === "charity" && form.charity_program_id
             ? Number(form.charity_program_id) || form.charity_program_id
             : null,
+        province_code: itemWilayah.province_code || undefined,
+        regency_code: itemWilayah.regency_code || undefined,
+        district_code: itemWilayah.district_code || undefined,
+        village_code: itemWilayah.village_code || undefined,
+        daerah_id: itemOrg.daerah_id ? Number(itemOrg.daerah_id) || itemOrg.daerah_id : undefined,
+        desa_id: itemOrg.desa_id ? Number(itemOrg.desa_id) || itemOrg.desa_id : undefined,
+        kelompok_id: itemOrg.kelompok_id ? Number(itemOrg.kelompok_id) || itemOrg.kelompok_id : undefined,
         grade: form.grade,
         judul: form.judul.trim(),
         keterangan: form.keterangan.trim(),
@@ -345,7 +364,10 @@ export default function CoordinatorItems({
   const quickDonorMut = useMutation({
     mutationFn: () =>
       createConsoleDonor({
-        region_id: Number(qdRegion) || qdRegion,
+        province_code: qdWilayah.province_code || undefined,
+        regency_code: qdWilayah.regency_code || undefined,
+        district_code: qdWilayah.district_code || undefined,
+        village_code: qdWilayah.village_code,
         nama: qdNama.trim(),
         kontak: qdKontak.trim(),
         anonim: true,
@@ -637,7 +659,7 @@ export default function CoordinatorItems({
                 }}
               >
                 <p className="text-sm font-bold">Tambah donatur cepat</p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FieldWrapper id="qd-nama" label="Nama donatur" required>
                     <input
                       id="qd-nama"
@@ -656,18 +678,23 @@ export default function CoordinatorItems({
                       placeholder="0812..."
                     />
                   </FieldWrapper>
-                  <FieldWrapper id="qd-reg" label="Wilayah" required>
-                    <RegionSelect
-                      id="qd-reg"
-                      value={qdRegion}
-                      onChange={setQdRegion}
-                    />
-                  </FieldWrapper>
                 </div>
+                <FieldWrapper label="Wilayah donatur (sampai Kelurahan/Desa)" required>
+                  <WilayahCascader
+                    value={qdWilayah}
+                    onChange={setQdWilayah}
+                    maxLevel="village"
+                  />
+                </FieldWrapper>
                 <button
                   type="button"
                   className="brk-btn brk-btn-primary"
-                  disabled={quickDonorMut.isPending || !qdNama.trim() || !qdKontak.trim()}
+                  disabled={
+                    quickDonorMut.isPending ||
+                    !qdNama.trim() ||
+                    !qdKontak.trim() ||
+                    !qdWilayah.village_code
+                  }
                   onClick={() => quickDonorMut.mutate()}
                 >
                   {quickDonorMut.isPending ? "Menyimpan..." : "Simpan dan pilih donatur"}
@@ -710,6 +737,27 @@ export default function CoordinatorItems({
                 </div>
               </div>
             )}
+
+            {/* Optional wilayah & organisasi tagging for catalog filters */}
+            <div
+              className="mt-4 space-y-3 rounded-xl border p-4"
+              style={{ borderColor: "var(--garis)" }}
+            >
+              <div>
+                <p className="text-sm font-bold">
+                  Wilayah barang dan organisasi (opsional)
+                </p>
+                <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                  Jika wilayah administratif dikosongkan, otomatis mengikuti wilayah donatur. Isi daerah/desa/kelompok agar barang tampil pada filter organisasi.
+                </p>
+              </div>
+              <WilayahCascader
+                value={itemWilayah}
+                onChange={setItemWilayah}
+                maxLevel="village"
+              />
+              <OrganisasiSelect value={itemOrg} onChange={setItemOrg} />
+            </div>
 
             {selectedCategory?.forbidden && (
               <div className="mt-4">
