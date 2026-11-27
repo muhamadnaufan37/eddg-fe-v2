@@ -1,29 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "react-qr-code";
+import { useReactToPrint } from "react-to-print";
 import {
   AlertTriangle,
   Camera,
   CheckCircle2,
   ClipboardCheck,
   Eye,
+  EyeOff,
+  Loader2,
   Package,
+  Pencil,
   Plus,
   Printer,
   RefreshCw,
   RotateCcw,
   Send,
+  Star,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   EMPTY_WILAYAH,
   addConsoleDonorConsent,
   createConsoleDonor,
   createConsoleItem,
   getConsoleDonors,
+  getConsoleItem,
   getConsoleItemSop,
   getConsoleItems,
+  getConsoleOrder,
+  getConsoleOrders,
   getConsoleStore,
   parseBarokahiinError,
   republishConsoleItem,
@@ -60,6 +69,7 @@ import {
   ITEM_CATEGORIES_SEED,
   PHOTO_ANGLE_GUIDES,
   detectForbiddenKeywords,
+  formatDateId,
   formatRupiah,
   unwrapList,
 } from "../components/ui/utils";
@@ -113,6 +123,9 @@ export default function CoordinatorItems({
 }) {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [jalurFilter, setJalurFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -149,8 +162,34 @@ export default function CoordinatorItems({
   const [onlyPendingSop, setOnlyPendingSop] = useState(false);
   const [disclosureByCode, setDisclosureByCode] = useState<Record<string, string>>({});
 
-  // Print QR label modal
+  // Detail modal state
+  const [detailItem, setDetailItem] = useState<ConsoleItem | null>(null);
+
+  // Print QR label modal (thermal 58mm / 80mm)
   const [labelItem, setLabelItem] = useState<ConsoleItem | null>(null);
+  const [thermalWidth, setThermalWidth] = useState<"58mm" | "80mm">("58mm");
+  const thermalLabelRef = useRef<HTMLDivElement>(null);
+  const handlePrintThermal = useReactToPrint({
+    contentRef: thermalLabelRef,
+    documentTitle: labelItem
+      ? `Label-${labelItem.kode_barang}`
+      : "Label-Barokahiin",
+    pageStyle: `
+      @page {
+        size: ${thermalWidth} auto;
+        margin: 2mm;
+      }
+      @media print {
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          -webkit-print-color-adjust: exact;
+        }
+      }
+    `,
+  });
   // Withdraw dialog
   const [withdrawTarget, setWithdrawTarget] = useState<ConsoleItem | null>(null);
   const [withdrawReason, setWithdrawReason] = useState("");
@@ -177,9 +216,27 @@ export default function CoordinatorItems({
   });
 
   const itemsQuery = useQuery({
-    queryKey: ["barokahiin", "console", "items", statusFilter, search, page],
+    queryKey: [
+      "barokahiin",
+      "console",
+      "items",
+      statusFilter,
+      categoryFilter,
+      jalurFilter,
+      gradeFilter,
+      search,
+      page,
+    ],
     queryFn: () =>
-      getConsoleItems({ status: statusFilter, q: search, page, per_page: 12 }),
+      getConsoleItems({
+        status: statusFilter,
+        category_id: categoryFilter || undefined,
+        jalur: jalurFilter || undefined,
+        grade: gradeFilter || undefined,
+        q: search,
+        page,
+        per_page: 12,
+      }),
   });
 
   const sopQuery = useQuery({
@@ -187,6 +244,62 @@ export default function CoordinatorItems({
     queryFn: () => getConsoleItemSop(editingItem!.uuid),
     enabled: Boolean(editingItem?.uuid && editorMode === "form"),
   });
+
+  const detailQuery = useQuery({
+    queryKey: ["barokahiin", "console", "item-detail", detailItem?.uuid],
+    queryFn: () => getConsoleItem(detailItem!.uuid),
+    enabled: Boolean(detailItem?.uuid),
+  });
+
+  // Fallback lookup: if a sold item doesn't embed `review`, find its order and check its review
+  const soldOrdersQuery = useQuery({
+    queryKey: ["barokahiin", "console", "orders", "for-item-rating"],
+    queryFn: () => getConsoleOrders({ per_page: 50 }),
+    enabled: Boolean(detailItem && detailItem.status === "terjual"),
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const matchedOrderForDetail = useMemo(() => {
+    if (!detailItem || detailItem.status !== "terjual") return null;
+    const { items: orderList } = unwrapList(soldOrdersQuery.data);
+    return (
+      orderList.find((ord) =>
+        ord.items?.some(
+          (oi) =>
+            oi.uuid === detailItem.uuid ||
+            oi.kode_barang === detailItem.kode_barang,
+        ),
+      ) ?? null
+    );
+  }, [detailItem, soldOrdersQuery.data]);
+
+  const matchedOrderDetailQuery = useQuery({
+    queryKey: [
+      "barokahiin",
+      "console",
+      "order-detail",
+      matchedOrderForDetail?.uuid,
+    ],
+    queryFn: () => getConsoleOrder(matchedOrderForDetail!.uuid),
+    enabled: Boolean(
+      matchedOrderForDetail?.uuid && !matchedOrderForDetail?.review,
+    ),
+  });
+
+  useEffect(() => {
+    if (!detailItem) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDetailItem(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [detailItem]);
+
+  const isEditableStatus = (status?: string) =>
+    status === "draft" ||
+    status === "perlu_revisi" ||
+    status === "terbit" ||
+    status === "ditarik";
 
   const storeVerified =
     storeQuery.data?.address_verified ||
@@ -502,6 +615,14 @@ export default function CoordinatorItems({
                 Verifikasi toko
               </button>
             }
+          />
+        )}
+
+        {editingItem?.status === "terbit" && (
+          <InfoBanner
+            tone="info"
+            title="Mengubah barang yang sudah terbit (ITM-09)"
+            message="Perubahan harga dalam batas konfigurasi langsung berlaku tanpa review. Perubahan keterangan atau foto signifikan akan mengembalikan barang ke antrean review Admin."
           />
         )}
 
@@ -1490,11 +1611,11 @@ export default function CoordinatorItems({
           </button>
         }
       >
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <input
             type="search"
             aria-label="Cari barang"
-            className="brk-input sm:max-w-xs"
+            className="brk-input"
             placeholder="Cari kode atau judul..."
             value={search}
             onChange={(e) => {
@@ -1502,28 +1623,96 @@ export default function CoordinatorItems({
               setPage(1);
             }}
           />
-          <div className="w-full sm:max-w-56">
-            <ConsoleSelect
-              value={statusFilter}
-              onChange={(v) => {
-                setStatusFilter(v);
+          <ConsoleSelect
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+            placeholder="Semua status"
+            options={[
+              { value: "", label: "Semua status" },
+              {
+                value: "draft,perlu_revisi",
+                label: "Perlu tindakan (Draf & Revisi)",
+              },
+              { value: "draft", label: "Draf" },
+              { value: "menunggu_review", label: "Menunggu review" },
+              { value: "perlu_revisi", label: "Perlu revisi" },
+              { value: "terbit", label: "Terbit" },
+              { value: "ditahan", label: "Ditahan" },
+              { value: "terjual", label: "Terjual" },
+              { value: "ditarik", label: "Ditarik" },
+              { value: "ditolak", label: "Ditolak" },
+            ]}
+          />
+          <ConsoleSelect
+            value={categoryFilter}
+            onChange={(v) => {
+              setCategoryFilter(v);
+              setPage(1);
+            }}
+            placeholder="Semua kategori"
+            options={[
+              { value: "", label: "Semua kategori" },
+              ...ITEM_CATEGORIES_SEED.map((c) => ({
+                value: String(c.id),
+                label: `${c.code} — ${c.nama}`,
+              })),
+            ]}
+          />
+          <ConsoleSelect
+            value={jalurFilter}
+            onChange={(v) => {
+              setJalurFilter(v);
+              setPage(1);
+            }}
+            placeholder="Semua jalur"
+            options={[
+              { value: "", label: "Semua jalur" },
+              { value: "jual", label: "Jual reguler" },
+              { value: "charity", label: "Charity" },
+              { value: "salurkan", label: "Salurkan langsung" },
+            ]}
+          />
+          <ConsoleSelect
+            value={gradeFilter}
+            onChange={(v) => {
+              setGradeFilter(v);
+              setPage(1);
+            }}
+            placeholder="Semua grade"
+            options={[
+              { value: "", label: "Semua grade" },
+              { value: "A", label: "Grade A" },
+              { value: "B", label: "Grade B" },
+              { value: "C", label: "Grade C" },
+            ]}
+          />
+        </div>
+        {(search ||
+          statusFilter ||
+          categoryFilter ||
+          jalurFilter ||
+          gradeFilter) && (
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              className="brk-btn brk-btn-ghost min-h-9 px-3 text-xs"
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("");
+                setCategoryFilter("");
+                setJalurFilter("");
+                setGradeFilter("");
                 setPage(1);
               }}
-              placeholder="Semua status"
-              options={[
-                { value: "", label: "Semua status" },
-                { value: "draft", label: "Draf" },
-                { value: "menunggu_review", label: "Menunggu review" },
-                { value: "perlu_revisi", label: "Perlu revisi" },
-                { value: "terbit", label: "Terbit" },
-                { value: "ditahan", label: "Ditahan" },
-                { value: "terjual", label: "Terjual" },
-                { value: "ditarik", label: "Ditarik" },
-                { value: "ditolak", label: "Ditolak" },
-              ]}
-            />
+            >
+              <RotateCcw className="size-3.5" aria-hidden="true" />
+              <span>Reset filter</span>
+            </button>
           </div>
-        </div>
+        )}
 
         {itemsQuery.isLoading ? (
           <LoadingSkeleton rows={4} />
@@ -1606,8 +1795,30 @@ export default function CoordinatorItems({
                       >
                         {formatRupiah(displayPrice)}
                       </p>
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <GradeBadge grade={displayGrade} />
+                        {(() => {
+                          const rev = item.review ?? item.order?.review ?? null;
+                          const score =
+                            rev?.rating ?? rev?.rating_barang ?? null;
+                          if (!score) return null;
+                          return (
+                            <span
+                              className="brk-num inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold"
+                              style={{
+                                backgroundColor: "var(--kunyit-muda)",
+                                borderColor: "var(--kunyit)",
+                                color: "var(--peringatan-teks)",
+                              }}
+                            >
+                              <Star
+                                className="size-3 fill-current"
+                                aria-hidden="true"
+                              />
+                              <span>{score}/5</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1616,6 +1827,14 @@ export default function CoordinatorItems({
                     className="flex flex-wrap gap-2 border-t pt-3"
                     style={{ borderColor: "var(--garis)" }}
                   >
+                    <button
+                      type="button"
+                      className="brk-btn brk-btn-secondary"
+                      onClick={() => setDetailItem(item)}
+                    >
+                      <Eye className="size-4" aria-hidden="true" />
+                      <span>Lihat detail</span>
+                    </button>
                     {(item.status === "draft" ||
                       item.status === "perlu_revisi") && (
                       <button
@@ -1623,12 +1842,24 @@ export default function CoordinatorItems({
                         className="brk-btn brk-btn-primary"
                         onClick={() => openEditItem(item)}
                       >
-                        Lanjutkan kurasi
+                        <Pencil className="size-4" aria-hidden="true" />
+                        <span>Lanjutkan kurasi</span>
+                      </button>
+                    )}
+                    {(item.status === "terbit" ||
+                      item.status === "ditarik") && (
+                      <button
+                        type="button"
+                        className="brk-btn brk-btn-primary"
+                        onClick={() => openEditItem(item)}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                        <span>Edit barang</span>
                       </button>
                     )}
                     <button
                       type="button"
-                      className="brk-btn brk-btn-secondary"
+                      className="brk-btn brk-btn-neutral"
                       onClick={() => setLabelItem(item)}
                     >
                       <Printer className="size-4" aria-hidden="true" />
@@ -1637,10 +1868,11 @@ export default function CoordinatorItems({
                     {item.status === "terbit" && (
                       <button
                         type="button"
-                        className="brk-btn brk-btn-ghost"
+                        className="brk-btn brk-btn-warning"
                         onClick={() => setWithdrawTarget(item)}
                       >
-                        Tarik barang
+                        <EyeOff className="size-4" aria-hidden="true" />
+                        <span>Tarik barang</span>
                       </button>
                     )}
                     {item.status === "ditarik" && (
@@ -1650,8 +1882,21 @@ export default function CoordinatorItems({
                         disabled={republishMut.isPending}
                         onClick={() => republishMut.mutate(item.uuid)}
                       >
-                        <RotateCcw className="size-4" aria-hidden="true" />
-                        <span>Terbitkan ulang</span>
+                        {republishMut.isPending &&
+                        republishMut.variables === item.uuid ? (
+                          <Loader2
+                            className="size-4 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <RotateCcw className="size-4" aria-hidden="true" />
+                        )}
+                        <span>
+                          {republishMut.isPending &&
+                          republishMut.variables === item.uuid
+                            ? "Menerbitkan..."
+                            : "Terbitkan ulang"}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -1664,75 +1909,583 @@ export default function CoordinatorItems({
         <Pager pagination={pagination} onChange={setPage} />
       </ConsolePanel>
 
-      {/* Print Physical Label Modal (ITM-12) */}
-      {labelItem && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Cetak label fisik barang"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        >
+      {/* Item Detail Modal (accessible for all statuses) */}
+      {detailItem && (() => {
+        const full = detailQuery.data ?? detailItem;
+        const rawFull = full as ConsoleItem & {
+          judul_publik?: string;
+          nama_internal?: string;
+          harga_rupiah?: number;
+          kondisi_grade?: string;
+        };
+        const title =
+          full.judul || rawFull.judul_publik || rawFull.nama_internal || full.kode_barang;
+        const price = full.price_idr ?? rawFull.harga_rupiah ?? 0;
+        const grade = full.grade || rawFull.kondisi_grade;
+        const mediaList = full.media ?? [];
+
+        return (
           <div
-            className="brk-float w-full max-w-sm rounded-4xl border p-5"
-            style={{
-              backgroundColor: "var(--putih)",
-              borderColor: "var(--garis)",
-            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="brk-item-detail-title"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-2 sm:items-center sm:p-4"
+            onClick={() => setDetailItem(null)}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">Label fisik barang</h3>
-              <button
-                type="button"
-                aria-label="Tutup"
-                className="flex size-11 items-center justify-center rounded-lg"
-                onClick={() => setLabelItem(null)}
-              >
-                <X className="size-5" aria-hidden="true" />
-              </button>
-            </div>
-
             <div
-              className="mt-4 flex flex-col items-center rounded-xl border-2 border-dashed p-5 text-center"
-              style={{ borderColor: "var(--tinta)" }}
+              className="brk-float brk-safe-bottom max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-4xl border p-5 sm:p-6"
+              style={{
+                backgroundColor: "var(--putih)",
+                borderColor: "var(--garis)",
+                color: "var(--tinta)",
+              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <QRCode
-                value={`${labelItem.kode_barang}|${labelItem.uuid}`}
-                size={136}
-              />
-              <p className="brk-display brk-num mt-3 text-lg font-bold">
-                {labelItem.kode_barang}
-              </p>
-              <p className="mt-1 line-clamp-2 text-sm font-semibold">
-                {labelItem.judul}
-              </p>
-              <p className="brk-num mt-1 text-base font-bold">
-                {formatRupiah(labelItem.price_idr)}
-              </p>
-              <p className="mt-1 text-xs" style={{ color: "var(--muted-brk)" }}>
-                Grade {labelItem.grade}, Rak: {labelItem.lokasi_penyimpanan || "-"}
-              </p>
-            </div>
+              <div
+                className="flex items-start justify-between gap-3 border-b pb-3"
+                style={{ borderColor: "var(--garis)" }}
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className="brk-num text-xs font-bold"
+                      style={{ color: "var(--muted-brk)" }}
+                    >
+                      {full.kode_barang}
+                    </span>
+                    <StatusBadge value={full.status} />
+                    <GradeBadge grade={grade} />
+                  </div>
+                  <h2
+                    id="brk-item-detail-title"
+                    className="mt-1.5 text-lg font-bold"
+                  >
+                    {title}
+                  </h2>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Tutup detail barang"
+                  className="size-10 shrink-0 rounded-lg"
+                  onClick={() => setDetailItem(null)}
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </Button>
+              </div>
 
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="brk-btn brk-btn-secondary"
-                onClick={() => setLabelItem(null)}
-              >
-                Tutup
-              </button>
-              <button
-                type="button"
-                className="brk-btn brk-btn-primary"
-                onClick={() => window.print()}
-              >
-                <Printer className="size-4" aria-hidden="true" />
-                <span>Cetak sekarang</span>
-              </button>
+              <div className="mt-4 space-y-4">
+                {(detailQuery.isLoading || detailQuery.isFetching) && (
+                  <div
+                    className="flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-semibold"
+                    style={{
+                      backgroundColor: "var(--indigo-muda)",
+                      borderColor: "var(--indigo)",
+                      color: "var(--indigo)",
+                    }}
+                  >
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+                    <span>Memuat detail barang terbaru dari server...</span>
+                  </div>
+                )}
+
+                {full.alasan_tolak && (
+                  <InfoBanner
+                    tone={full.status === "ditolak" ? "danger" : "warning"}
+                    title={
+                      full.status === "ditolak"
+                        ? "Alasan penolakan"
+                        : "Catatan revisi Reviewer"
+                    }
+                    message={full.alasan_tolak}
+                  />
+                )}
+
+                {/* Buyer Rating & Review (for sold items or whenever review exists) */}
+                {(() => {
+                  const resolvedReview =
+                    full.review ??
+                    full.order?.review ??
+                    matchedOrderDetailQuery.data?.review ??
+                    matchedOrderForDetail?.review ??
+                    null;
+                  const ratingScore =
+                    resolvedReview?.rating ??
+                    resolvedReview?.rating_barang ??
+                    null;
+                  const loadingRating =
+                    full.status === "terjual" &&
+                    !ratingScore &&
+                    (detailQuery.isLoading ||
+                      soldOrdersQuery.isLoading ||
+                      matchedOrderDetailQuery.isLoading);
+
+                  if (full.status !== "terjual" && !ratingScore) return null;
+
+                  return (
+                    <div
+                      className="rounded-xl border p-4"
+                      style={{
+                        backgroundColor: ratingScore
+                          ? "var(--kunyit-muda)"
+                          : "var(--kertas)",
+                        borderColor: ratingScore
+                          ? "var(--kunyit)"
+                          : "var(--garis)",
+                      }}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p
+                          className="text-xs font-bold"
+                          style={{
+                            color: ratingScore
+                              ? "var(--peringatan-teks)"
+                              : "var(--muted-brk)",
+                          }}
+                        >
+                          Rating dan ulasan pembeli
+                        </p>
+                        {(full.order?.kode_pesanan ||
+                          matchedOrderForDetail?.kode_pesanan) && (
+                          <span
+                            className="brk-num text-xs font-semibold"
+                            style={{ color: "var(--muted-brk)" }}
+                          >
+                            Pesanan{" "}
+                            {full.order?.kode_pesanan ||
+                              matchedOrderForDetail?.kode_pesanan}
+                          </span>
+                        )}
+                      </div>
+
+                      {loadingRating ? (
+                        <div
+                          className="mt-2 flex items-center gap-2 text-xs font-medium"
+                          style={{ color: "var(--muted-brk)" }}
+                        >
+                          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                          <span>Memuat rating dan ulasan pembeli...</span>
+                        </div>
+                      ) : ratingScore ? (
+                        <div className="mt-1.5 space-y-1">
+                          <div className="flex flex-wrap items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star
+                                key={n}
+                                className={`size-4 ${n <= ratingScore ? "fill-current" : "opacity-30"}`}
+                                style={{ color: "var(--peringatan-teks)" }}
+                                aria-hidden="true"
+                              />
+                            ))}
+                            <span
+                              className="brk-num ml-1 text-sm font-bold"
+                              style={{ color: "var(--peringatan-teks)" }}
+                            >
+                              {ratingScore} / 5
+                            </span>
+                            {resolvedReview?.rating_layanan ? (
+                              <span
+                                className="brk-num ml-2 text-xs"
+                                style={{ color: "var(--peringatan-teks)" }}
+                              >
+                                (Layanan: {resolvedReview.rating_layanan}/5)
+                              </span>
+                            ) : null}
+                          </div>
+                          {(resolvedReview?.komentar ||
+                            resolvedReview?.teks) && (
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "var(--tinta)" }}
+                            >
+                              "{resolvedReview.komentar || resolvedReview.teks}"
+                            </p>
+                          )}
+                          {resolvedReview?.created_at && (
+                            <p
+                              className="text-xs"
+                              style={{ color: "var(--muted-brk)" }}
+                            >
+                              Diulas pada{" "}
+                              {formatDateId(resolvedReview.created_at)}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p
+                          className="mt-1 text-xs"
+                          style={{ color: "var(--muted-brk)" }}
+                        >
+                          Pembeli belum memberikan rating atau ulasan untuk
+                          barang ini.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Media gallery */}
+                {mediaList.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {mediaList.map((m) =>
+                      m.tipe === "video" ? (
+                        <video
+                          key={m.uuid}
+                          src={m.url}
+                          poster={m.thumbnail_url || undefined}
+                          controls
+                          preload="metadata"
+                          className="aspect-4/5 w-full rounded-lg bg-black object-cover"
+                        />
+                      ) : (
+                        <img
+                          key={m.uuid}
+                          src={m.url}
+                          alt={m.alt || title}
+                          className="aspect-4/5 w-full rounded-lg object-cover"
+                        />
+                      ),
+                    )}
+                  </div>
+                )}
+
+                {/* Key pricing & specs */}
+                <div
+                  className="grid grid-cols-2 gap-3 rounded-xl border p-4 text-sm sm:grid-cols-4"
+                  style={{
+                    backgroundColor: "var(--kertas)",
+                    borderColor: "var(--garis)",
+                  }}
+                >
+                  <div>
+                    <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                      Harga jual
+                    </p>
+                    <p
+                      className="brk-display brk-num font-bold"
+                      style={{ color: "var(--indigo)" }}
+                    >
+                      {formatRupiah(price)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                      Harga baru ref.
+                    </p>
+                    <p className="brk-num font-semibold">
+                      {formatRupiah(full.ref_new_price_idr)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                      Berat / Dimensi
+                    </p>
+                    <p className="brk-num font-semibold">
+                      {full.weight_g ?? 0} g ({full.dim_l_cm ?? 0}×
+                      {full.dim_w_cm ?? 0}×{full.dim_h_cm ?? 0} cm)
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                      Jalur
+                    </p>
+                    <p className="font-semibold capitalize">
+                      {full.jalur || "jual"}
+                    </p>
+                  </div>
+                </div>
+
+                {full.lokasi_penyimpanan && (
+                  <div
+                    className="rounded-xl border p-3 text-sm"
+                    style={{ borderColor: "var(--garis)" }}
+                  >
+                    <p
+                      className="text-xs font-bold"
+                      style={{ color: "var(--muted-brk)" }}
+                    >
+                      Lokasi penyimpanan fisik
+                    </p>
+                    <p className="mt-0.5 font-medium">
+                      {full.lokasi_penyimpanan}
+                    </p>
+                  </div>
+                )}
+
+                {/* Defect & description */}
+                <div className="space-y-3 text-sm">
+                  <div
+                    className="rounded-xl border p-3.5"
+                    style={{ borderColor: "var(--garis)" }}
+                  >
+                    <p
+                      className="text-xs font-bold"
+                      style={{ color: "var(--muted-brk)" }}
+                    >
+                      Kekurangan barang
+                    </p>
+                    <p className="mt-1">{full.kekurangan || "-"}</p>
+                  </div>
+
+                  <div
+                    className="rounded-xl border p-3.5"
+                    style={{ borderColor: "var(--garis)" }}
+                  >
+                    <p
+                      className="text-xs font-bold"
+                      style={{ color: "var(--muted-brk)" }}
+                    >
+                      Keterangan publik
+                    </p>
+                    <p className="mt-1 whitespace-pre-line">
+                      {full.keterangan || "-"}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="flex flex-wrap items-center justify-between gap-2 border-t pt-4"
+                  style={{ borderColor: "var(--garis)" }}
+                >
+                  <button
+                    type="button"
+                    className="brk-btn brk-btn-secondary"
+                    onClick={() => {
+                      setLabelItem(full);
+                      setDetailItem(null);
+                    }}
+                  >
+                    <Printer className="size-4" aria-hidden="true" />
+                    <span>Cetak label</span>
+                  </button>
+
+                  <div className="flex flex-wrap gap-2">
+                    {isEditableStatus(full.status) && (
+                      <button
+                        type="button"
+                        className="brk-btn brk-btn-primary"
+                        onClick={() => {
+                          setDetailItem(null);
+                          openEditItem(full);
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                        <span>
+                          {full.status === "draft" ||
+                          full.status === "perlu_revisi"
+                            ? "Lanjutkan kurasi"
+                            : "Edit barang"}
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="brk-btn brk-btn-secondary"
+                      onClick={() => setDetailItem(null)}
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* Print Thermal Physical Label Modal (ITM-12, 58mm / 80mm thermal paper) */}
+      {labelItem && (() => {
+        const rawLbl = labelItem as ConsoleItem & {
+          judul_publik?: string;
+          nama_internal?: string;
+          harga_rupiah?: number;
+          kondisi_grade?: string;
+        };
+        const lblTitle =
+          labelItem.judul ||
+          rawLbl.judul_publik ||
+          rawLbl.nama_internal ||
+          labelItem.kode_barang;
+        const lblPrice = labelItem.price_idr ?? rawLbl.harga_rupiah ?? 0;
+        const lblGrade = labelItem.grade || rawLbl.kondisi_grade;
+
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cetak label thermal barang"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={() => setLabelItem(null)}
+          >
+            <div
+              className="brk-float max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-4xl border p-5"
+              style={{
+                backgroundColor: "var(--putih)",
+                borderColor: "var(--garis)",
+                color: "var(--tinta)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-lg font-bold">
+                    Cetak Label Thermal ({thermalWidth})
+                  </h3>
+                  <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                    Khusus printer stiker / kertas thermal hitam-putih.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Tutup"
+                  className="size-10 rounded-lg"
+                  onClick={() => setLabelItem(null)}
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </Button>
+              </div>
+
+              {/* Thermal paper width selector */}
+              <div className="mt-3 flex gap-2">
+                {(["58mm", "80mm"] as const).map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    className="brk-btn min-h-9 flex-1 text-xs"
+                    style={{
+                      backgroundColor:
+                        thermalWidth === size
+                          ? "var(--indigo-btn)"
+                          : "var(--kertas)",
+                      color: thermalWidth === size ? "#ffffff" : "var(--tinta)",
+                      borderColor:
+                        thermalWidth === size
+                          ? "var(--indigo-btn)"
+                          : "var(--garis)",
+                    }}
+                    onClick={() => setThermalWidth(size)}
+                  >
+                    Kertas {size}
+                  </button>
+                ))}
+              </div>
+
+              {/* Printable Thermal Sticker Area */}
+              <div className="mt-4 flex justify-center rounded-xl border p-4" style={{ backgroundColor: "var(--kertas)", borderColor: "var(--garis)" }}>
+                <div
+                  ref={thermalLabelRef}
+                  style={{
+                    width: thermalWidth === "58mm" ? "216px" : "296px",
+                    backgroundColor: "#ffffff",
+                    color: "#000000",
+                    padding: "10px 8px",
+                    border: "1px dashed #000000",
+                    fontFamily: "Arial, Helvetica, sans-serif",
+                  }}
+                >
+                  <div
+                    style={{
+                      textAlign: "center",
+                      borderBottom: "1px dashed #000000",
+                      paddingBottom: "6px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 800,
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      BAROKAHIIN
+                    </div>
+                    <div style={{ fontSize: "9px" }}>
+                      Barang Layak Kurasi Lokal
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <QRCode
+                      value={`${labelItem.kode_barang}|${labelItem.uuid}`}
+                      size={thermalWidth === "58mm" ? 112 : 140}
+                      fgColor="#000000"
+                      bgColor="#ffffff"
+                    />
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: thermalWidth === "58mm" ? "13px" : "15px",
+                        fontWeight: 800,
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {labelItem.kode_barang}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        marginTop: "4px",
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {lblTitle}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: thermalWidth === "58mm" ? "15px" : "17px",
+                        fontWeight: 800,
+                        marginTop: "6px",
+                        paddingTop: "6px",
+                        borderTop: "1px dashed #000000",
+                      }}
+                    >
+                      {formatRupiah(lblPrice)}
+                    </div>
+                    <div style={{ fontSize: "10px", marginTop: "4px" }}>
+                      {lblGrade ? `Grade ${lblGrade}` : ""}
+                      {lblGrade && labelItem.lokasi_penyimpanan ? " | " : ""}
+                      {labelItem.lokasi_penyimpanan
+                        ? `Simpan: ${labelItem.lokasi_penyimpanan}`
+                        : ""}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="brk-btn brk-btn-secondary"
+                  onClick={() => setLabelItem(null)}
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  className="brk-btn brk-btn-primary"
+                  onClick={() => handlePrintThermal()}
+                >
+                  <Printer className="size-4" aria-hidden="true" />
+                  <span>Cetak / PDF Thermal</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <ConfirmDialog
         open={Boolean(withdrawTarget)}

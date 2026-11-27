@@ -131,9 +131,9 @@ export default function AdminCoordinatorsStores() {
       setSelectedStore((prev) =>
         prev
           ? {
-              ...prev,
-              pending_address: updatedAddr,
-            }
+            ...prev,
+            pending_address: updatedAddr,
+          }
           : prev,
       );
       void queryClient.invalidateQueries({
@@ -154,6 +154,9 @@ export default function AdminCoordinatorsStores() {
     },
     onError: (err) => toast.error(parseBarokahiinError(err).message),
   });
+
+  console.log(verifyTarget);
+
 
   const rejectAddrMut = useMutation({
     mutationFn: (addressUuid: string) =>

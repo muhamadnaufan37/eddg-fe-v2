@@ -3,7 +3,9 @@ import {
   BookOpen,
   ClipboardCheck,
   ClipboardList,
+  Database,
   HeartHandshake,
+  KeyRound,
   LayoutDashboard,
   MoreHorizontal,
   Package,
@@ -40,7 +42,9 @@ import AdminCoordinatorsStores from "./admin/AdminCoordinatorsStores";
 import AdminFinanceDisputes from "./admin/AdminFinanceDisputes";
 import AdminCharity from "./admin/AdminCharity";
 import AdminConfigAndAudit from "./admin/AdminConfigAndAudit";
+import AdminMasterData from "./admin/AdminMasterData";
 import AdminVouchers from "./admin/AdminVouchers";
+import Security2FAPanel from "./components/Security2FAPanel";
 
 type WorkspaceMode = "coordinator" | "admin";
 
@@ -118,6 +122,14 @@ const COORDINATOR_NAV: NavItem<CoordinatorTab>[] = [
     subtitle: "Standar SLA, Level 1–3, Grade A/B/C, V1–V8, dan 10 butir Kode Etik.",
     icon: BookOpen,
   },
+  {
+    id: "security",
+    label: "Keamanan 2FA",
+    shortLabel: "2FA",
+    group: "Rujukan",
+    subtitle: "Aktifkan autentikasi dua faktor (TOTP) dan kelola kode pemulihan akun.",
+    icon: KeyRound,
+  },
 ];
 
 const ADMIN_NAV: NavItem<AdminTab>[] = [
@@ -170,12 +182,28 @@ const ADMIN_NAV: NavItem<AdminTab>[] = [
     icon: HeartHandshake,
   },
   {
+    id: "master",
+    label: "Master Data",
+    shortLabel: "Master",
+    group: "Pengaturan",
+    subtitle: "Kelola kategori, template & butir SOP kurasi, panduan harga, dan tabel ongkir.",
+    icon: Database,
+  },
+  {
     id: "config",
     label: "Konfigurasi dan Audit",
     shortLabel: "Sistem",
     group: "Pengaturan",
     subtitle: "Skema bagi hasil 5 bagian, parameter sistem, halaman statis, dan audit log.",
     icon: Settings2,
+  },
+  {
+    id: "security",
+    label: "Keamanan 2FA",
+    shortLabel: "2FA",
+    group: "Pengaturan",
+    subtitle: "Aktifkan autentikasi dua faktor (TOTP) dan kelola kode pemulihan akun.",
+    icon: KeyRound,
   },
 ];
 
@@ -472,6 +500,7 @@ export default function BarokahiinConsolePage() {
                 {coordTab === "wallet" && <CoordinatorWallet />}
                 {coordTab === "charity" && <CoordinatorCharity />}
                 {coordTab === "guide" && <CoordinatorGuide />}
+                {coordTab === "security" && <Security2FAPanel />}
               </>
             ) : (
               <>
@@ -483,7 +512,9 @@ export default function BarokahiinConsolePage() {
                 {adminTab === "vouchers" && <AdminVouchers />}
                 {adminTab === "finance" && <AdminFinanceDisputes />}
                 {adminTab === "charity" && <AdminCharity />}
+                {adminTab === "master" && <AdminMasterData />}
                 {adminTab === "config" && <AdminConfigAndAudit />}
+                {adminTab === "security" && <Security2FAPanel />}
               </>
             )}
           </main>

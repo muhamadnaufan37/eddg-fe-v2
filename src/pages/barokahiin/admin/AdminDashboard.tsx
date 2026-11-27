@@ -24,7 +24,9 @@ export type AdminTab =
   | "vouchers"
   | "finance"
   | "charity"
-  | "config";
+  | "master"
+  | "config"
+  | "security";
 
 export default function AdminDashboard({
   onNavigate,

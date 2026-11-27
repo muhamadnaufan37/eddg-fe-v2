@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   FileCheck2,
@@ -10,26 +10,37 @@ import { toast } from "sonner";
 import {
   EMPTY_WILAYAH,
   createConsoleProgram,
+  getConsolePrograms,
   parseBarokahiinError,
   requestProgramDisbursement,
   submitProgramReport,
   type BarokahiinMedia,
-  type CharityProgram,
   type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConsolePanel,
+  ConsoleSelect,
+  EmptyState,
   ErrorBanner,
   FieldWrapper,
+  LoadingSkeleton,
+  Pager,
   StatusBadge,
   WilayahCascader,
 } from "../components/ui/ConsoleUi";
 import { MediaUploadQueue } from "../components/ui/MediaUploadQueue";
-import { formatRupiah } from "../components/ui/utils";
+import { formatDateId, formatRupiah, unwrapList } from "../components/ui/utils";
 
 export default function CoordinatorCharity() {
-  // Session-created programs
-  const [createdPrograms, setCreatedPrograms] = useState<CharityProgram[]>([]);
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+
+  const programsQuery = useQuery({
+    queryKey: ["barokahiin", "console", "programs", page],
+    queryFn: () => getConsolePrograms({ page, per_page: 20 }),
+  });
+
+  const { items: programs, pagination } = unwrapList(programsQuery.data);
 
   // New program form (POST /console/programs)
   const [judul, setJudul] = useState("");
@@ -71,18 +82,18 @@ export default function CoordinatorCharity() {
         rencana_anggaran: anggaran.trim(),
       }),
     onSuccess: (created) => {
-      if (created) {
-        setCreatedPrograms((prev) => [created, ...prev]);
-        if (created.uuid) {
-          setDisbProgramUuid(created.uuid);
-          setReportProgramUuid(created.uuid);
-        }
+      if (created?.uuid) {
+        setDisbProgramUuid(created.uuid);
+        setReportProgramUuid(created.uuid);
       }
       setJudul("");
       setTujuan("");
       setPenerima("");
       setAnggaran("");
       toast.success("Program Charity diajukan untuk persetujuan Admin");
+      void queryClient.invalidateQueries({
+        queryKey: ["barokahiin", "console", "programs"],
+      });
     },
     onError: (err) => toast.error(parseBarokahiinError(err).message),
   });
@@ -98,6 +109,9 @@ export default function CoordinatorCharity() {
       setDisbAmount("");
       setDisbKeperluan("");
       toast.success("Pengajuan pencairan Dompet Program terkirim ke Admin");
+      void queryClient.invalidateQueries({
+        queryKey: ["barokahiin", "console", "programs"],
+      });
     },
     onError: (err) => {
       const parsed = parseBarokahiinError(err);
@@ -120,6 +134,9 @@ export default function CoordinatorCharity() {
       setReportBuktiRef("");
       setReportMedia([]);
       toast.success("Laporan penggunaan dana dikirim untuk persetujuan Admin");
+      void queryClient.invalidateQueries({
+        queryKey: ["barokahiin", "console", "programs"],
+      });
     },
     onError: (err) => toast.error(parseBarokahiinError(err).message),
   });
@@ -277,14 +294,16 @@ export default function CoordinatorCharity() {
               }}
             >
               {disbError && <ErrorBanner message={disbError} />}
-              <FieldWrapper id="disb-prog-uuid" label="UUID program" required>
-                <input
+              <FieldWrapper id="disb-prog-uuid" label="Program Charity" required>
+                <ConsoleSelect
                   id="disb-prog-uuid"
-                  className="brk-input"
                   value={disbProgramUuid}
-                  onChange={(e) => setDisbProgramUuid(e.target.value)}
-                  placeholder="Masukkan UUID program yang disetujui"
-                  required
+                  onChange={setDisbProgramUuid}
+                  placeholder="Pilih program yang disetujui"
+                  options={programs.map((p) => ({
+                    value: p.uuid,
+                    label: `${p.judul} — Saldo ${formatRupiah(p.wallet_balance_idr ?? p.terkumpul_idr)} (${p.status})`,
+                  }))}
                 />
               </FieldWrapper>
               <FieldWrapper
@@ -340,14 +359,16 @@ export default function CoordinatorCharity() {
                 reportMut.mutate();
               }}
             >
-              <FieldWrapper id="rep-prog-uuid" label="UUID program" required>
-                <input
+              <FieldWrapper id="rep-prog-uuid" label="Program Charity" required>
+                <ConsoleSelect
                   id="rep-prog-uuid"
-                  className="brk-input"
                   value={reportProgramUuid}
-                  onChange={(e) => setReportProgramUuid(e.target.value)}
-                  placeholder="Masukkan UUID program"
-                  required
+                  onChange={setReportProgramUuid}
+                  placeholder="Pilih program untuk dilaporkan"
+                  options={programs.map((p) => ({
+                    value: p.uuid,
+                    label: `${p.judul} (${p.status})`,
+                  }))}
                 />
               </FieldWrapper>
               <FieldWrapper
@@ -411,34 +432,128 @@ export default function CoordinatorCharity() {
         </div>
       </div>
 
-      {createdPrograms.length > 0 && (
-        <ConsolePanel
-          icon={HeartHandshake}
-          title="Program yang baru diajukan pada sesi ini"
-          description="Klik UUID program untuk menggunakannya pada formulir pencairan atau laporan."
-        >
-          <div className="space-y-2.5">
-            {createdPrograms.map((prog) => (
-              <div
+      <ConsolePanel
+        icon={HeartHandshake}
+        title="Daftar program Charity wilayah Anda"
+        description="Pantau saldo Dompet Program, riwayat pencairan, dan laporan penggunaan dana setiap program."
+      >
+        {programsQuery.isLoading ? (
+          <LoadingSkeleton rows={3} />
+        ) : programsQuery.error ? (
+          <ErrorBanner
+            message={parseBarokahiinError(programsQuery.error).message}
+            onRetry={() => void programsQuery.refetch()}
+          />
+        ) : programs.length === 0 ? (
+          <EmptyState
+            title="Belum ada program Charity"
+            description="Ajukan program sosial wilayah pertama Anda menggunakan formulir di atas."
+          />
+        ) : (
+          <div className="space-y-3">
+            {programs.map((prog) => (
+              <article
                 key={prog.uuid}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3.5 text-sm"
+                className="rounded-xl border p-4 text-sm"
                 style={{ borderColor: "var(--garis)" }}
               >
-                <div>
-                  <p className="font-bold">{prog.judul}</p>
-                  <p
-                    className="brk-num text-xs"
-                    style={{ color: "var(--muted-brk)" }}
-                  >
-                    UUID: {prog.uuid}, Target {formatRupiah(prog.target_idr)}
-                  </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold">{prog.judul}</h3>
+                      <StatusBadge value={prog.status} />
+                    </div>
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: "var(--muted-brk)" }}
+                    >
+                      {prog.tujuan}
+                    </p>
+                    <p
+                      className="brk-num mt-1.5 text-xs font-semibold"
+                      style={{ color: "var(--indigo)" }}
+                    >
+                      Saldo Dompet Program:{" "}
+                      {formatRupiah(prog.wallet_balance_idr ?? prog.terkumpul_idr)}{" "}
+                      / Target {formatRupiah(prog.target_idr)}
+                    </p>
+                    {(prog.periode_mulai || prog.periode_selesai) && (
+                      <p
+                        className="mt-0.5 text-xs"
+                        style={{ color: "var(--muted-brk)" }}
+                      >
+                        Periode: {formatDateId(prog.periode_mulai)} –{" "}
+                        {formatDateId(prog.periode_selesai)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="brk-btn brk-btn-secondary"
+                      onClick={() => setDisbProgramUuid(prog.uuid)}
+                    >
+                      <ArrowDownToLine className="size-4" aria-hidden="true" />
+                      <span>Pencairan</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="brk-btn brk-btn-daun"
+                      onClick={() => setReportProgramUuid(prog.uuid)}
+                    >
+                      <FileCheck2 className="size-4" aria-hidden="true" />
+                      <span>Laporan</span>
+                    </button>
+                  </div>
                 </div>
-                <StatusBadge value={prog.status} />
-              </div>
+                {((prog.disbursements && prog.disbursements.length > 0) ||
+                  (prog.reports && prog.reports.length > 0)) && (
+                  <div
+                    className="mt-3 grid grid-cols-1 gap-3 border-t pt-3 text-xs sm:grid-cols-2"
+                    style={{ borderColor: "var(--garis)" }}
+                  >
+                    {prog.disbursements && prog.disbursements.length > 0 && (
+                      <div>
+                        <p className="font-bold" style={{ color: "var(--muted-brk)" }}>
+                          Pencairan ({prog.disbursements.length})
+                        </p>
+                        <ul className="mt-1 space-y-1">
+                          {prog.disbursements.map((d) => (
+                            <li key={d.uuid} className="flex justify-between gap-2">
+                              <span className="truncate">{d.keperluan}</span>
+                              <span className="brk-num shrink-0 font-semibold">
+                                {formatRupiah(d.jumlah_idr)} ({d.status})
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {prog.reports && prog.reports.length > 0 && (
+                      <div>
+                        <p className="font-bold" style={{ color: "var(--muted-brk)" }}>
+                          Laporan ({prog.reports.length})
+                        </p>
+                        <ul className="mt-1 space-y-1">
+                          {prog.reports.map((r, i) => (
+                            <li key={r.uuid ?? i} className="flex justify-between gap-2">
+                              <span className="truncate">{r.ringkasan}</span>
+                              <span className="brk-num shrink-0 font-semibold">
+                                {formatRupiah(r.total_terpakai_idr)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </article>
             ))}
           </div>
-        </ConsolePanel>
-      )}
+        )}
+        <Pager pagination={pagination} onChange={setPage} />
+      </ConsolePanel>
     </div>
   );
 }

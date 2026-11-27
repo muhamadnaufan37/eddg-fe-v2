@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, HeartHandshake, Receipt, Wallet } from "lucide-react";
+import {
+  ArrowUpRight,
+  Download,
+  HeartHandshake,
+  Receipt,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   createIdempotencyKey,
+  exportConsoleWalletCsv,
+  getConsolePrograms,
   getConsoleWallet,
   getConsoleWalletEntries,
   parseBarokahiinError,
@@ -13,6 +20,7 @@ import {
 import {
   ConfirmDialog,
   ConsolePanel,
+  ConsoleSelect,
   EmptyState,
   ErrorBanner,
   FieldWrapper,
@@ -36,6 +44,11 @@ export default function CoordinatorWallet() {
     createIdempotencyKey("payout"),
   );
 
+  // CSV Export filters
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const [exportingCsv, setExportingCsv] = useState(false);
+
   const walletQuery = useQuery({
     queryKey: ["barokahiin", "console", "wallet"],
     queryFn: getConsoleWallet,
@@ -45,6 +58,26 @@ export default function CoordinatorWallet() {
     queryKey: ["barokahiin", "console", "wallet-entries", page],
     queryFn: () => getConsoleWalletEntries({ page, per_page: 20 }),
   });
+
+  const programsQuery = useQuery({
+    queryKey: ["barokahiin", "console", "programs", "wallet-select"],
+    queryFn: () => getConsolePrograms({ per_page: 50 }),
+  });
+
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      await exportConsoleWalletCsv({
+        from: exportFrom || undefined,
+        to: exportTo || undefined,
+      });
+      toast.success("File mutasi dompet CSV berhasil diunduh");
+    } catch (err) {
+      toast.error(parseBarokahiinError(err).message);
+    } finally {
+      setExportingCsv(false);
+    }
+  };
 
   useEffect(() => {
     if (!walletQuery.data) return;
@@ -102,6 +135,7 @@ export default function CoordinatorWallet() {
   const wallet = walletQuery.data;
   const minPayout = wallet?.min_payout_idr ?? 100000;
   const { items: entries, pagination } = unwrapList(entriesQuery.data);
+  const { items: programs } = unwrapList(programsQuery.data);
 
   return (
     <div className="space-y-5">
@@ -197,15 +231,21 @@ export default function CoordinatorWallet() {
 
           <FieldWrapper
             id="wallet-charity-prog"
-            label="ID Program Charity tujuan"
-            helper="Masukkan ID program Charity yang disetujui Admin."
+            label="Program Charity tujuan"
+            helper="Pilih program Charity yang disetujui Admin."
           >
-            <input
+            <ConsoleSelect
               id="wallet-charity-prog"
-              className="brk-input brk-num"
               value={charityProgramId}
-              onChange={(e) => setCharityProgramId(e.target.value)}
-              placeholder="Contoh: 1"
+              onChange={setCharityProgramId}
+              placeholder="Pilih program Charity"
+              options={[
+                { value: "", label: "Tidak dipilih" },
+                ...programs.map((p) => ({
+                  value: String(p.id ?? p.uuid),
+                  label: `${p.judul} (${p.status})`,
+                })),
+              ]}
             />
           </FieldWrapper>
 
@@ -219,12 +259,63 @@ export default function CoordinatorWallet() {
         </form>
       </ConsolePanel>
 
-      {/* Ledger history */}
+      {/* Ledger history + Export CSV (WAL-07) */}
       <ConsolePanel
         icon={Receipt}
         title="Riwayat entri dompet (ledger)"
         description="Seluruh pencatatan bersifat immutable. Penggantian ongkir dan biaya kemas tercatat terpisah dari komisi."
       >
+        <div
+          className="mb-4 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-end sm:justify-between"
+          style={{
+            backgroundColor: "var(--kertas)",
+            borderColor: "var(--garis)",
+          }}
+        >
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="wallet-export-from"
+                className="mb-1 block text-xs font-semibold"
+                style={{ color: "var(--muted-brk)" }}
+              >
+                Dari tanggal
+              </label>
+              <input
+                id="wallet-export-from"
+                type="date"
+                className="brk-input"
+                value={exportFrom}
+                onChange={(e) => setExportFrom(e.target.value)}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="wallet-export-to"
+                className="mb-1 block text-xs font-semibold"
+                style={{ color: "var(--muted-brk)" }}
+              >
+                Sampai tanggal
+              </label>
+              <input
+                id="wallet-export-to"
+                type="date"
+                className="brk-input"
+                value={exportTo}
+                onChange={(e) => setExportTo(e.target.value)}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="brk-btn brk-btn-neutral shrink-0"
+            disabled={exportingCsv}
+            onClick={() => void handleExportCsv()}
+          >
+            <Download className="size-4" aria-hidden="true" />
+            <span>{exportingCsv ? "Mengunduh..." : "Export CSV Mutasi"}</span>
+          </button>
+        </div>
         {entriesQuery.isLoading ? (
           <LoadingSkeleton rows={4} />
         ) : entriesQuery.error ? (

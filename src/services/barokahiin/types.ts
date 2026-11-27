@@ -333,6 +333,27 @@ export interface ConsoleItem {
   price_suggestions?: PriceSuggestion[];
   store?: { uuid?: string; nama?: string; region_name?: string } | null;
   coordinator?: { uuid?: string; nama?: string; level?: number } | null;
+  review?: {
+    rating?: number | null;
+    rating_barang?: number | null;
+    rating_layanan?: number | null;
+    komentar?: string | null;
+    teks?: string | null;
+    created_at?: string | null;
+  } | null;
+  order?: {
+    uuid?: string;
+    kode_pesanan?: string;
+    status?: string;
+    review?: {
+      rating?: number | null;
+      rating_barang?: number | null;
+      rating_layanan?: number | null;
+      komentar?: string | null;
+      teks?: string | null;
+      created_at?: string | null;
+    } | null;
+  } | null;
   submitted_at?: string | null;
   published_at?: string | null;
   created_at?: string;
@@ -417,6 +438,50 @@ export interface ConsoleOrder {
     price_idr: number;
     grade?: ItemGrade;
     cover_url?: string | null;
+  }>;
+  review?: {
+    rating?: number | null;
+    rating_barang?: number | null;
+    rating_layanan?: number | null;
+    komentar?: string | null;
+    teks?: string | null;
+    created_at?: string | null;
+  } | null;
+  penerima?: {
+    nama?: string | null;
+    kontak?: string | null;
+    telepon?: string | null;
+    no_hp?: string | null;
+  } | null;
+  alamat?: {
+    jalan_nomor?: string | null;
+    alamat_lengkap?: string | null;
+    rt_rw?: string | null;
+    kelurahan?: string | null;
+    kecamatan?: string | null;
+    kabupaten?: string | null;
+    provinsi?: string | null;
+    kode_pos?: string | null;
+    patokan?: string | null;
+    ringkas?: string | null;
+  } | null;
+  payments?: Array<{
+    uuid?: string;
+    status?: string;
+    metode?: string | null;
+    channel?: string | null;
+    amount_idr?: number | null;
+    paid_at?: string | null;
+    created_at?: string | null;
+  }>;
+  disputes?: ConsoleDispute[];
+  timeline?: Array<{
+    status?: string;
+    label?: string;
+    keterangan?: string | null;
+    timestamp?: string | null;
+    waktu?: string | null;
+    at?: string | null;
   }>;
   paid_at?: string | null;
   prepared_at?: string | null;
@@ -520,6 +585,13 @@ export interface CharityProgram {
   report_due_at?: string | null;
   report_overdue?: boolean;
   disbursements?: CharityDisbursement[];
+  reports?: Array<{
+    uuid?: string;
+    ringkasan?: string;
+    total_terpakai_idr?: number;
+    status?: string;
+    created_at?: string;
+  }>;
   created_at?: string;
 }
 
@@ -606,4 +678,86 @@ export interface AdminAuditLog {
   sesudah?: Record<string, unknown> | null;
   alasan?: string | null;
   waktu: string;
+}
+
+// --- Master Data Admin (Section 3.4) ---
+
+export interface AdminCategory {
+  id: number | string;
+  uuid: string;
+  kode: string;
+  nama: string;
+  slug?: string | null;
+  aktif?: boolean;
+  terlarang?: boolean;
+  aturan?: {
+    pickup_only?: boolean;
+    [key: string]: unknown;
+  } | null;
+  urutan?: number;
+  created_at?: string;
+}
+
+export type SopCheckTipe = "bool" | "text" | "number";
+export type SopCheckButuhBukti = "none" | "foto" | "video";
+export type SopCheckOnFail = "fix" | "reject";
+
+export interface AdminSopCheck {
+  id: number | string;
+  template_id?: number | string;
+  kode: string;
+  teks: string;
+  tipe: SopCheckTipe | string;
+  wajib: boolean;
+  butuh_bukti: SopCheckButuhBukti | string;
+  on_fail: SopCheckOnFail | string;
+  urutan?: number;
+}
+
+export interface AdminSopTemplate {
+  id: number | string;
+  uuid?: string;
+  category_id?: number | string | null;
+  category_code?: string | null;
+  category_name?: string | null;
+  nama?: string;
+  versi?: number | string;
+  checks?: AdminSopCheck[];
+}
+
+export interface AdminPriceGuideline {
+  id: number | string;
+  category_id: number | string | null;
+  category_code?: string | null;
+  category_name?: string | null;
+  grade: ItemGrade;
+  min_pct: number;
+  max_pct: number;
+}
+
+export type ShippingZona = "dalam_kota" | "jawa_barat" | "luar_jawa_barat";
+
+export interface AdminShippingRate {
+  id: number | string;
+  origin_region_id?: number | string | null;
+  zona: ShippingZona | string;
+  berat_min_g: number;
+  berat_max_g: number;
+  tarif_idr: number;
+  aktif?: boolean;
+}
+
+// --- 2FA TOTP (Section 4) ---
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  enabled_at?: string | null;
+  last_verified_at?: string | null;
+  recovery_codes_remaining?: number;
+}
+
+export interface TwoFactorSetupResponse {
+  secret: string;
+  otpauth_uri: string;
+  recovery_codes: string[];
 }

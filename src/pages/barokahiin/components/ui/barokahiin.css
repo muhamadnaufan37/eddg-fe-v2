@@ -207,6 +207,32 @@
   border: 1.5px solid var(--kunyit);
 }
 
+.barokahiin-console .brk-btn-warning {
+  background-color: var(--kunyit-muda);
+  color: var(--peringatan-teks);
+  border: 1.5px solid var(--kunyit);
+}
+
+@media (hover: hover) {
+  .barokahiin-console .brk-btn-warning:hover:not(:disabled) {
+    filter: brightness(0.95);
+  }
+}
+
+.barokahiin-console .brk-btn-neutral {
+  background-color: var(--kertas);
+  color: var(--tinta);
+  border: 1.5px solid var(--garis-kuat);
+}
+
+@media (hover: hover) {
+  .barokahiin-console .brk-btn-neutral:hover:not(:disabled) {
+    background-color: var(--indigo-muda);
+    border-color: var(--indigo);
+    color: var(--indigo);
+  }
+}
+
 .barokahiin-console .brk-receipt {
   background-color: var(--putih);
   border: 1px solid var(--garis);

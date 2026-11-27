@@ -40,7 +40,8 @@ export type CoordinatorTab =
   | "orders"
   | "wallet"
   | "charity"
-  | "guide";
+  | "guide"
+  | "security";
 
 export default function CoordinatorDashboard({
   onNavigate,

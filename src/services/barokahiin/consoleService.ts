@@ -1,6 +1,7 @@
 import {
   CONSOLE_BASE,
   createIdempotencyKey,
+  downloadApiCsv,
   getApiData,
   patchApiData,
   postApiData,
@@ -127,6 +128,9 @@ export const getConsoleItems = (
   params: {
     status?: string;
     q?: string;
+    category_id?: number | string;
+    jalur?: ItemJalur | string;
+    grade?: ItemGrade | string;
     page?: number;
     per_page?: number;
   } = {},
@@ -278,6 +282,12 @@ export const getConsoleOrders = (
     params,
   );
 
+export const getConsoleOrder = (uuid: string) =>
+  getApiData<ConsoleOrder>(
+    CONSOLE_BASE,
+    `/orders/${encodeURIComponent(uuid)}`,
+  );
+
 export const prepareConsoleOrder = (uuid: string) =>
   postApiData<ConsoleOrder>(
     CONSOLE_BASE,
@@ -311,6 +321,15 @@ export const shipConsoleOrder = (
     payload,
   );
 
+export const getConsoleDisputes = (
+  params: { status?: string; page?: number; per_page?: number } = {},
+) =>
+  getApiData<PaginatedList<ConsoleDispute> | ConsoleDispute[]>(
+    CONSOLE_BASE,
+    "/disputes",
+    params,
+  );
+
 export const replyConsoleDispute = (uuid: string, pesan: string) =>
   postApiData<ConsoleDispute>(
     CONSOLE_BASE,
@@ -332,6 +351,14 @@ export const getConsoleWalletEntries = (
     params,
   );
 
+export const exportConsoleWalletCsv = (params: { from?: string; to?: string } = {}) =>
+  downloadApiCsv(
+    CONSOLE_BASE,
+    "/wallet/export",
+    params,
+    `mutasi-dompet-${params.from || "all"}-${params.to || "now"}.csv`,
+  );
+
 export const updateWalletCharityShare = (payload: {
   charity_share_pct: number;
   charity_program_id?: number | string | null;
@@ -351,6 +378,15 @@ export const requestConsolePayout = (
     "/payouts",
     { jumlah_idr },
     { idempotencyKey },
+  );
+
+export const getConsolePrograms = (
+  params: { status?: string; page?: number; per_page?: number } = {},
+) =>
+  getApiData<PaginatedList<CharityProgram> | CharityProgram[]>(
+    CONSOLE_BASE,
+    "/programs",
+    params,
   );
 
 export const createConsoleProgram = (payload: {

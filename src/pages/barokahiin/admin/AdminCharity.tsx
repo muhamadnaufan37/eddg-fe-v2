@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Coins, HeartHandshake } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Coins, HeartHandshake, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   EMPTY_WILAYAH,
@@ -8,20 +8,37 @@ import {
   approveAdminDisbursement,
   approveAdminProgram,
   createIdempotencyKey,
+  getAdminPrograms,
   parseBarokahiinError,
   type WilayahValue,
 } from "@/services/barokahiin";
 import {
   ConfirmDialog,
   ConsolePanel,
+  ConsoleSelect,
+  EmptyState,
+  ErrorBanner,
   FieldWrapper,
+  LoadingSkeleton,
+  Pager,
   RupiahInput,
+  StatusBadge,
   WilayahCascader,
 } from "../components/ui/ConsoleUi";
-import { formatRupiah } from "../components/ui/utils";
+import { formatDateId, formatRupiah, unwrapList } from "../components/ui/utils";
 
 export default function AdminCharity() {
   const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+
+  const programsQuery = useQuery({
+    queryKey: ["barokahiin", "admin", "programs", statusFilter, page],
+    queryFn: () =>
+      getAdminPrograms({ status: statusFilter, page, per_page: 20 }),
+  });
+
+  const { items: programs, pagination } = unwrapList(programsQuery.data);
 
   // Approve program (POST /admin/programs/{uuid}/approve)
   const [approveProgUuid, setApproveProgUuid] = useState("");
@@ -91,6 +108,165 @@ export default function AdminCharity() {
 
   return (
     <div className="space-y-5">
+      {/* Live Programs List (GET /admin/programs) */}
+      <ConsolePanel
+        icon={HeartHandshake}
+        title="Daftar program Charity"
+        description="Tinjau pengajuan program, setujui program baru, alokasikan Dana Kegiatan wilayah, dan setujui pengajuan pencairan."
+      >
+        <div className="mb-4 w-full sm:max-w-60">
+          <ConsoleSelect
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua status" },
+              { value: "diajukan", label: "Diajukan (butuh persetujuan)" },
+              { value: "disetujui", label: "Disetujui" },
+              { value: "berjalan", label: "Berjalan" },
+              { value: "selesai", label: "Selesai" },
+              { value: "dilaporkan", label: "Dilaporkan" },
+              { value: "ditolak", label: "Ditolak" },
+            ]}
+          />
+        </div>
+
+        {programsQuery.isLoading ? (
+          <LoadingSkeleton rows={3} />
+        ) : programsQuery.error ? (
+          <ErrorBanner
+            message={parseBarokahiinError(programsQuery.error).message}
+            onRetry={() => void programsQuery.refetch()}
+          />
+        ) : programs.length === 0 ? (
+          <EmptyState
+            title="Belum ada program Charity"
+            description="Program Charity yang diajukan koordinator wilayah akan tampil di sini."
+          />
+        ) : (
+          <div className="space-y-3">
+            {programs.map((prog) => (
+              <article
+                key={prog.uuid}
+                className="rounded-xl border p-4 text-sm"
+                style={{ borderColor: "var(--garis)" }}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold">{prog.judul}</h3>
+                      <StatusBadge value={prog.status} />
+                    </div>
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: "var(--muted-brk)" }}
+                    >
+                      {prog.coordinator_name ? `${prog.coordinator_name} · ` : ""}
+                      {prog.region_name || ""}
+                      {prog.periode_mulai
+                        ? ` · ${formatDateId(prog.periode_mulai)} – ${formatDateId(prog.periode_selesai)}`
+                        : ""}
+                    </p>
+                    <p
+                      className="brk-num mt-1 text-xs font-semibold"
+                      style={{ color: "var(--indigo)" }}
+                    >
+                      Saldo: {formatRupiah(prog.wallet_balance_idr ?? prog.terkumpul_idr)} / Target {formatRupiah(prog.target_idr)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {prog.status === "diajukan" && (
+                      <button
+                        type="button"
+                        className="brk-btn brk-btn-daun"
+                        disabled={approveProgMut.isPending}
+                        onClick={() => approveProgMut.mutate(prog.uuid)}
+                      >
+                        {approveProgMut.isPending &&
+                        approveProgMut.variables === prog.uuid ? (
+                          <Loader2
+                            className="size-4 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <CheckCircle2 className="size-4" aria-hidden="true" />
+                        )}
+                        <span>
+                          {approveProgMut.isPending &&
+                          approveProgMut.variables === prog.uuid
+                            ? "Menyetujui..."
+                            : "Setujui program"}
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="brk-btn brk-btn-secondary"
+                      onClick={() => setProgramUuid(prog.uuid)}
+                    >
+                      <Coins className="size-4" aria-hidden="true" />
+                      <span>Pilih untuk alokasi</span>
+                    </button>
+                  </div>
+                </div>
+
+                {prog.disbursements && prog.disbursements.length > 0 && (
+                  <div
+                    className="mt-3 space-y-2 border-t pt-3 text-xs"
+                    style={{ borderColor: "var(--garis)" }}
+                  >
+                    <p className="font-bold" style={{ color: "var(--muted-brk)" }}>
+                      Pengajuan pencairan ({prog.disbursements.length})
+                    </p>
+                    {prog.disbursements.map((d) => (
+                      <div
+                        key={d.uuid}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5"
+                        style={{
+                          backgroundColor: "var(--kertas)",
+                          borderColor: "var(--garis)",
+                        }}
+                      >
+                        <div>
+                          <span className="brk-num font-bold">
+                            {formatRupiah(d.jumlah_idr)}
+                          </span>{" "}
+                          — {d.keperluan} ({d.status})
+                        </div>
+                        {d.status === "diajukan" && (
+                          <button
+                            type="button"
+                            className="brk-btn brk-btn-primary min-h-8 px-2.5 text-xs"
+                            disabled={approveDisbMut.isPending}
+                            onClick={() => approveDisbMut.mutate(d.uuid)}
+                          >
+                            {approveDisbMut.isPending &&
+                            approveDisbMut.variables === d.uuid ? (
+                              <>
+                                <Loader2
+                                  className="size-3.5 animate-spin"
+                                  aria-hidden="true"
+                                />
+                                <span>Menyetujui...</span>
+                              </>
+                            ) : (
+                              "Setujui pencairan"
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+        <Pager pagination={pagination} onChange={setPage} />
+      </ConsolePanel>
+
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         {/* Allocate regional activity pool */}
         <ConsolePanel
@@ -125,16 +301,18 @@ export default function AdminCharity() {
 
             <FieldWrapper
               id="alloc-prog"
-              label="UUID Program Charity tujuan"
+              label="Program Charity tujuan"
               required
             >
-              <input
+              <ConsoleSelect
                 id="alloc-prog"
-                className="brk-input"
                 value={programUuid}
-                onChange={(e) => setProgramUuid(e.target.value)}
-                placeholder="Masukkan UUID program yang disetujui"
-                required
+                onChange={setProgramUuid}
+                placeholder="Pilih program yang disetujui"
+                options={programs.map((p) => ({
+                  value: p.uuid,
+                  label: `${p.judul} (${p.status})`,
+                }))}
               />
             </FieldWrapper>
 

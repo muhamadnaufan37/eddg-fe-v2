@@ -13,6 +13,8 @@ import {
   createAdminSplitScheme,
   getAdminAuditLogs,
   getAdminConfig,
+  getAdminPages,
+  getAdminSplitSchemes,
   parseBarokahiinError,
   saveAdminPage,
   updateAdminConfig,
@@ -90,6 +92,18 @@ export default function AdminConfigAndAudit() {
   const [auditSearch, setAuditSearch] = useState("");
   const [auditPage, setAuditPage] = useState(1);
 
+  const splitSchemesQuery = useQuery({
+    queryKey: ["barokahiin", "admin", "split-schemes"],
+    queryFn: () => getAdminSplitSchemes({ per_page: 20 }),
+    enabled: subTab === "split",
+  });
+
+  const pagesQuery = useQuery({
+    queryKey: ["barokahiin", "admin", "pages"],
+    queryFn: getAdminPages,
+    enabled: subTab === "pages",
+  });
+
   const configQuery = useQuery({
     queryKey: ["barokahiin", "admin", "config"],
     queryFn: getAdminConfig,
@@ -136,6 +150,9 @@ export default function AdminConfigAndAudit() {
         if (created.uuid) setAnnounceUuidInput(created.uuid);
       }
       toast.success("Skema bagi hasil baru tersimpan sebagai draf");
+      void queryClient.invalidateQueries({
+        queryKey: ["barokahiin", "admin", "split-schemes"],
+      });
     },
     onError: (err) => toast.error(parseBarokahiinError(err).message),
   });
@@ -149,6 +166,9 @@ export default function AdminConfigAndAudit() {
       setAnnounceTarget(null);
       setAnnounceUuidInput("");
       toast.success("Skema bagi hasil berhasil diumumkan ke koordinator");
+      void queryClient.invalidateQueries({
+        queryKey: ["barokahiin", "admin", "split-schemes"],
+      });
     },
     onError: (err) => toast.error(parseBarokahiinError(err).message),
   });
@@ -213,6 +233,9 @@ export default function AdminConfigAndAudit() {
   const { items: auditLogs, pagination: auditPagination } = unwrapList(
     auditQuery.data,
   );
+  const { items: serverSchemes } = unwrapList(splitSchemesQuery.data);
+  const { items: staticPages } = unwrapList(pagesQuery.data);
+  const allSchemes = serverSchemes.length > 0 ? serverSchemes : createdSchemes;
 
   return (
     <div className="space-y-5">
@@ -402,38 +425,47 @@ export default function AdminConfigAndAudit() {
                 </button>
               </div>
 
-              {createdSchemes.map((sch, idx) => (
-                <div
-                  key={sch.uuid || idx}
-                  className="flex flex-col gap-2 rounded-xl border p-3.5 sm:flex-row sm:items-center sm:justify-between"
-                  style={{ borderColor: "var(--garis)" }}
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">
-                        {sch.nama || `Versi ${sch.versi ?? idx + 1}`}
-                      </span>
-                      <StatusBadge value={sch.status} />
+              {splitSchemesQuery.isLoading ? (
+                <LoadingSkeleton rows={2} />
+              ) : (
+                allSchemes.map((sch, idx) => (
+                  <div
+                    key={sch.uuid || idx}
+                    className="flex flex-col gap-2 rounded-xl border p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                    style={{ borderColor: "var(--garis)" }}
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold">
+                          {sch.nama || `Versi ${sch.versi ?? idx + 1}`}
+                        </span>
+                        <StatusBadge value={sch.status} />
+                      </div>
+                      <p
+                        className="brk-num mt-1 text-xs"
+                        style={{ color: "var(--muted-brk)" }}
+                      >
+                        Koor {sch.koordinator_pct}% · Keg {sch.kegiatan_pct}% · Ops{" "}
+                        {sch.operasional_pct}% · Jam {sch.jaminan_pct}% · Don{" "}
+                        {sch.donatur_pct}%
+                        {sch.mulai_berlaku
+                          ? ` · Berlaku ${formatDateId(sch.mulai_berlaku)}`
+                          : ""}
+                      </p>
                     </div>
-                    <p
-                      className="brk-num mt-1 text-xs"
-                      style={{ color: "var(--muted-brk)" }}
-                    >
-                      UUID: {sch.uuid || "-"}
-                    </p>
+                    {sch.uuid && sch.status === "draft" && (
+                      <button
+                        type="button"
+                        className="brk-btn brk-btn-secondary shrink-0"
+                        onClick={() => setAnnounceTarget(sch)}
+                      >
+                        <Megaphone className="size-4" aria-hidden="true" />
+                        <span>Umumkan</span>
+                      </button>
+                    )}
                   </div>
-                  {sch.uuid && (
-                    <button
-                      type="button"
-                      className="brk-btn brk-btn-secondary shrink-0"
-                      onClick={() => setAnnounceTarget(sch)}
-                    >
-                      <Megaphone className="size-4" aria-hidden="true" />
-                      <span>Umumkan</span>
-                    </button>
-                  )}
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </ConsolePanel>
 
@@ -726,12 +758,53 @@ export default function AdminConfigAndAudit() {
               </button>
             </form>
 
-            <div className="space-y-2 lg:col-span-5">
-              <h3 className="text-sm font-bold">Kunci halaman yang didukung</h3>
-              <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
-                Pilih kunci halaman di formulir kiri lalu simpan menggunakan{" "}
-                <code>PUT /admin/pages</code> untuk membuat atau memperbarui konten statis storefront.
-              </p>
+            <div className="space-y-2.5 lg:col-span-5">
+              <h3 className="text-sm font-bold">Daftar halaman statis tersimpan</h3>
+              {pagesQuery.isLoading ? (
+                <LoadingSkeleton rows={2} />
+              ) : staticPages.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--muted-brk)" }}>
+                  Belum ada halaman statis tersimpan. Pilih kunci halaman di formulir kiri lalu simpan.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {staticPages.map((pg) => (
+                    <button
+                      key={pg.kunci}
+                      type="button"
+                      onClick={() => {
+                        setPageKey(pg.kunci);
+                        setPageTitle(pg.judul || "");
+                        setPageBody(pg.isi || "");
+                        setPagePublished(pg.diterbitkan !== false);
+                      }}
+                      className="w-full rounded-xl border p-3 text-left text-sm transition-colors hover:border-[var(--indigo)]"
+                      style={{
+                        borderColor:
+                          pageKey === pg.kunci ? "var(--indigo)" : "var(--garis)",
+                        backgroundColor:
+                          pageKey === pg.kunci
+                            ? "var(--indigo-muda)"
+                            : "var(--kertas)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold">{pg.judul || pg.kunci}</span>
+                        <StatusBadge
+                          value={pg.diterbitkan === false ? "draft" : "terbit"}
+                        />
+                      </div>
+                      <p
+                        className="mt-0.5 text-xs"
+                        style={{ color: "var(--muted-brk)" }}
+                      >
+                        Kunci: <code>{pg.kunci}</code>
+                        {pg.updated_at ? ` · Diperbarui ${formatDateId(pg.updated_at)}` : ""}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </ConsolePanel>

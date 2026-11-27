@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
+  Download,
   MessageSquareWarning,
   Scale,
   Wallet,
@@ -12,6 +13,9 @@ import {
   createAdminLedgerAdjustment,
   createIdempotencyKey,
   decideAdminDispute,
+  exportAdminLedgerCsv,
+  exportAdminSalesCsv,
+  getAdminDisputes,
   getAdminLedgerReconciliation,
   getAdminPayouts,
   parseBarokahiinError,
@@ -28,6 +32,7 @@ import {
   FieldWrapper,
   InfoBanner,
   LoadingSkeleton,
+  Pager,
   StatusBadge,
 } from "../components/ui/ConsoleUi";
 import { formatDateId, formatRupiah, unwrapList } from "../components/ui/utils";
@@ -54,7 +59,9 @@ export default function AdminFinanceDisputes() {
   const [adjConfirmOpen, setAdjConfirmOpen] = useState(false);
   const [adjKey, setAdjKey] = useState(() => createIdempotencyKey("ledger-adj"));
 
-  // Dispute decision form (POST /admin/disputes/{uuid}/decide)
+  // Dispute list & decision form (GET /admin/disputes + POST /admin/disputes/{uuid}/decide)
+  const [disputeStatusFilter, setDisputeStatusFilter] = useState("");
+  const [disputePage, setDisputePage] = useState(1);
   const [disputeUuid, setDisputeUuid] = useState("");
   const [disputeConfirmOpen, setDisputeConfirmOpen] = useState(false);
   const [putusan, setPutusan] = useState<
@@ -64,6 +71,14 @@ export default function AdminFinanceDisputes() {
   const [kelalaian, setKelalaian] = useState(false);
   const [biayaRetur, setBiayaRetur] = useState("0");
   const [disputeCatatan, setDisputeCatatan] = useState("");
+
+  // CSV Export filters (WAL-07)
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const [exportSalesStatus, setExportSalesStatus] = useState("");
+  const [exportingType, setExportingType] = useState<"sales" | "ledger" | null>(
+    null,
+  );
 
   const payoutsQuery = useQuery({
     queryKey: ["barokahiin", "admin", "payouts"],
@@ -76,6 +91,47 @@ export default function AdminFinanceDisputes() {
     queryFn: getAdminLedgerReconciliation,
     enabled: subTab === "ledger",
   });
+
+  const disputesQuery = useQuery({
+    queryKey: [
+      "barokahiin",
+      "admin",
+      "disputes",
+      disputeStatusFilter,
+      disputePage,
+    ],
+    queryFn: () =>
+      getAdminDisputes({
+        status: disputeStatusFilter,
+        page: disputePage,
+        per_page: 20,
+      }),
+    enabled: subTab === "disputes",
+  });
+
+  const handleExport = async (type: "sales" | "ledger") => {
+    setExportingType(type);
+    try {
+      if (type === "sales") {
+        await exportAdminSalesCsv({
+          from: exportFrom || undefined,
+          to: exportTo || undefined,
+          status: exportSalesStatus || undefined,
+        });
+        toast.success("Laporan penjualan CSV berhasil diunduh");
+      } else {
+        await exportAdminLedgerCsv({
+          from: exportFrom || undefined,
+          to: exportTo || undefined,
+        });
+        toast.success("Laporan ledger CSV berhasil diunduh");
+      }
+    } catch (err) {
+      toast.error(parseBarokahiinError(err).message);
+    } finally {
+      setExportingType(null);
+    }
+  };
 
   const transferMut = useMutation({
     mutationFn: () => transferAdminPayout(transferTarget!.uuid, buktiRef.trim()),
@@ -155,6 +211,9 @@ export default function AdminFinanceDisputes() {
   });
 
   const { items: payouts } = unwrapList(payoutsQuery.data);
+  const { items: disputes, pagination: disputePagination } = unwrapList(
+    disputesQuery.data,
+  );
 
   return (
     <div className="space-y-5">
@@ -336,6 +395,80 @@ export default function AdminFinanceDisputes() {
           </ConsolePanel>
 
           <ConsolePanel
+            icon={Download}
+            title="Export laporan keuangan CSV (WAL-07)"
+            description="Unduh laporan penjualan dan laporan entri ledger dalam format CSV untuk rekonsiliasi dan audit keuangan."
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <FieldWrapper id="adm-exp-from" label="Dari tanggal">
+                <input
+                  id="adm-exp-from"
+                  type="date"
+                  className="brk-input"
+                  value={exportFrom}
+                  onChange={(e) => setExportFrom(e.target.value)}
+                />
+              </FieldWrapper>
+              <FieldWrapper id="adm-exp-to" label="Sampai tanggal">
+                <input
+                  id="adm-exp-to"
+                  type="date"
+                  className="brk-input"
+                  value={exportTo}
+                  onChange={(e) => setExportTo(e.target.value)}
+                />
+              </FieldWrapper>
+              <FieldWrapper
+                id="adm-exp-status"
+                label="Filter status (khusus penjualan)"
+              >
+                <ConsoleSelect
+                  id="adm-exp-status"
+                  value={exportSalesStatus}
+                  onChange={setExportSalesStatus}
+                  options={[
+                    { value: "", label: "Semua status" },
+                    { value: "dibayar", label: "Dibayar" },
+                    { value: "disiapkan", label: "Disiapkan" },
+                    { value: "dikirim", label: "Dikirim" },
+                    { value: "diterima", label: "Diterima" },
+                    { value: "selesai", label: "Selesai" },
+                    { value: "refund", label: "Refund" },
+                  ]}
+                />
+              </FieldWrapper>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="brk-btn brk-btn-primary"
+                disabled={exportingType !== null}
+                onClick={() => void handleExport("sales")}
+              >
+                <Download className="size-4" aria-hidden="true" />
+                <span>
+                  {exportingType === "sales"
+                    ? "Mengunduh..."
+                    : "Export Penjualan CSV"}
+                </span>
+              </button>
+              <button
+                type="button"
+                className="brk-btn brk-btn-neutral"
+                disabled={exportingType !== null}
+                onClick={() => void handleExport("ledger")}
+              >
+                <Download className="size-4" aria-hidden="true" />
+                <span>
+                  {exportingType === "ledger"
+                    ? "Mengunduh..."
+                    : "Export Ledger CSV"}
+                </span>
+              </button>
+            </div>
+          </ConsolePanel>
+
+          <ConsolePanel
             icon={Scale}
             title="Entri koreksi ledger (immutable)"
             description="Ledger tidak pernah dihapus atau diubah. Gunakan entri koreksi berpasangan (debit dan kredit) dengan alasan wajib dan Idempotency-Key."
@@ -417,9 +550,104 @@ export default function AdminFinanceDisputes() {
       )}
 
       {subTab === "disputes" && (
-        <ConsolePanel
-          icon={MessageSquareWarning}
-          title="Tetapkan putusan komplain"
+        <div className="space-y-5">
+          <ConsolePanel
+            icon={MessageSquareWarning}
+            title="Daftar komplain pembeli"
+            description="Tinjau komplain yang masuk dan pilih salah satu untuk menetapkan putusan Admin."
+          >
+            <div className="mb-4 w-full sm:max-w-60">
+              <ConsoleSelect
+                value={disputeStatusFilter}
+                onChange={(v) => {
+                  setDisputeStatusFilter(v);
+                  setDisputePage(1);
+                }}
+                options={[
+                  { value: "", label: "Semua status" },
+                  { value: "terbuka", label: "Terbuka" },
+                  { value: "ditanggapi", label: "Ditanggapi" },
+                  { value: "diputus", label: "Diputus" },
+                  { value: "selesai", label: "Selesai" },
+                ]}
+              />
+            </div>
+
+            {disputesQuery.isLoading ? (
+              <LoadingSkeleton rows={3} />
+            ) : disputesQuery.error ? (
+              <ErrorBanner
+                message={parseBarokahiinError(disputesQuery.error).message}
+                onRetry={() => void disputesQuery.refetch()}
+              />
+            ) : disputes.length === 0 ? (
+              <EmptyState
+                title="Tidak ada komplain"
+                description="Komplain pembeli yang memerlukan putusan Admin akan tampil di sini."
+              />
+            ) : (
+              <div className="space-y-3">
+                {disputes.map((d) => {
+                  const selected = disputeUuid === d.uuid;
+                  return (
+                    <article
+                      key={d.uuid}
+                      className="rounded-xl border p-4"
+                      style={{
+                        borderColor: selected ? "var(--indigo)" : "var(--garis)",
+                        backgroundColor: selected
+                          ? "var(--indigo-muda)"
+                          : "var(--putih)",
+                      }}
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="brk-num text-sm font-bold">
+                              {d.order_code || d.uuid}
+                            </span>
+                            <StatusBadge value={d.status} />
+                          </div>
+                          <p className="mt-1 text-sm font-semibold">
+                            Alasan: {d.alasan}
+                          </p>
+                          {d.keterangan && (
+                            <p
+                              className="mt-0.5 text-xs"
+                              style={{ color: "var(--muted-brk)" }}
+                            >
+                              {d.keterangan}
+                            </p>
+                          )}
+                          <p
+                            className="mt-1 text-xs"
+                            style={{ color: "var(--muted-brk)" }}
+                          >
+                            Dibuat {formatDateId(d.created_at)}
+                            {d.putusan
+                              ? ` · Putusan: ${d.putusan.replaceAll("_", " ")}`
+                              : ""}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className={`brk-btn shrink-0 ${selected ? "brk-btn-primary" : "brk-btn-secondary"}`}
+                          onClick={() => setDisputeUuid(d.uuid)}
+                        >
+                          {selected ? "Sedang dipilih" : "Pilih untuk putusan"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+            <Pager pagination={disputePagination} onChange={setDisputePage} />
+          </ConsolePanel>
+
+          <ConsolePanel
+            icon={MessageSquareWarning}
+            title="Tetapkan putusan komplain"
           description="Putuskan tolak, refund sebagian, atau refund penuh berdasarkan UUID komplain. Biaya retur karena kelalaian koordinator dipotong dari komisi barang tersebut."
         >
           <form
@@ -515,6 +743,7 @@ export default function AdminFinanceDisputes() {
             </div>
           </form>
         </ConsolePanel>
+        </div>
       )}
 
       {/* Payout transfer modal */}

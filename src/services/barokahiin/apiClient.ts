@@ -3,6 +3,7 @@ import type { ApiEnvelope, ParsedApiError } from "./types";
 
 export const CONSOLE_BASE = "/api/v1/barokahiin/console";
 export const ADMIN_BASE = "/api/v1/barokahiin/admin";
+export const AUTH_2FA_BASE = "/api/v1/barokahiin/auth/2fa";
 
 function cleanParams(params?: Record<string, unknown>) {
   return Object.fromEntries(
@@ -105,6 +106,37 @@ export async function uploadApiForm<T>(
     },
   );
   return response.data.data;
+}
+
+export async function downloadApiCsv(
+  base: string,
+  path: string,
+  params?: Record<string, unknown>,
+  fallbackFilename = "export.csv",
+): Promise<void> {
+  const response = await axiosServices().get<Blob>(`${base}${path}`, {
+    params: cleanParams(params),
+    responseType: "blob",
+  });
+  const disposition =
+    (response.headers?.["content-disposition"] as string | undefined) || "";
+  const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";\n]+)/i);
+  const filename = match?.[1]
+    ? decodeURIComponent(match[1].replace(/"/g, "").trim())
+    : fallbackFilename;
+
+  const blob =
+    response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 const CODE_HINTS: Record<string, string> = {

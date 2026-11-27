@@ -1,4 +1,4 @@
-﻿import { createContext, useEffect, useReducer, type ReactNode } from "react";
+import { createContext, useEffect, useReducer, type ReactNode } from "react";
 import accountReducer from "../store/accountReducer";
 import type { User } from "../store/accountReducer";
 import {
@@ -121,6 +121,67 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       if (response.data.data.token) {
         const dataUser = response.data.data.user;
         const token = response.data.data.token;
+        const requires2fa = Boolean(response.data.data.requires_2fa);
+
+        if (requires2fa) {
+          // Temporarily set token in memory so POST /barokahiin/auth/2fa/verify is authenticated
+          setAccessToken(token);
+          const result = await Swal.fire({
+            title: "Verifikasi 2FA TOTP",
+            html: `<p style="font-size:14px;color:#4b5563;">Masukkan kode 6 digit dari aplikasi authenticator Anda atau recovery code (<code>XXXX-XXXX</code>).</p>`,
+            input: "text",
+            inputPlaceholder: "123456 atau XXXX-XXXX",
+            inputAttributes: {
+              autocapitalize: "off",
+              autocomplete: "one-time-code",
+            },
+            showCancelButton: true,
+            confirmButtonText: "Verifikasi & Masuk",
+            cancelButtonText: "Batal",
+            confirmButtonColor: "#1f2c7a",
+            allowOutsideClick: false,
+            showLoaderOnConfirm: true,
+            customClass: { container: "!z-[99999]" },
+            preConfirm: async (code: string) => {
+              const trimmed = (code || "").trim();
+              if (!trimmed) {
+                Swal.showValidationMessage("Kode 2FA wajib diisi.");
+                return false;
+              }
+              try {
+                await axiosServices().post(
+                  "/api/v1/barokahiin/auth/2fa/verify",
+                  { code: trimmed },
+                );
+                return true;
+              } catch (verifyErr: unknown) {
+                const msg =
+                  (
+                    verifyErr as {
+                      response?: {
+                        data?: { message?: string; error?: { message?: string } };
+                      };
+                    }
+                  )?.response?.data?.error?.message ||
+                  (
+                    verifyErr as {
+                      response?: { data?: { message?: string } };
+                    }
+                  )?.response?.data?.message ||
+                  "Kode 2FA tidak valid. Silakan coba lagi.";
+                Swal.showValidationMessage(msg);
+                return false;
+              }
+            },
+          });
+
+          if (!result.isConfirmed) {
+            setAccessToken(null);
+            toast.info("Verifikasi 2FA dibatalkan");
+            dispatch({ type: IS_LOADING, payload: { isLoading: false } });
+            return;
+          }
+        }
 
         setSession({
           token,

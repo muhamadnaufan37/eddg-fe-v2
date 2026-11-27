@@ -2,6 +2,7 @@ import {
   ADMIN_BASE,
   createIdempotencyKey,
   deleteApiData,
+  downloadApiCsv,
   getApiData,
   patchApiData,
   postApiData,
@@ -10,7 +11,12 @@ import {
 import type {
   AddressCheckCode,
   AdminAuditLog,
+  AdminCategory,
   AdminDashboardData,
+  AdminPriceGuideline,
+  AdminShippingRate,
+  AdminSopCheck,
+  AdminSopTemplate,
   AdminVoucher,
   CharityDisbursement,
   CharityProgram,
@@ -19,6 +25,7 @@ import type {
   CoordinatorSanction,
   CoordinatorStore,
   CoordinatorSummary,
+  ItemGrade,
   LedgerReconciliation,
   PaginatedList,
   PayoutRecord,
@@ -214,6 +221,15 @@ export const updateAdminVoucher = (
 export const deleteAdminVoucher = (uuid: string) =>
   deleteApiData<unknown>(ADMIN_BASE, `/vouchers/${encodeURIComponent(uuid)}`);
 
+export const getAdminDisputes = (
+  params: { status?: string; page?: number; per_page?: number } = {},
+) =>
+  getApiData<PaginatedList<ConsoleDispute> | ConsoleDispute[]>(
+    ADMIN_BASE,
+    "/disputes",
+    params,
+  );
+
 export const decideAdminDispute = (
   uuid: string,
   payload: {
@@ -256,6 +272,26 @@ export const rejectAdminPayout = (uuid: string, alasan: string) =>
 export const getAdminLedgerReconciliation = () =>
   getApiData<LedgerReconciliation>(ADMIN_BASE, "/ledger/reconciliation");
 
+export const exportAdminSalesCsv = (
+  params: { from?: string; to?: string; status?: string } = {},
+) =>
+  downloadApiCsv(
+    ADMIN_BASE,
+    "/reports/sales/export",
+    params,
+    `laporan-penjualan-${params.from || "all"}-${params.to || "now"}.csv`,
+  );
+
+export const exportAdminLedgerCsv = (
+  params: { from?: string; to?: string } = {},
+) =>
+  downloadApiCsv(
+    ADMIN_BASE,
+    "/reports/ledger/export",
+    params,
+    `laporan-ledger-${params.from || "all"}-${params.to || "now"}.csv`,
+  );
+
 export const createAdminLedgerAdjustment = (
   payload: {
     debit_account: string;
@@ -268,6 +304,15 @@ export const createAdminLedgerAdjustment = (
   postApiData<unknown>(ADMIN_BASE, "/ledger/adjustments", payload, {
     idempotencyKey,
   });
+
+export const getAdminPrograms = (
+  params: { status?: string; page?: number; per_page?: number } = {},
+) =>
+  getApiData<PaginatedList<CharityProgram> | CharityProgram[]>(
+    ADMIN_BASE,
+    "/programs",
+    params,
+  );
 
 export const approveAdminProgram = (uuid: string) =>
   postApiData<CharityProgram>(
@@ -298,6 +343,15 @@ export const approveAdminDisbursement = (uuid: string) =>
     `/disbursements/${encodeURIComponent(uuid)}/approve`,
   );
 
+export const getAdminSplitSchemes = (
+  params: { page?: number; per_page?: number } = {},
+) =>
+  getApiData<PaginatedList<SplitScheme> | SplitScheme[]>(
+    ADMIN_BASE,
+    "/split-schemes",
+    params,
+  );
+
 export const createAdminSplitScheme = (payload: {
   nama?: string;
   cakupan?: string;
@@ -324,6 +378,12 @@ export const getAdminConfig = () =>
 export const updateAdminConfig = (payload: Record<string, unknown>) =>
   patchApiData<Record<string, unknown>>(ADMIN_BASE, "/config", payload);
 
+export const getAdminPages = () =>
+  getApiData<PaginatedList<StaticPageRecord> | StaticPageRecord[]>(
+    ADMIN_BASE,
+    "/pages",
+  );
+
 export const saveAdminPage = (payload: StaticPageRecord) =>
   putApiData<StaticPageRecord>(ADMIN_BASE, "/pages", payload);
 
@@ -343,4 +403,146 @@ export const getAdminAuditLogs = (
     ADMIN_BASE,
     "/audit-logs",
     params,
+  );
+
+// --- 3.4 Master Data Admin (Categories, SOP, Price Guidelines, Shipping Rates) ---
+
+export const getAdminCategories = () =>
+  getApiData<PaginatedList<AdminCategory> | AdminCategory[]>(
+    ADMIN_BASE,
+    "/categories",
+  );
+
+export const createAdminCategory = (payload: {
+  kode: string;
+  nama: string;
+  aktif: boolean;
+  terlarang: boolean;
+  aturan?: { pickup_only?: boolean };
+  urutan?: number;
+}) => postApiData<AdminCategory>(ADMIN_BASE, "/categories", payload);
+
+export const updateAdminCategory = (
+  uuid: string,
+  payload: Partial<{
+    kode: string;
+    nama: string;
+    aktif: boolean;
+    terlarang: boolean;
+    aturan: { pickup_only?: boolean };
+    urutan: number;
+  }>,
+) =>
+  patchApiData<AdminCategory>(
+    ADMIN_BASE,
+    `/categories/${encodeURIComponent(uuid)}`,
+    payload,
+  );
+
+export const deleteAdminCategory = (uuid: string) =>
+  deleteApiData<unknown>(ADMIN_BASE, `/categories/${encodeURIComponent(uuid)}`);
+
+export const getAdminSopTemplates = () =>
+  getApiData<PaginatedList<AdminSopTemplate> | AdminSopTemplate[]>(
+    ADMIN_BASE,
+    "/sop-templates",
+  );
+
+export const createAdminSopCheck = (
+  templateId: string | number,
+  payload: {
+    kode: string;
+    teks: string;
+    tipe: "bool" | "text" | "number";
+    wajib: boolean;
+    butuh_bukti: "none" | "foto" | "video";
+    on_fail: "fix" | "reject";
+    urutan?: number;
+  },
+) =>
+  postApiData<AdminSopCheck>(
+    ADMIN_BASE,
+    `/sop-templates/${encodeURIComponent(String(templateId))}/checks`,
+    payload,
+  );
+
+export const updateAdminSopCheck = (
+  checkId: string | number,
+  payload: Partial<{
+    kode: string;
+    teks: string;
+    tipe: "bool" | "text" | "number";
+    wajib: boolean;
+    butuh_bukti: "none" | "foto" | "video";
+    on_fail: "fix" | "reject";
+    urutan: number;
+  }>,
+) =>
+  patchApiData<AdminSopCheck>(
+    ADMIN_BASE,
+    `/sop-checks/${encodeURIComponent(String(checkId))}`,
+    payload,
+  );
+
+export const deleteAdminSopCheck = (checkId: string | number) =>
+  deleteApiData<unknown>(
+    ADMIN_BASE,
+    `/sop-checks/${encodeURIComponent(String(checkId))}`,
+  );
+
+export const getAdminPriceGuidelines = () =>
+  getApiData<PaginatedList<AdminPriceGuideline> | AdminPriceGuideline[]>(
+    ADMIN_BASE,
+    "/price-guidelines",
+  );
+
+export const upsertAdminPriceGuideline = (payload: {
+  category_id: number | null;
+  grade: ItemGrade;
+  min_pct: number;
+  max_pct: number;
+}) => postApiData<AdminPriceGuideline>(ADMIN_BASE, "/price-guidelines", payload);
+
+export const deleteAdminPriceGuideline = (id: string | number) =>
+  deleteApiData<unknown>(
+    ADMIN_BASE,
+    `/price-guidelines/${encodeURIComponent(String(id))}`,
+  );
+
+export const getAdminShippingRates = () =>
+  getApiData<PaginatedList<AdminShippingRate> | AdminShippingRate[]>(
+    ADMIN_BASE,
+    "/shipping-rates",
+  );
+
+export const createAdminShippingRate = (payload: {
+  origin_region_id: number | null;
+  zona: "dalam_kota" | "jawa_barat" | "luar_jawa_barat";
+  berat_min_g: number;
+  berat_max_g: number;
+  tarif_idr: number;
+  aktif: boolean;
+}) => postApiData<AdminShippingRate>(ADMIN_BASE, "/shipping-rates", payload);
+
+export const updateAdminShippingRate = (
+  id: string | number,
+  payload: Partial<{
+    origin_region_id: number | null;
+    zona: "dalam_kota" | "jawa_barat" | "luar_jawa_barat";
+    berat_min_g: number;
+    berat_max_g: number;
+    tarif_idr: number;
+    aktif: boolean;
+  }>,
+) =>
+  patchApiData<AdminShippingRate>(
+    ADMIN_BASE,
+    `/shipping-rates/${encodeURIComponent(String(id))}`,
+    payload,
+  );
+
+export const deleteAdminShippingRate = (id: string | number) =>
+  deleteApiData<unknown>(
+    ADMIN_BASE,
+    `/shipping-rates/${encodeURIComponent(String(id))}`,
   );

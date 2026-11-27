@@ -29,13 +29,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import ReactSelect from "react-select";
 import {
   getWilayahDistricts,
   getWilayahFilters,
@@ -808,8 +802,6 @@ export function ConfirmDialog({
   );
 }
 
-const EMPTY_SELECT_SENTINEL = "__EMPTY__";
-
 export interface ConsoleSelectOption {
   value: string;
   label: string;
@@ -821,8 +813,10 @@ export function ConsoleSelect({
   value,
   onChange,
   options,
-  placeholder = "Pilih...",
+  placeholder = "Pilih atau cari...",
   disabled,
+  loading = false,
+  searchable = true,
   className = "",
 }: {
   id?: string;
@@ -831,34 +825,75 @@ export function ConsoleSelect({
   options: ConsoleSelectOption[];
   placeholder?: string;
   disabled?: boolean;
+  loading?: boolean;
+  searchable?: boolean;
   className?: string;
 }) {
-  const mappedValue = value === "" ? EMPTY_SELECT_SENTINEL : value;
+  const selectedOption = options.find((opt) => opt.value === value) ?? null;
+
   return (
-    <Select
-      value={mappedValue}
-      onValueChange={(v) => onChange(v === EMPTY_SELECT_SENTINEL ? "" : v)}
-      disabled={disabled}
-    >
-      <SelectTrigger
-        id={id}
-        className={`min-h-11 w-full rounded-md border-[1.5px] bg-[var(--putih)] text-sm text-[var(--tinta)] ${className}`}
-        style={{ borderColor: "var(--garis-kuat)" }}
-      >
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent className="z-[70] max-h-72 border bg-white text-gray-900 dark:border-gray-700 dark:bg-[#2a2a2a] dark:text-white">
-        {options.map((opt) => (
-          <SelectItem
-            key={opt.value === "" ? EMPTY_SELECT_SENTINEL : opt.value}
-            value={opt.value === "" ? EMPTY_SELECT_SENTINEL : opt.value}
-            disabled={opt.disabled}
-          >
-            {opt.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className={className || "w-full"}>
+      <ReactSelect<ConsoleSelectOption, false>
+        inputId={id}
+        unstyled
+        isSearchable={searchable}
+        isDisabled={disabled}
+        isLoading={loading}
+        loadingMessage={() => "Memuat data..."}
+        options={options}
+        value={selectedOption}
+        onChange={(opt) => onChange(opt ? opt.value : "")}
+        isOptionDisabled={(opt) => Boolean(opt.disabled)}
+        placeholder={placeholder}
+        noOptionsMessage={({ inputValue }) =>
+          inputValue
+            ? `Tidak ditemukan "${inputValue}"`
+            : "Tidak ada pilihan tersedia"
+        }
+        menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+        menuPosition="fixed"
+        menuPlacement="auto"
+        styles={{
+          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+        }}
+        classNames={{
+          control: ({ isFocused, isDisabled }) =>
+            [
+              "flex min-h-11 w-full items-center justify-between gap-2 rounded-md border-[1.5px] px-3 py-1.5 text-sm transition-colors",
+              "bg-white text-[#171b3d] dark:bg-[#2a2a2a] dark:text-white",
+              isFocused
+                ? "border-[#1f2c7a] ring-2 ring-[#1f2c7a]/20 dark:border-[#7fb3d5] dark:ring-[#7fb3d5]/25"
+                : "border-[#7a83a6] hover:border-[#1f2c7a] dark:border-[#4b5563] dark:hover:border-[#7fb3d5]",
+              isDisabled ? "cursor-not-allowed opacity-60" : "cursor-text",
+            ].join(" "),
+          valueContainer: () => "flex flex-1 flex-wrap items-center gap-1 overflow-hidden",
+          singleValue: () => "truncate text-sm text-[#171b3d] dark:text-white",
+          placeholder: () => "truncate text-sm text-[#566083] dark:text-gray-400",
+          input: () => "m-0 p-0 text-sm text-[#171b3d] dark:text-white",
+          indicatorsContainer: () => "flex shrink-0 items-center gap-1",
+          dropdownIndicator: ({ selectProps }) =>
+            [
+              "p-1 text-[#566083] transition-transform duration-150 dark:text-gray-400",
+              selectProps.menuIsOpen ? "rotate-180" : "",
+            ].join(" "),
+          menu: () =>
+            "mt-1.5 overflow-hidden rounded-lg border border-[#d9deee] bg-white shadow-lg dark:border-[#374151] dark:bg-[#2a2a2a]",
+          menuList: () => "max-h-64 overflow-y-auto p-1",
+          option: ({ isSelected, isFocused, isDisabled }) =>
+            [
+              "cursor-pointer rounded-md px-3 py-2 text-sm transition-colors",
+              isDisabled ? "cursor-not-allowed opacity-45" : "",
+              isSelected
+                ? "bg-[#1f2c7a] font-semibold text-white dark:bg-[#457b9d] dark:text-white"
+                : isFocused
+                  ? "bg-[#e6e9f8] text-[#1f2c7a] dark:bg-[#1f3342] dark:text-[#7fb3d5]"
+                  : "text-[#171b3d] dark:text-gray-100",
+            ].join(" "),
+          noOptionsMessage: () =>
+            "px-3 py-4 text-center text-sm text-[#566083] dark:text-gray-400",
+        }}
+      />
+    </div>
   );
 }
 
@@ -914,6 +949,7 @@ export function WilayahCascader({
         </span>
         <ConsoleSelect
           value={value.province_code}
+          loading={provincesQuery.isLoading}
           onChange={(province_code) =>
             onChange({
               province_code,
@@ -938,6 +974,7 @@ export function WilayahCascader({
         </span>
         <ConsoleSelect
           value={value.regency_code}
+          loading={regenciesQuery.isLoading}
           disabled={!value.province_code || regenciesQuery.isLoading}
           onChange={(regency_code) =>
             onChange({
@@ -968,6 +1005,7 @@ export function WilayahCascader({
           </span>
           <ConsoleSelect
             value={value.district_code}
+            loading={districtsQuery.isLoading}
             disabled={!value.regency_code || districtsQuery.isLoading}
             onChange={(district_code) =>
               onChange({
@@ -998,6 +1036,7 @@ export function WilayahCascader({
           </span>
           <ConsoleSelect
             value={value.village_code}
+            loading={villagesQuery.isLoading}
             disabled={!value.district_code || villagesQuery.isLoading}
             onChange={(village_code) =>
               onChange({
